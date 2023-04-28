@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "graph_lr"
+version = "0.0.1"
+description = "Graph Representation Learning"
+authors = ["Quentin Blampey <quentin.blampey@centralesupelec.fr>"]
+packages = [
+    { include = "graph_lr" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.7.1,<3.11"
+
+[tool.poetry.dev-dependencies]
+black = "^22.8.0"
+isort = "^5.10.1"
+pytest = "^7.1.3"
+mkdocs-material = "^8.5.6"
+mkdocstrings = "^0.19.0"
+mkdocstrings-python = "^0.7.1"
+mkdocs-jupyter = "^0.21.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[tool.black]
+line-length = 90
+include = '\.pyi?$'
+exclude = '''
+/(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+'''
+
+[tool.isort]
+profile = "black"
+skip_glob = ["*/__init__.py"]
