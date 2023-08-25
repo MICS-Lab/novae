@@ -34,6 +34,7 @@ wandb/
 .env
 .autoenv
 !**/.gitkeep
+exploration
 
 # pyenv
 .python-version
