@@ -17,7 +17,7 @@ class Embedding(pl.LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         emb_weights = self.softmax(self.embeddings.weight)
-        return x @ emb_weights.T
+        return x @ emb_weights
 
 
 class ContrastiveLoss(pl.LightningModule):

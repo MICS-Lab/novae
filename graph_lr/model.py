@@ -5,18 +5,17 @@ import torch
 from anndata import AnnData
 from torch import nn, optim
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn.aggr import MeanAggregation
 
-from .data import PairsDataset, StandardDataset
-from .module import ContrastiveLoss, GraphEncoder
-from .sampling import HopSampler
+from .data import HopSampler, PairsDataset, StandardDataset
+from .module import ContrastiveLoss, Embedding, GraphEncoder
 
 
 class GraphCL(pl.LightningModule):
     def __init__(
         self,
         adata: AnnData,
-        obsm_key="X_pca",
+        # obsm_key="X_pca",
+        embedding_size: int = 64,
         n_hops: int = 2,
         n_intermediate: int = 4,
         hidden_channels: int = 64,
@@ -30,11 +29,14 @@ class GraphCL(pl.LightningModule):
         self.save_hyperparameters(ignore=["adata"])
 
         self.adata = adata
-        self.x_numpy = self.adata.obsm[obsm_key]
+        self.x_numpy = self.adata.X  # log1p expressions
         self.x = torch.tensor(self.x_numpy)
 
+        self.n_genes = self.x.shape[1]
+
+        self.embedding = Embedding(self.n_genes, embedding_size)
         self.module = GraphEncoder(
-            self.x.shape[1], hidden_channels, num_layers, out_channels
+            embedding_size, hidden_channels, num_layers, out_channels
         )
         self.projection = nn.Sequential(
             nn.Linear(out_channels, out_channels),
@@ -70,6 +72,7 @@ class GraphCL(pl.LightningModule):
         dataset = PairsDataset(
             self.adata,
             self.x,
+            self.embedding,
             self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
@@ -84,7 +87,7 @@ class GraphCL(pl.LightningModule):
         else:
             from tqdm import tqdm
 
-        dataset = StandardDataset(self.adata, self.x, self.hparams.n_hops)
+        dataset = StandardDataset(self.adata, self.x, self.embedding, self.hparams.n_hops)
         loader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=False)
         return torch.concatenate(
             [self.module(batch) for batch in tqdm(loader, desc="DataLoader")]
