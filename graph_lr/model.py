@@ -46,12 +46,15 @@ class GraphCL(pl.LightningModule):
 
         self.contrastive_loss = ContrastiveLoss(self.hparams.batch_size, temperature)
 
-    def forward(self, batch):
+    def forward(self, batch, projection: bool = True):
         data1, data2 = batch
 
         h1, h2 = self.module(data1), self.module(data2)
 
-        return h1, h2
+        if not projection:
+            return h1, h2
+
+        return self.projection(h1), self.projection(h2)
 
     def training_step(self, batch, batch_idx):
         h1, h2 = self(batch)
