@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from anndata import AnnData
 from torch.utils.data import Dataset
 
@@ -6,11 +7,11 @@ from .sampling import HopSampler
 
 
 class StandardDataset(Dataset):
-    def __init__(self, adata: AnnData, n_hops: int) -> None:
+    def __init__(self, adata: AnnData, x: torch.Tensor, n_hops: int) -> None:
         self.adata = adata
         self.n_hops = n_hops
 
-        self.sampler = HopSampler(self.adata)
+        self.sampler = HopSampler(self.adata, x)
 
     def __len__(self):
         return self.adata.n_obs
@@ -23,6 +24,7 @@ class PairsDataset(Dataset):
     def __init__(
         self,
         adata: AnnData,
+        x: torch.Tensor,
         n_hops: int,
         n_intermediate: int = None,
         max_attemps: int = 10,
@@ -34,7 +36,7 @@ class PairsDataset(Dataset):
         )
         self.max_attemps = max_attemps
 
-        self.sampler = HopSampler(self.adata)
+        self.sampler = HopSampler(self.adata, x)
 
     def __len__(self):
         return 10_000
