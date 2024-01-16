@@ -8,12 +8,12 @@ from graph_lr import GraphCL
 def main():
     adata = sc.read_h5ad("/Users/quentinblampey/dev/graph_lr/exploration/conc.h5ad")
 
-    model = GraphCL(adata, n_hops=2, heads=4)
+    model = GraphCL(adata, n_hops=2, heads=8)
 
     wandb_logger = WandbLogger(log_model="all", project="graph-lr")
 
     trainer = pl.Trainer(
-        max_epochs=10,
+        max_epochs=40,
         accelerator="cpu",
         enable_checkpointing=False,
         log_every_n_steps=10,

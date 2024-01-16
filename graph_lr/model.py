@@ -21,7 +21,7 @@ class GraphCL(pl.LightningModule):
         n_hops: int = 2,
         n_intermediate: int = 4,
         hidden_channels: int = 64,
-        num_layers: int = 5,
+        num_layers: int = 10,
         out_channels: int = 64,
         batch_size: int = 32,
         lr: float = 1e-3,
