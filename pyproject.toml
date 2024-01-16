@@ -14,6 +14,7 @@ pytorch-lightning = "^2.0.7"
 torch-scatter = "^2.0"
 setuptools = "^68.1.2"
 tensorboard = "^2.14.0"
+wandb = "^0.16.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.8.0"

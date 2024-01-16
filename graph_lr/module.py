@@ -9,15 +9,45 @@ from torch_geometric.nn.aggr import AttentionalAggregation
 from torch_geometric.nn.models import GAT
 
 
-class Embedding(pl.LightningModule):
-    def __init__(self, voc_size: int, embedding_size: int) -> None:
+class GenesEmbedding(pl.LightningModule):
+    def __init__(self, gene_names: list[str], embedding_size: int) -> None:
         super().__init__()
-        self.embeddings = nn.Embedding(voc_size, embedding_size)
-        self.softmax = nn.Softmax(dim=1)
+        self.voc_size = len(gene_names)
+        self.gene_to_index = {gene: i for i, gene in enumerate(gene_names)}
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        emb_weights = self.softmax(self.embeddings.weight)
-        return x @ emb_weights
+        self.embedding = nn.Embedding(self.voc_size, embedding_size)
+        self.softmax = nn.Softmax(dim=0)
+
+    def genes_to_indices(self, gene_names: list[str]) -> torch.Tensor:
+        return torch.tensor(
+            [self.gene_to_index[gene] for gene in gene_names], dtype=torch.long
+        )
+
+    def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
+        genes_embeddings = self.embedding(genes_indices)
+        genes_embeddings = self.softmax(genes_embeddings)
+
+        return x @ genes_embeddings
+
+
+# class Embedding(pl.LightningModule):
+#     def __init__(
+#         self, voc_size: int, embedding_size: int, drop_ratio: float = 0.1
+#     ) -> None:
+#         super().__init__()
+#         self.voc_size = voc_size
+#         self.embeddings = nn.Embedding(voc_size, embedding_size)
+#         self.softmax = nn.Softmax(dim=1)
+#         self.dropped_voc_size = int(self.voc_size * (1 - drop_ratio))
+
+#     def forward(self, x: torch.Tensor, drop_nodes: bool = False) -> torch.Tensor:
+#         if not drop_nodes:
+#             emb_weights = self.softmax(self.embeddings.weight)
+#             return x @ emb_weights
+
+#         indices = torch.randperm(self.voc_size)[: self.dropped_voc_size]
+#         emb_weights = self.softmax(self.embeddings(indices))
+#         return x[:, indices] @ emb_weights
 
 
 class ContrastiveLoss(pl.LightningModule):
@@ -54,7 +84,12 @@ class ContrastiveLoss(pl.LightningModule):
 
 class GraphEncoder(pl.LightningModule):
     def __init__(
-        self, num_features: int, hidden_channels: int, num_layers: int, out_channels: int
+        self,
+        num_features: int,
+        hidden_channels: int,
+        num_layers: int,
+        out_channels: int,
+        heads: int,
     ) -> None:
         super().__init__()
         self.gat = GAT(
@@ -63,6 +98,7 @@ class GraphEncoder(pl.LightningModule):
             num_layers=num_layers,
             out_channels=out_channels,
             v2=True,
+            heads=heads,
         )
 
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
