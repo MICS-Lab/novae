@@ -142,11 +142,15 @@ class ShuffledDataset:
 
         self.sampler = HopSampler(self.adata, x, embedding)
 
+        self.valid_indices = np.where(adata.obsp["spatial_connectivities"].sum(1).A1 > 0)[
+            0
+        ]
+
     def __len__(self):
         return 10_000
 
     def __getitem__(self, idx):
-        origin_index = np.random.choice(self.adata.n_obs, size=1)[0]
+        origin_index = np.random.choice(self.valid_indices, size=1)[0]
 
         return self.sampler.hop_travel(
             origin_index, n_hops=self.n_hops, shuffle_pair=True

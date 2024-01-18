@@ -55,16 +55,17 @@ class GraphCL(pl.LightningModule):
 
         h1, h2 = self.module(data1), self.module(data2)
 
-        if not projection:
-            return h1, h2
+        return h1, h2
+        # if not projection:
+        #     return h1, h2
 
-        return self.projection(h1), self.projection(h2)
+        # return self.projection(h1), self.projection(h2)
 
     def training_step(self, batch, batch_idx):
         h1, h2 = self(batch)
         # loss = self.contrastive_loss(h1, h2)
 
-        h1, h2 = self.sigmoid(self.classifier(h1)), self.sigmoid(self.classifier(h2))
+        # h1, h2 = self.sigmoid(self.classifier(h1)), self.sigmoid(self.classifier(h2))
         loss = self.bce_loss(h1, torch.ones_like(h1, device=h1.device)) + self.bce_loss(
             h2, torch.zeros_like(h2, device=h2.device)
         )

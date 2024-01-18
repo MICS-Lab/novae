@@ -5,8 +5,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch_geometric.data import Data
+
+# from torch_geometric.nn import aggr
+from torch_geometric.nn import TransformerConv, global_mean_pool
 from torch_geometric.nn.aggr import AttentionalAggregation
-from torch_geometric.nn.models import GAT
+from torch_geometric.nn.models import GAT, GCN, GraphSAGE
+from torch_geometric.nn.models.basic_gnn import BasicGNN
 
 
 class GenesEmbedding(pl.LightningModule):
@@ -82,6 +86,14 @@ class ContrastiveLoss(pl.LightningModule):
         return (-positives + torch.logsumexp(cos_sim + self.mask, dim=-1)).mean()
 
 
+class Transformer(BasicGNN):
+    supports_edge_weight: bool = False
+    supports_edge_attr: bool = False
+
+    def init_conv(self, in_channels: int, out_channels: int, **kwargs):
+        return TransformerConv(in_channels, out_channels, **kwargs)
+
+
 class GraphEncoder(pl.LightningModule):
     def __init__(
         self,
@@ -92,7 +104,7 @@ class GraphEncoder(pl.LightningModule):
         heads: int,
     ) -> None:
         super().__init__()
-        self.gat = GAT(
+        self.gnn = GAT(
             num_features,
             hidden_channels=hidden_channels,
             num_layers=num_layers,
@@ -101,10 +113,34 @@ class GraphEncoder(pl.LightningModule):
             heads=heads,
         )
 
+        # self.gnn = Transformer(
+        #     num_features,
+        #     hidden_channels=hidden_channels,
+        #     num_layers=num_layers,
+        #     out_channels=out_channels,
+        #     heads=heads,
+        #     concat=False,
+        # )
+
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
         self.attention_aggregation = AttentionalAggregation(self.seq)
 
+        self.edge_scorer = nn.Sequential(
+            nn.Linear(2 * out_channels, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid(),
+        )
+
     def forward(self, data: Data):
-        out = self.gat(x=data.x, edge_index=data.edge_index)
-        h = self.attention_aggregation(out, ptr=data.ptr)
-        return h
+        out = self.gnn(x=data.x, edge_index=data.edge_index)
+        # h = self.attention_aggregation(out, ptr=data.ptr)
+        # return h
+
+        edge_embeddings = torch.cat(
+            (out[data.edge_index[0]], out[data.edge_index[1]]), dim=1
+        )
+        scores = self.edge_scorer(edge_embeddings)
+        return global_mean_pool(x=scores, batch=data.batch[data.edge_index[0]])
