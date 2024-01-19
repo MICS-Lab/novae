@@ -6,8 +6,8 @@ from anndata import AnnData
 from torch import nn, optim
 from torch_geometric.loader import DataLoader
 
-from .data import HopSampler, ShuffledDataset, StandardDataset
-from .module import ContrastiveLoss, GenesEmbedding, GraphEncoder
+from .data import LocalAugmentationDataset
+from .module import GenesEmbedding, GraphEncoder
 
 
 class GraphCL(pl.LightningModule):
@@ -82,36 +82,45 @@ class GraphCL(pl.LightningModule):
         return loss
 
     def train_dataloader(self):
-        # dataset = PairsDataset(
-        #     self.adata,
-        #     self.x,
-        #     self.embedding,
-        #     self.hparams.n_hops,
-        #     n_intermediate=self.hparams.n_intermediate,
-        # )
-        dataset = ShuffledDataset(
+        dataset = LocalAugmentationDataset(
             self.adata,
             self.x,
             self.embedding,
-            self.hparams.n_hops,
+            n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
         return DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
         )
 
-    # @torch.no_grad()
-    # def embeddings(self):
-    #     if importlib.util.find_spec("ipywidgets") is not None:
-    #         from tqdm.autonotebook import tqdm
-    #     else:
-    #         from tqdm import tqdm
+    def test_dataloader(self):
+        dataset = LocalAugmentationDataset(
+            self.adata,
+            self.x,
+            self.embedding,
+            all_nodes=True,
+            n_hops=self.hparams.n_hops,
+            n_intermediate=self.hparams.n_intermediate,
+        )
+        dataset
+        return DataLoader(
+            dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
+        )
 
-    #     dataset = StandardDataset(self.adata, self.x, self.embedding, self.hparams.n_hops)
-    #     loader = DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=False)
-    #     return torch.concatenate(
-    #         [self.module(batch) for batch in tqdm(loader, desc="DataLoader")]
-    #     )
+    @torch.no_grad()
+    def delta(self):
+        if importlib.util.find_spec("ipywidgets") is not None:
+            from tqdm.autonotebook import tqdm
+        else:
+            from tqdm import tqdm
+
+        loader = self.test_dataloader()
+        return torch.concatenate(
+            [
+                self.module(batch[0]) - self.module(batch[1])
+                for batch in tqdm(loader, desc="DataLoader")
+            ]
+        )
 
     # def baseline_embeddings(self):
     #     sampler = HopSampler(self.adata, self.x)
