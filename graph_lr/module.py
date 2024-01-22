@@ -55,15 +55,18 @@ class GraphEncoder(pl.LightningModule):
             heads=heads,
         )
 
+        # Node pooling
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
         self.attention_aggregation = AttentionalAggregation(self.seq)
 
+        # Edge pooling
         self.edge_scorer = EdgeScorer(out_channels, out_channels, heads=heads)
 
-    def forward(self, data: Data):
+    def forward(self, data: Data, edge_pooling: bool = False):
         out = self.gnn(x=data.x, edge_index=data.edge_index)
-        # h = self.attention_aggregation(out, ptr=data.ptr)
-        # return h
+
+        if not edge_pooling:
+            return self.attention_aggregation(out, ptr=data.ptr)
 
         scores = self.edge_scorer(x=out, edge_index=data.edge_index)
         return global_mean_pool(x=scores, batch=data.batch[data.edge_index[0]])

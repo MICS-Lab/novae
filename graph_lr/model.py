@@ -1,5 +1,6 @@
 import importlib
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
 from anndata import AnnData
@@ -16,7 +17,7 @@ class GraphCL(pl.LightningModule):
         adata: AnnData,
         batch_key: str = None,
         # obsm_key="X_pca",
-        embedding_size: int = 64,
+        embedding_size: int = 256,
         heads: int = 1,
         n_hops: int = 2,
         n_intermediate: int = 4,
@@ -44,28 +45,20 @@ class GraphCL(pl.LightningModule):
             nn.Linear(out_channels, out_channels),
         )
 
-        self.sigmoid = nn.Sigmoid()
-
         self.classifier = nn.Linear(out_channels, 1)
         self.bce_loss = nn.BCELoss()
-        # self.contrastive_loss = ContrastiveLoss(self.hparams.batch_size, temperature)
 
-    def forward(self, batch, projection: bool = True):
+    def forward(self, batch, edge_pooling: bool = False):
         data1, data2 = batch
 
-        h1, h2 = self.module(data1), self.module(data2)
+        h1 = self.module(data1, edge_pooling=edge_pooling)
+        h2 = self.module(data2, edge_pooling=edge_pooling)
 
         return h1, h2
-        # if not projection:
-        #     return h1, h2
-
-        # return self.projection(h1), self.projection(h2)
 
     def training_step(self, batch, batch_idx):
         h1, h2 = self(batch)
-        # loss = self.contrastive_loss(h1, h2)
 
-        # h1, h2 = self.sigmoid(self.classifier(h1)), self.sigmoid(self.classifier(h2))
         loss = self.bce_loss(h1, torch.ones_like(h1, device=h1.device)) + self.bce_loss(
             h2, torch.zeros_like(h2, device=h2.device)
         )
@@ -86,6 +79,7 @@ class GraphCL(pl.LightningModule):
             self.adata,
             self.x,
             self.embedding,
+            delta_th=0.5,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
@@ -98,7 +92,6 @@ class GraphCL(pl.LightningModule):
             self.adata,
             self.x,
             self.embedding,
-            all_nodes=True,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
@@ -108,34 +101,44 @@ class GraphCL(pl.LightningModule):
         )
 
     @torch.no_grad()
-    def delta(self):
+    def delta(self) -> torch.Tensor:
         if importlib.util.find_spec("ipywidgets") is not None:
             from tqdm.autonotebook import tqdm
         else:
             from tqdm import tqdm
 
         loader = self.test_dataloader()
-        return torch.concatenate(
+
+        out = torch.concatenate(
             [
                 self.module(batch[0]) - self.module(batch[1])
                 for batch in tqdm(loader, desc="DataLoader")
             ]
         )
 
-    # def baseline_embeddings(self):
-    #     sampler = HopSampler(self.adata, self.x)
+        delta = np.zeros(self.adata.n_obs, dtype=float)
+        delta[loader.dataset.valid_indices] = out.numpy(force=True)
 
-    #     import numpy as np
-
-    #     return np.stack(
-    #         [
-    #             self.x_numpy[
-    #                 sampler.hop_travel(i, self.hparams.n_hops, as_pyg=False)
-    #             ].mean(0)
-    #             for i in range(self.adata.n_obs)
-    #         ]
-    #     )
+        return delta
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
         return optimizer
+
+    @torch.no_grad()
+    def sinkhorn(out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
+        """Q is K-by-B for consistency with notations from the paper (out: B*K)"""
+        Q = torch.exp(out / epsilon).t()
+        Q /= torch.sum(Q)
+
+        B = Q.shape[1]
+        K = Q.shape[0]
+
+        for _ in range(sinkhorn_iterations):
+            sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
+            Q /= sum_of_rows
+            Q /= K
+            Q /= torch.sum(Q, dim=0, keepdim=True)
+            Q /= B
+        Q *= B
+        return Q.t()

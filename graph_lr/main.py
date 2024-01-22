@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 import scanpy as sc
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
 from graph_lr import GraphCL
@@ -12,12 +13,14 @@ def main():
 
     wandb_logger = WandbLogger(log_model="all", project="graph-lr")
 
+    callbacks = [ModelCheckpoint(monitor="loss_epoch")]
+
     trainer = pl.Trainer(
         max_epochs=40,
         accelerator="cpu",
-        enable_checkpointing=False,
         log_every_n_steps=10,
         logger=wandb_logger,
+        callbacks=callbacks,
     )
 
     trainer.fit(model)

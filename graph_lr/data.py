@@ -16,30 +16,33 @@ class LocalAugmentationDataset(Dataset):
         adata: AnnData,
         x: torch.Tensor,
         embedding: GenesEmbedding,
-        all_nodes: bool = False,
+        delta_th: float = None,
         n_hops: int = 2,
         n_intermediate: int = None,
     ) -> None:
         self.adata = adata
         self.x = x
         self.embedding = embedding
-        self.all_nodes = all_nodes
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
         self.genes_indices = self.embedding.genes_to_indices(adata.var_names)
 
         self.A = adata.obsp["spatial_connectivities"]
-        self.valid_indices = np.where(self.A.sum(1).A1 > 0)[0]
+
+        if "delta" in adata.obs and delta_th is not None:
+            print("Using delta")
+            self.valid_indices = np.where(
+                (self.A.sum(1).A1 > 0) & (adata.obs.delta <= delta_th)
+            )[0]
+        else:
+            self.valid_indices = np.where(self.A.sum(1).A1 > 0)[0]
 
     def __len__(self) -> int:
-        if self.all_nodes:
-            return self.adata.n_obs
         return len(self.valid_indices)
 
     def __getitem__(self, idx):
-        if not self.all_nodes:
-            idx = self.valid_indices[idx]
+        idx = self.valid_indices[idx]
 
         return self.hop_travel(idx, n_hops=self.n_hops, shuffle_pair=True)
 
