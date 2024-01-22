@@ -36,6 +36,32 @@ class GenesEmbedding(pl.LightningModule):
         return x @ genes_embeddings
 
 
+class SwavHead(pl.LightningModule):
+    def __init__(self, out_channels: int, num_prototypes: int):
+        self.out_channels = out_channels
+        self.num_prototypes = num_prototypes
+
+        self.prototypes = nn.Linear(self.out_channels, self.num_prototypes, bias=False)
+
+    @torch.no_grad()
+    def sinkhorn(out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
+        """Q is K-by-B for consistency with notations from the paper (out: B*K)"""
+        Q = torch.exp(out / epsilon).t()
+        Q /= torch.sum(Q)
+
+        B = Q.shape[1]
+        K = Q.shape[0]
+
+        for _ in range(sinkhorn_iterations):
+            sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
+            Q /= sum_of_rows
+            Q /= K
+            Q /= torch.sum(Q, dim=0, keepdim=True)
+            Q /= B
+        Q *= B
+        return Q.t()
+
+
 class GraphEncoder(pl.LightningModule):
     def __init__(
         self,
@@ -62,14 +88,15 @@ class GraphEncoder(pl.LightningModule):
         # Edge pooling
         self.edge_scorer = EdgeScorer(out_channels, out_channels, heads=heads)
 
-    def forward(self, data: Data, edge_pooling: bool = False):
+    def forward(self, data: Data):
         out = self.gnn(x=data.x, edge_index=data.edge_index)
 
-        if not edge_pooling:
-            return self.attention_aggregation(out, ptr=data.ptr)
+        node_pooling = self.attention_aggregation(out, ptr=data.ptr)
 
         scores = self.edge_scorer(x=out, edge_index=data.edge_index)
-        return global_mean_pool(x=scores, batch=data.batch[data.edge_index[0]])
+        edge_pooling = global_mean_pool(x=scores, batch=data.batch[data.edge_index[0]])
+
+        return node_pooling, edge_pooling
 
 
 class EdgeScorer(MessagePassing):

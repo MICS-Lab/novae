@@ -23,6 +23,7 @@ class LocalAugmentationDataset(Dataset):
         self.adata = adata
         self.x = x
         self.embedding = embedding
+        self.delta_th = delta_th
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
@@ -30,27 +31,38 @@ class LocalAugmentationDataset(Dataset):
 
         self.A = adata.obsp["spatial_connectivities"]
 
-        if "delta" in adata.obs and delta_th is not None:
-            print("Using delta")
-            self.valid_indices = np.where(
-                (self.A.sum(1).A1 > 0) & (adata.obs.delta <= delta_th)
-            )[0]
-        else:
-            self.valid_indices = np.where(self.A.sum(1).A1 > 0)[0]
+        self.valid_indices = [i for i in range(adata.n_obs) if self.node_is_valid(i)]
+
+    def node_is_valid(self, index: int):
+        if "delta" in self.adata.obs and self.delta_th is not None:
+            if self.adata.obs["delta"].values[index] <= self.delta_th:
+                return False
+
+        return len(self.n_hop_neighbours(index)) > 0
 
     def __len__(self) -> int:
         return len(self.valid_indices)
 
-    def __getitem__(self, idx):
-        idx = self.valid_indices[idx]
+    def __getitem__(self, dataset_index):
+        index = self.valid_indices[dataset_index]
 
-        return self.hop_travel(idx, n_hops=self.n_hops, shuffle_pair=True)
+        plausible_nghs = self.n_hop_neighbours(index)
+        ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
 
-    def _to_pyg_graph(
-        self, indices, shuffle_pair: bool = False
-    ) -> Union[Data, Tuple[Data, Data]]:
+        data, data_shuffled = self.hop_travel(index, shuffle_pair=True)
+        data_ngh = self.hop_travel(ngh_index)
+
+        return data, data_shuffled, data_ngh
+
+    def hop_travel(self, index: int, shuffle_pair: bool = False):
+        indices = {index}
+
+        for _ in range(self.n_hops):
+            indices = indices | set(self.A[list(indices)].indices)
+
+        indices = list(indices)
+
         x = self.x[indices]
-
         x = self.embedding(x, self.genes_indices)
         edge_index, _ = from_scipy_sparse_matrix(self.A[indices][:, indices])
 
@@ -63,26 +75,10 @@ class LocalAugmentationDataset(Dataset):
 
         return data
 
-    def hop_travel(
-        self, index: int, n_hops: int, as_pyg: bool = True, shuffle_pair: bool = False
-    ):
-        indices = {index}
+    def n_hop_neighbours(self, origin_index: int) -> set:
+        visited = {origin_index}
 
-        for _ in range(n_hops):
-            indices = indices | set(self.A[list(indices)].indices)
+        for _ in range(self.n_intermediate):
+            visited |= set(self.A[list(visited)].indices)
 
-        indices = list(indices)
-
-        return (
-            self._to_pyg_graph(indices, shuffle_pair=shuffle_pair) if as_pyg else indices
-        )
-
-    # def get_pair_node(self, origin_index: int, n_intermediate: int):
-    #     # TODO: travel on similar cells: use PCA distance?
-    #     visited = {origin_index}
-    #     for _ in range(n_intermediate):
-    #         visited |= set(self.A[list(visited)].indices)
-
-    #     plausible = set(self.A[list(visited)].indices) - visited
-
-    #     return np.random.choice(list(plausible), size=1)[0] if plausible else None
+        return set(self.A[list(visited)].indices) - visited

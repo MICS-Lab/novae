@@ -48,20 +48,19 @@ class GraphCL(pl.LightningModule):
         self.classifier = nn.Linear(out_channels, 1)
         self.bce_loss = nn.BCELoss()
 
-    def forward(self, batch, edge_pooling: bool = False):
-        data1, data2 = batch
-
-        h1 = self.module(data1, edge_pooling=edge_pooling)
-        h2 = self.module(data2, edge_pooling=edge_pooling)
-
-        return h1, h2
+    def forward(self, batch):
+        return [self.module(view) for view in batch]
 
     def training_step(self, batch, batch_idx):
-        h1, h2 = self(batch)
+        (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
 
-        loss = self.bce_loss(h1, torch.ones_like(h1, device=h1.device)) + self.bce_loss(
-            h2, torch.zeros_like(h2, device=h2.device)
-        )
+        loss = ...
+
+        # loss = self.bce_loss(
+        #     ep, torch.ones_like(ep, device=ep.device)
+        # ) + self.bce_loss(
+        #     ep_shuffle, torch.zeros_like(ep_shuffle, device=ep_shuffle.device)
+        # )
 
         self.log(
             "loss",

@@ -11,7 +11,7 @@ def main():
 
     model = GraphCL(adata, n_hops=2, heads=4)
 
-    wandb_logger = WandbLogger(log_model="all", project="graph-lr")
+    wandb_logger = WandbLogger(log_model="all", project="graph_lr_swav")
 
     callbacks = [ModelCheckpoint(monitor="loss_epoch")]
 
