@@ -1,3 +1,4 @@
+import math
 from typing import Optional, Tuple, Union
 
 import pytorch_lightning as pl
@@ -25,9 +26,7 @@ class GenesEmbedding(pl.LightningModule):
         self.softmax = nn.Softmax(dim=0)
 
     def genes_to_indices(self, gene_names: list[str]) -> torch.Tensor:
-        return torch.tensor(
-            [self.gene_to_index[gene] for gene in gene_names], dtype=torch.long
-        )
+        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long)
 
     def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
         genes_embeddings = self.embedding(genes_indices)
@@ -37,14 +36,34 @@ class GenesEmbedding(pl.LightningModule):
 
 
 class SwavHead(pl.LightningModule):
-    def __init__(self, out_channels: int, num_prototypes: int):
+    def __init__(self, out_channels: int, num_prototypes: int, temperature: float = 0.1):
+        super().__init__()
         self.out_channels = out_channels
         self.num_prototypes = num_prototypes
+        self.temperature = temperature
 
-        self.prototypes = nn.Linear(self.out_channels, self.num_prototypes, bias=False)
+        self.prototypes = nn.Parameter(torch.empty((self.out_channels, self.num_prototypes)))
+        self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
+
+    def normalize_prototypes(self):
+        self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
+
+    def forward(self, out1, out2):
+        self.normalize_prototypes()
+
+        out1 = F.normalize(out1, dim=1, p=2)
+        out2 = F.normalize(out2, dim=1, p=2)
+
+        scores1 = out1 @ self.prototypes
+        scores2 = out2 @ self.prototypes
+
+        q1 = self.sinkhorn(scores1)
+        q2 = self.sinkhorn(scores2)
+
+        return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
     @torch.no_grad()
-    def sinkhorn(out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
+    def sinkhorn(self, out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
         """Q is K-by-B for consistency with notations from the paper (out: B*K)"""
         Q = torch.exp(out / epsilon).t()
         Q /= torch.sum(Q)
@@ -60,6 +79,9 @@ class SwavHead(pl.LightningModule):
             Q /= B
         Q *= B
         return Q.t()
+
+    def cross_entropy_loss(self, q, p):
+        return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
 
 class GraphEncoder(pl.LightningModule):

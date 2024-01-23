@@ -37,7 +37,7 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 
 [tool.black]
-line-length = 90
+line-length = 100
 include = '\.pyi?$'
 exclude = '''
 /(

@@ -8,7 +8,7 @@ from torch import nn, optim
 from torch_geometric.loader import DataLoader
 
 from .data import LocalAugmentationDataset
-from .module import GenesEmbedding, GraphEncoder
+from .module import GenesEmbedding, GraphEncoder, SwavHead
 
 
 class GraphCL(pl.LightningModule):
@@ -26,7 +26,8 @@ class GraphCL(pl.LightningModule):
         out_channels: int = 64,
         batch_size: int = 32,
         lr: float = 1e-3,
-        temperature: float = 0.5,
+        temperature: float = 0.1,
+        num_prototypes: int = 1_000,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["adata"])
@@ -36,9 +37,7 @@ class GraphCL(pl.LightningModule):
         self.x = torch.tensor(self.x_numpy)
 
         self.embedding = GenesEmbedding(adata.var_names, embedding_size)
-        self.module = GraphEncoder(
-            embedding_size, hidden_channels, num_layers, out_channels, heads
-        )
+        self.module = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
         self.projection = nn.Sequential(
             nn.Linear(out_channels, out_channels),
             nn.ReLU(inplace=True),
@@ -48,13 +47,15 @@ class GraphCL(pl.LightningModule):
         self.classifier = nn.Linear(out_channels, 1)
         self.bce_loss = nn.BCELoss()
 
+        self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
+
     def forward(self, batch):
         return [self.module(view) for view in batch]
 
     def training_step(self, batch, batch_idx):
         (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
 
-        loss = ...
+        loss = self.swav_head(np, np_ngh)
 
         # loss = self.bce_loss(
         #     ep, torch.ones_like(ep, device=ep.device)
@@ -82,9 +83,7 @@ class GraphCL(pl.LightningModule):
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
-        return DataLoader(
-            dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
-        )
+        return DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True)
 
     def test_dataloader(self):
         dataset = LocalAugmentationDataset(
@@ -123,21 +122,3 @@ class GraphCL(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
         return optimizer
-
-    @torch.no_grad()
-    def sinkhorn(out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
-        """Q is K-by-B for consistency with notations from the paper (out: B*K)"""
-        Q = torch.exp(out / epsilon).t()
-        Q /= torch.sum(Q)
-
-        B = Q.shape[1]
-        K = Q.shape[0]
-
-        for _ in range(sinkhorn_iterations):
-            sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
-            Q /= sum_of_rows
-            Q /= K
-            Q /= torch.sum(Q, dim=0, keepdim=True)
-            Q /= B
-        Q *= B
-        return Q.t()
