@@ -27,7 +27,7 @@ class GraphCL(pl.LightningModule):
         batch_size: int = 32,
         lr: float = 1e-3,
         temperature: float = 0.1,
-        num_prototypes: int = 1_000,
+        num_prototypes: int = 32,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["adata"])
@@ -97,6 +97,9 @@ class GraphCL(pl.LightningModule):
         return DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
+
+    def on_train_epoch_start(self):
+        self.swav_head.prototypes.requires_grad = self.current_epoch > 0
 
     @torch.no_grad()
     def delta(self) -> torch.Tensor:
