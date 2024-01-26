@@ -9,9 +9,12 @@ from graph_lr import GraphCL
 def main():
     adata = sc.read_h5ad("/Users/quentinblampey/dev/graph_lr/exploration/conc.h5ad")
 
-    model = GraphCL(adata, n_hops=2, heads=4)
+    swav = False
 
-    wandb_logger = WandbLogger(log_model="all", project="graph_lr_swav")
+    mode = "swav" if swav else "shuffle"
+    model = GraphCL(adata, swav, n_hops=2, heads=4)
+
+    wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{mode}")
 
     callbacks = [ModelCheckpoint(monitor="loss_epoch")]
 

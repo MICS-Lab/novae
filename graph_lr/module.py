@@ -30,7 +30,7 @@ class GenesEmbedding(pl.LightningModule):
 
     def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
         genes_embeddings = self.embedding(genes_indices)
-        genes_embeddings = self.softmax(genes_embeddings)
+        genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
         return x @ genes_embeddings
 
@@ -44,6 +44,7 @@ class SwavHead(pl.LightningModule):
 
         self.prototypes = nn.Parameter(torch.empty((self.out_channels, self.num_prototypes)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
+        self.normalize_prototypes()
 
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
@@ -65,7 +66,8 @@ class SwavHead(pl.LightningModule):
     @torch.no_grad()
     def sinkhorn(self, out, epsilon: float = 0.05, sinkhorn_iterations: int = 3):
         """Q is K-by-B for consistency with notations from the paper (out: B*K)"""
-        Q = torch.exp(out / epsilon).t()
+        Q = out  # - out.max() # remove comment to make it numerically more stable
+        Q = torch.exp(Q / epsilon).t()
         Q /= torch.sum(Q)
 
         B = Q.shape[1]

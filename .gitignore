@@ -20,6 +20,7 @@ site
 outputs
 multirun
 lightning_logs
+graph_lr_*
 
 # Data files
 data/*

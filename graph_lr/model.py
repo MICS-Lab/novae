@@ -15,6 +15,7 @@ class GraphCL(pl.LightningModule):
     def __init__(
         self,
         adata: AnnData,
+        swav: bool,
         batch_key: str = None,
         # obsm_key="X_pca",
         embedding_size: int = 256,
@@ -24,7 +25,7 @@ class GraphCL(pl.LightningModule):
         hidden_channels: int = 64,
         num_layers: int = 10,
         out_channels: int = 64,
-        batch_size: int = 32,
+        batch_size: int = 256,
         lr: float = 1e-3,
         temperature: float = 0.1,
         num_prototypes: int = 32,
@@ -33,8 +34,10 @@ class GraphCL(pl.LightningModule):
         self.save_hyperparameters(ignore=["adata"])
 
         self.adata = adata
+        self.swav = swav
         self.x_numpy = self.adata.X  # log1p expressions
         self.x = torch.tensor(self.x_numpy)
+        self.x = (self.x - self.x.mean(0)) / self.x.std(0)  # TODO: keep? how with multi adata?
 
         self.embedding = GenesEmbedding(adata.var_names, embedding_size)
         self.module = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
@@ -55,13 +58,12 @@ class GraphCL(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
 
-        loss = self.swav_head(np, np_ngh)
-
-        # loss = self.bce_loss(
-        #     ep, torch.ones_like(ep, device=ep.device)
-        # ) + self.bce_loss(
-        #     ep_shuffle, torch.zeros_like(ep_shuffle, device=ep_shuffle.device)
-        # )
+        if self.swav:
+            loss = self.swav_head(np, np_ngh)
+        else:
+            loss = self.bce_loss(ep, torch.ones_like(ep, device=ep.device)) + self.bce_loss(
+                ep_shuffle, torch.zeros_like(ep_shuffle, device=ep_shuffle.device)
+            )
 
         self.log(
             "loss",
