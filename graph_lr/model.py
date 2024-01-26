@@ -4,6 +4,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from anndata import AnnData
+from sklearn.decomposition import PCA
 from torch import nn, optim
 from torch_geometric.loader import DataLoader
 
@@ -36,10 +37,17 @@ class GraphCL(pl.LightningModule):
         self.adata = adata
         self.swav = swav
         self.x_numpy = self.adata.X  # log1p expressions
+        # TODO: keep? how with multi adata?
+        self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / self.x_numpy.std(0)
         self.x = torch.tensor(self.x_numpy)
-        self.x = (self.x - self.x.mean(0)) / self.x.std(0)  # TODO: keep? how with multi adata?
 
         self.embedding = GenesEmbedding(adata.var_names, embedding_size)
+
+        # PCA init embeddings (valid only if x centered)
+        pca = PCA(n_components=embedding_size)
+        pca.fit(self.x_numpy)
+        self.embedding.embedding.weight.data = torch.tensor(pca.components_.T)
+
         self.module = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
         self.projection = nn.Sequential(
             nn.Linear(out_channels, out_channels),
