@@ -9,7 +9,7 @@ from graph_lr import GraphCL
 def main():
     adata = sc.read_h5ad("/Users/quentinblampey/dev/graph_lr/exploration/conc.h5ad")
 
-    swav = False
+    swav = True
 
     mode = "swav" if swav else "shuffle"
     model = GraphCL(adata, swav, n_hops=2, heads=4)

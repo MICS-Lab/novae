@@ -6,6 +6,7 @@ import torch
 from anndata import AnnData
 from sklearn.decomposition import PCA
 from torch import nn, optim
+from torch.nn import functional as F
 from torch_geometric.loader import DataLoader
 
 from .data import LocalAugmentationDataset
@@ -112,7 +113,7 @@ class GraphCL(pl.LightningModule):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
 
     @torch.no_grad()
-    def delta(self) -> torch.Tensor:
+    def delta(self) -> np.ndarray:
         if importlib.util.find_spec("ipywidgets") is not None:
             from tqdm.autonotebook import tqdm
         else:
@@ -122,7 +123,7 @@ class GraphCL(pl.LightningModule):
 
         out = torch.concatenate(
             [
-                self.module(batch[0]) - self.module(batch[1])
+                self.module(batch[0])[1] - self.module(batch[1])[1]
                 for batch in tqdm(loader, desc="DataLoader")
             ]
         )
@@ -131,6 +132,27 @@ class GraphCL(pl.LightningModule):
         delta[loader.dataset.valid_indices] = out.numpy(force=True)
 
         return delta
+
+    @torch.no_grad()
+    def swav_clusters(self) -> np.ndarray:
+        preds = []
+
+        loader = self.test_dataloader()
+
+        for h1, _, _ in loader:
+            np_, _ = self.module(h1)
+            out1 = F.normalize(np_, dim=1, p=2)
+            scores1 = out1 @ self.swav_head.prototypes
+            pred = scores1.argmax(1)
+
+            preds.append(pred)
+
+        preds = torch.cat(preds)
+
+        res = np.full(self.adata.n_obs, "nan")
+        res[loader.dataset.valid_indices] = preds.numpy(force=True).astype(str)
+
+        return res
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)

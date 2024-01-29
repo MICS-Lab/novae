@@ -103,6 +103,7 @@ class GraphEncoder(pl.LightningModule):
             out_channels=out_channels,
             v2=True,
             heads=heads,
+            act="ELU",
         )
 
         # Node pooling
