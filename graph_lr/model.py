@@ -18,8 +18,7 @@ class GraphCL(pl.LightningModule):
         self,
         adata: AnnData,
         swav: bool,
-        batch_key: str = None,
-        # obsm_key="X_pca",
+        slide_key: str = None,
         embedding_size: int = 256,
         heads: int = 1,
         n_hops: int = 2,
@@ -33,11 +32,15 @@ class GraphCL(pl.LightningModule):
         num_prototypes: int = 32,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=["adata"])
+        self.save_hyperparameters(ignore=["adata", "slide_key"])
 
         self.adata = adata
+        self.slide_key = slide_key
+
         self.swav = swav
         self.x_numpy = self.adata.X  # log1p expressions
+        self.x_numpy = self.x_numpy if isinstance(self.x_numpy, np.ndarray) else self.x_numpy.A
+
         # TODO: keep? how with multi adata?
         self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / self.x_numpy.std(0)
         self.x = torch.tensor(self.x_numpy)
@@ -86,31 +89,38 @@ class GraphCL(pl.LightningModule):
         return loss
 
     def train_dataloader(self):
-        dataset = LocalAugmentationDataset(
+        self.dataset = LocalAugmentationDataset(
             self.adata,
             self.x,
             self.embedding,
+            slide_key=self.slide_key,
+            batch_size=self.hparams.batch_size,
             delta_th=0.5,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
-        return DataLoader(dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True)
+        return DataLoader(
+            self.dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
+        )
 
     def test_dataloader(self):
         dataset = LocalAugmentationDataset(
             self.adata,
             self.x,
             self.embedding,
+            slide_key=self.slide_key,
+            batch_size=self.hparams.batch_size,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
-        dataset
         return DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
 
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
+
+        self.dataset.shuffle_grouped_indices()
 
     @torch.no_grad()
     def delta(self) -> np.ndarray:
@@ -151,6 +161,23 @@ class GraphCL(pl.LightningModule):
 
         res = np.full(self.adata.n_obs, "nan")
         res[loader.dataset.valid_indices] = preds.numpy(force=True).astype(str)
+
+        return res
+
+    @torch.no_grad()
+    def embeddings(self) -> np.ndarray:
+        emb = []
+
+        loader = self.test_dataloader()
+
+        for h1, _, _ in loader:
+            np_, _ = self.module(h1)
+            out1 = F.normalize(np_, dim=1, p=2)
+            emb.append(out1)
+
+        embeddings = torch.concat(emb, dim=0).numpy(force=True)
+        res = np.zeros((self.adata.n_obs, embeddings.shape[1]))
+        res[loader.dataset.valid_indices] = embeddings
 
         return res
 

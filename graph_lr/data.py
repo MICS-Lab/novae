@@ -9,6 +9,8 @@ from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .module import GenesEmbedding
 
+IS_VALID_KEY = "is_valid"
+
 
 class LocalAugmentationDataset(Dataset):
     def __init__(
@@ -16,6 +18,8 @@ class LocalAugmentationDataset(Dataset):
         adata: AnnData,
         x: torch.Tensor,
         embedding: GenesEmbedding,
+        slide_key: bool = None,
+        batch_size: int = None,
         delta_th: float = None,
         n_hops: int = 2,
         n_intermediate: int = None,
@@ -23,6 +27,10 @@ class LocalAugmentationDataset(Dataset):
         self.adata = adata
         self.x = x
         self.embedding = embedding
+
+        self.slide_key = slide_key
+        self.batch_size = batch_size
+
         self.delta_th = delta_th
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
@@ -31,7 +39,49 @@ class LocalAugmentationDataset(Dataset):
 
         self.A = adata.obsp["spatial_connectivities"]
 
-        self.valid_indices = [i for i in range(adata.n_obs) if self.node_is_valid(i)]
+        self.adata.obs[IS_VALID_KEY] = [self.node_is_valid(i) for i in range(adata.n_obs)]
+        self.valid_indices = np.where(self.adata.obs[IS_VALID_KEY])[0]
+
+        self.init_obs_indices()
+
+    def init_obs_indices(self):
+        if self.slide_key is None:
+            self.obs_indices = self.valid_indices
+            return
+
+        assert (
+            self.batch_size is not None
+        ), "When using `slide_key`, you need to also provide `batch_size`"
+
+        self.batch_counts = self.adata.obs[self.slide_key][self.valid_indices].value_counts()
+        self.batches_per_slide = (self.batch_counts // self.batch_size).clip(1)
+        self.slides = self.batch_counts.index
+        self.shuffle_grouped_indices()
+
+    def shuffle_grouped_indices(self):
+        if self.slide_key is None:
+            return
+
+        obs_indices = np.empty((0, self.batch_size), dtype=int)
+
+        for slide in self.slides:
+            indices = np.where(
+                (self.adata.obs[self.slide_key] == slide) & self.adata.obs[IS_VALID_KEY]
+            )[0]
+            indices = np.random.permutation(indices)
+
+            n_elements = self.batches_per_slide[slide] * self.batch_size
+            if len(indices) >= n_elements:
+                indices = indices[:n_elements]
+            else:
+                indices = np.random.choice(indices, size=n_elements)
+
+            indices = indices.reshape((-1, self.batch_size))
+
+            obs_indices = np.concatenate([obs_indices, indices], axis=0)
+
+        np.random.shuffle(obs_indices)
+        self.obs_indices = obs_indices.flatten()
 
     def node_is_valid(self, index: int):
         if "delta" in self.adata.obs and self.delta_th is not None:
@@ -41,10 +91,10 @@ class LocalAugmentationDataset(Dataset):
         return len(self.n_hop_neighbours(index)) > 0
 
     def __len__(self) -> int:
-        return len(self.valid_indices)
+        return len(self.obs_indices)
 
     def __getitem__(self, dataset_index):
-        index = self.valid_indices[dataset_index]
+        index = self.obs_indices[dataset_index]
 
         plausible_nghs = self.n_hop_neighbours(index)
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
