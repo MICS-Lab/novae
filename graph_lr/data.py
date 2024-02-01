@@ -39,7 +39,20 @@ class LocalAugmentationDataset(Dataset):
 
         self.A = adata.obsp["spatial_connectivities"]
 
-        self.adata.obs[IS_VALID_KEY] = [self.node_is_valid(i) for i in range(adata.n_obs)]
+        self.A_local = self.A.copy()
+        for _ in range(self.n_hops - 1):
+            self.A_local = self.A_local @ self.A
+
+        self.A_pair = self.A.copy()
+        for i in range(self.n_intermediate - 1):
+            if i == self.n_intermediate - 2:
+                A_previous = self.A_pair.copy()
+            self.A_pair = self.A_pair @ self.A
+
+        self.A_pair[A_previous.nonzero()] = 0
+        self.A_pair.eliminate_zeros()
+
+        self.adata.obs[IS_VALID_KEY] = self.A_pair.sum(1).A1 > 0
         self.valid_indices = np.where(self.adata.obs[IS_VALID_KEY])[0]
 
         self.init_obs_indices()
@@ -83,20 +96,13 @@ class LocalAugmentationDataset(Dataset):
         np.random.shuffle(obs_indices)
         self.obs_indices = obs_indices.flatten()
 
-    def node_is_valid(self, index: int):
-        if "delta" in self.adata.obs and self.delta_th is not None:
-            if self.adata.obs["delta"].values[index] <= self.delta_th:
-                return False
-
-        return len(self.n_hop_neighbours(index)) > 0
-
     def __len__(self) -> int:
         return len(self.obs_indices)
 
     def __getitem__(self, dataset_index):
         index = self.obs_indices[dataset_index]
 
-        plausible_nghs = self.n_hop_neighbours(index)
+        plausible_nghs = self.A_pair[index].indices
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
 
         data, data_shuffled = self.hop_travel(index, shuffle_pair=True)
@@ -105,12 +111,7 @@ class LocalAugmentationDataset(Dataset):
         return data, data_shuffled, data_ngh
 
     def hop_travel(self, index: int, shuffle_pair: bool = False):
-        indices = {index}
-
-        for _ in range(self.n_hops):
-            indices = indices | set(self.A[list(indices)].indices)
-
-        indices = list(indices)
+        indices = self.A_local[index].indices
 
         x = self.x[indices]
         x = self.embedding(x, self.genes_indices)
@@ -124,11 +125,3 @@ class LocalAugmentationDataset(Dataset):
             return data, shuffled_data
 
         return data
-
-    def n_hop_neighbours(self, origin_index: int) -> set:
-        visited = {origin_index}
-
-        for _ in range(self.n_intermediate):
-            visited |= set(self.A[list(visited)].indices)
-
-        return set(self.A[list(visited)].indices) - visited
