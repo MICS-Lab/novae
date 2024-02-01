@@ -40,6 +40,7 @@ class GraphCL(pl.LightningModule):
         self.swav = swav
         self.x_numpy = self.adata.X  # log1p expressions
         self.x_numpy = self.x_numpy if isinstance(self.x_numpy, np.ndarray) else self.x_numpy.A
+        self.x_numpy = self.x_numpy.astype(np.float32)
 
         # TODO: keep? how with multi adata?
         self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / self.x_numpy.std(0)
