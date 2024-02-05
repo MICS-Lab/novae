@@ -44,8 +44,8 @@ class LocalAugmentationDataset(Dataset):
             self.A_local = self.A_local @ self.A
 
         self.A_pair = self.A.copy()
-        for i in range(self.n_intermediate - 1):
-            if i == self.n_intermediate - 2:
+        for i in range(self.n_intermediate):
+            if i == self.n_intermediate - 1:
                 A_previous = self.A_pair.copy()
             self.A_pair = self.A_pair @ self.A
 
@@ -95,6 +95,9 @@ class LocalAugmentationDataset(Dataset):
 
         np.random.shuffle(obs_indices)
         self.obs_indices = obs_indices.flatten()
+
+        # TODO: remove
+        self.obs_indices = self.obs_indices[: self.batch_size * 200]
 
     def __len__(self) -> int:
         return len(self.obs_indices)

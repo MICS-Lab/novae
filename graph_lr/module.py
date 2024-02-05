@@ -183,7 +183,10 @@ class EdgeScorer(MessagePassing):
         self,
         x: Tensor,
         edge_index: Adj,
-    ) -> Union[Tensor, Tuple[Tensor, Tuple[Tensor, Tensor]],]:
+    ) -> Union[
+        Tensor,
+        Tuple[Tensor, Tuple[Tensor, Tensor]],
+    ]:
         r"""Runs the forward pass of the module.
 
         Args:

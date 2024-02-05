@@ -12,6 +12,8 @@ from torch_geometric.loader import DataLoader
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
 
+EPS = 1e-8
+
 
 class GraphCL(pl.LightningModule):
     def __init__(
@@ -43,7 +45,7 @@ class GraphCL(pl.LightningModule):
         self.x_numpy = self.x_numpy.astype(np.float32)
 
         # TODO: keep? how with multi adata?
-        self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / self.x_numpy.std(0)
+        self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / (self.x_numpy.std(0) + EPS)
         self.x = torch.tensor(self.x_numpy)
 
         self.embedding = GenesEmbedding(adata.var_names, embedding_size)
@@ -145,7 +147,7 @@ class GraphCL(pl.LightningModule):
         return delta
 
     @torch.no_grad()
-    def swav_clusters(self) -> np.ndarray:
+    def swav_clusters(self, use_codes: bool = False) -> np.ndarray:
         preds = []
 
         loader = self.test_dataloader()
@@ -154,11 +156,18 @@ class GraphCL(pl.LightningModule):
             np_, _ = self.module(h1)
             out1 = F.normalize(np_, dim=1, p=2)
             scores1 = out1 @ self.swav_head.prototypes
-            pred = scores1.argmax(1)
 
-            preds.append(pred)
+            if use_codes:
+                preds.append(scores1)
+            else:
+                pred = scores1.argmax(1)
+                preds.append(pred)
 
         preds = torch.cat(preds)
+
+        if use_codes:
+            preds = self.swav_head.sinkhorn(preds)
+            preds = preds.argmax(1)
 
         res = np.full(self.adata.n_obs, "nan")
         res[loader.dataset.valid_indices] = preds.numpy(force=True).astype(str)

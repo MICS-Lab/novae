@@ -7,12 +7,17 @@ from graph_lr import GraphCL
 
 
 def main():
-    adata = sc.read_h5ad("/Users/quentinblampey/dev/graph_lr/exploration/conc.h5ad")
+    # adata = sc.read_h5ad("/Users/quentinblampey/dev/graph_lr/exploration/conc.h5ad")
+    adata = sc.read_h5ad(
+        "/Users/quentinblampey/data/vizgen/results/santiago_tumour_global_annot_epoch75_integrated.h5ad"
+    )
+    adata = adata[adata.obs.ID == "Santiago_2_region_2"].copy()
 
     swav = True
+    slide_key = None  # "ID"
 
     mode = "swav" if swav else "shuffle"
-    model = GraphCL(adata, swav, n_hops=2, heads=4)
+    model = GraphCL(adata, swav, n_hops=2, heads=4, slide_key=slide_key)
 
     wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{mode}")
 
