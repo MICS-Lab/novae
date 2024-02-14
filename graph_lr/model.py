@@ -96,6 +96,7 @@ class GraphCL(pl.LightningModule):
             self.adata,
             self.x,
             self.embedding,
+            eval=False,
             slide_key=self.slide_key,
             batch_size=self.hparams.batch_size,
             delta_th=0.5,

@@ -18,6 +18,8 @@ class LocalAugmentationDataset(Dataset):
         adata: AnnData,
         x: torch.Tensor,
         embedding: GenesEmbedding,
+        eval: bool = True,
+        dropout: float = 0.5,
         slide_key: bool = None,
         batch_size: int = None,
         delta_th: float = None,
@@ -27,6 +29,8 @@ class LocalAugmentationDataset(Dataset):
         self.adata = adata
         self.x = x
         self.embedding = embedding
+        self.eval = eval
+        self.dropout = dropout
 
         self.slide_key = slide_key
         self.batch_size = batch_size
@@ -117,7 +121,7 @@ class LocalAugmentationDataset(Dataset):
         indices = self.A_local[index].indices
 
         x = self.x[indices]
-        x = self.embedding(x, self.genes_indices)
+        x = self.transform(x)
         edge_index, _ = from_scipy_sparse_matrix(self.A[indices][:, indices])
 
         data = Data(x=x, edge_index=edge_index)
@@ -128,3 +132,19 @@ class LocalAugmentationDataset(Dataset):
             return data, shuffled_data
 
         return data
+
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
+        if self.eval:
+            return self.embedding(x, self.genes_indices)
+
+        # gene subset (= panel change)
+        n_vars = len(self.genes_indices)
+        indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.dropout))]
+        x = self.embedding(x[:, indices], self.genes_indices[indices])
+        # x = self.embedding(x, self.genes_indices)
+
+        # gene expression dropout (= low quality gene)
+        # indices = torch.randperm(x.shape[1])[: int(x.shape[1] * (1 - self.dropout))]
+        # x[:, indices] = 0
+
+        return x
