@@ -19,7 +19,8 @@ class LocalAugmentationDataset(Dataset):
         x: torch.Tensor,
         embedding: GenesEmbedding,
         eval: bool = True,
-        dropout: float = 0.5,
+        panel_dropout: float = 0.4,
+        gene_expression_dropout: float = 0.1,
         slide_key: bool = None,
         batch_size: int = None,
         delta_th: float = None,
@@ -30,7 +31,9 @@ class LocalAugmentationDataset(Dataset):
         self.x = x
         self.embedding = embedding
         self.eval = eval
-        self.dropout = dropout
+
+        self.panel_dropout = panel_dropout
+        self.gene_expression_dropout = gene_expression_dropout
 
         self.slide_key = slide_key
         self.batch_size = batch_size
@@ -139,12 +142,11 @@ class LocalAugmentationDataset(Dataset):
 
         # gene subset (= panel change)
         n_vars = len(self.genes_indices)
-        indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.dropout))]
+        indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
         x = self.embedding(x[:, indices], self.genes_indices[indices])
-        # x = self.embedding(x, self.genes_indices)
 
         # gene expression dropout (= low quality gene)
-        # indices = torch.randperm(x.shape[1])[: int(x.shape[1] * (1 - self.dropout))]
-        # x[:, indices] = 0
+        indices = torch.randperm(x.shape[1])[: int(x.shape[1] * self.gene_expression_dropout)]
+        x[:, indices] = 0
 
         return x
