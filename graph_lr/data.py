@@ -3,6 +3,7 @@ from typing import Tuple, Union
 import numpy as np
 import torch
 from anndata import AnnData
+from torch.distributions import Exponential
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
@@ -21,6 +22,8 @@ class LocalAugmentationDataset(Dataset):
         eval: bool = True,
         panel_dropout: float = 0.4,
         gene_expression_dropout: float = 0.1,
+        background_noise_lambda: float = 5.0,
+        sensitivity_noise_std: float = 0.05,
         slide_key: bool = None,
         batch_size: int = None,
         delta_th: float = None,
@@ -34,6 +37,10 @@ class LocalAugmentationDataset(Dataset):
 
         self.panel_dropout = panel_dropout
         self.gene_expression_dropout = gene_expression_dropout
+        self.background_noise_lambda = background_noise_lambda
+        self.sensitivity_noise_std = sensitivity_noise_std
+
+        self.background_noise_distribution = Exponential(torch.tensor(background_noise_lambda))
 
         self.slide_key = slide_key
         self.batch_size = batch_size
@@ -140,13 +147,19 @@ class LocalAugmentationDataset(Dataset):
         if self.eval:
             return self.embedding(x, self.genes_indices)
 
-        # gene subset (= panel change)
-        n_vars = len(self.genes_indices)
-        indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
-        x = self.embedding(x[:, indices], self.genes_indices[indices])
+        # noise background + sensitivity
+        addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],))
+        factor = (1 + torch.randn(x.shape[1]) * self.sensitivity_noise_std).clip(0, 2)
+        x = x * factor + addition
 
         # gene expression dropout (= low quality gene)
-        indices = torch.randperm(x.shape[1])[: int(x.shape[1] * self.gene_expression_dropout)]
-        x[:, indices] = 0
+        # indices = torch.randperm(x.shape[1])[: int(x.shape[1] * self.gene_expression_dropout)]
+        # x[:, indices] = 0
+
+        # gene subset (= panel change)
+        n_vars = len(self.genes_indices)
+        gene_indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
+
+        x = self.embedding(x[:, gene_indices], self.genes_indices[gene_indices])
 
         return x
