@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytorch_lightning as pl
 import scanpy as sc
 from pytorch_lightning.callbacks import ModelCheckpoint
