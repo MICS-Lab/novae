@@ -53,7 +53,7 @@ class LocalAugmentationDataset(Dataset):
 
         self.genes_indices = self.embedding.genes_to_indices(adata.var_names)
 
-        self.A = adata.obsp["spatial_connectivities"]
+        self.A = adata.obsp["spatial_distances"]
 
         self.A_local = self.A.copy()
         for _ in range(self.n_hops - 1):
@@ -134,13 +134,14 @@ class LocalAugmentationDataset(Dataset):
 
         x = self.x[indices]
         x = self.transform(x)
-        edge_index, _ = from_scipy_sparse_matrix(self.A[indices][:, indices])
+        edge_index, edge_weight = from_scipy_sparse_matrix(self.A[indices][:, indices])
+        edge_attr = edge_weight[:, None].to(torch.float32)
 
-        data = Data(x=x, edge_index=edge_index)
+        data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
 
         if shuffle_pair:
             shuffled_x = x[torch.randperm(x.size()[0])]
-            shuffled_data = Data(x=shuffled_x, edge_index=edge_index)
+            shuffled_data = Data(x=shuffled_x, edge_index=edge_index, edge_attr=edge_attr)
             return data, shuffled_data
 
         return data

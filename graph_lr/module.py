@@ -133,6 +133,7 @@ class GraphEncoder(pl.LightningModule):
             hidden_channels=hidden_channels,
             num_layers=num_layers,
             out_channels=out_channels,
+            edge_dim=1,
             v2=True,
             heads=heads,
             act="ELU",
@@ -146,7 +147,7 @@ class GraphEncoder(pl.LightningModule):
         self.edge_scorer = EdgeScorer(out_channels, out_channels, heads=heads)
 
     def forward(self, data: Data):
-        out = self.gnn(x=data.x, edge_index=data.edge_index)
+        out = self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
 
         node_pooling = self.attention_aggregation(out, ptr=data.ptr)
 
