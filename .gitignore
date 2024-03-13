@@ -24,7 +24,7 @@ graph_lr_*
 
 # Data files
 data/*
-!data/*.sh
+!data/download
 
 # Jupyter Notebook
 .ipynb_checkpoints
