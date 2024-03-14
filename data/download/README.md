@@ -2,7 +2,9 @@
 
 This directory contains `shell` and `python` scripts used to download public spatial transcriptomics datasets.
 
-## MERSCOPE
+## Scripts
+
+### MERSCOPE
 
 Requirements: the `gsutil` command line should be installed. See [here](https://cloud.google.com/storage/docs/gsutil_install).
 
@@ -16,7 +18,7 @@ sh download/merscope_download.sh
 python download/merscope_convert.py
 ```
 
-## Xenium
+### Xenium
 
 Requirements: a Python environment with `spatialdata-io` installed.
 
