@@ -47,7 +47,7 @@ def convert_to_h5ad(dataset_dir: Path):
 
 
 def main(args):
-    path = Path(args.path).absolute() / "vizgen"
+    path = Path(args.path).absolute() / "merscope"
 
     print(f"Reading all datasets inside {path}")
 

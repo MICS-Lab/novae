@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BUCKET_NAME="vz-ffpe-showcase"
-OUTPUT_DIR="./vizgen"
+OUTPUT_DIR="./merscope"
 
 for BUCKET_DIR in $(gsutil ls -d gs://$BUCKET_NAME/*); do
     DATASET_NAME=$(basename $BUCKET_DIR)
