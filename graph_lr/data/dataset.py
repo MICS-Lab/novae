@@ -11,14 +11,14 @@ from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .._constants import ADJ, ADJ_LOCAL, ADJ_PAIR, IS_VALID_KEY
 from ..module import GenesEmbedding
-from .loader import AnnDataLoader
+from .convert import AnnDataTorch
 
 
 class LocalAugmentationDataset(Dataset):
     def __init__(
         self,
         adatas: list[AnnData],
-        embedding: GenesEmbedding,
+        genes_embedding: GenesEmbedding,
         eval: bool = True,
         panel_dropout: float = 0.4,
         gene_expression_dropout: float = 0.1,
@@ -32,9 +32,9 @@ class LocalAugmentationDataset(Dataset):
     ) -> None:
         # TODO: fix adata, A, A_local, A_pair, genes_indices, ...
         self.adatas = adatas
-        self.anndata_loader = AnnDataLoader(self.adatas)
+        self.anndata_torch = AnnDataTorch(self.adatas)
 
-        self.embedding = embedding
+        self.genes_embedding = genes_embedding
         self.eval = eval
 
         self.panel_dropout = panel_dropout
@@ -51,7 +51,7 @@ class LocalAugmentationDataset(Dataset):
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
-        self.init_adjacencies()  # TODO: move in utils prepare adatas + add spatial_neighbors?
+        self.init_adjacencies()
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
 
         self.init_obs_indices()
@@ -60,21 +60,9 @@ class LocalAugmentationDataset(Dataset):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[ADJ]
 
-            adjacency_local = adjacency.copy()
-            for _ in range(self.n_hops - 1):
-                adjacency_local = adjacency_local @ adjacency
-            adata.obsp[ADJ_LOCAL] = adjacency_local
-
-            adjacency_pair: csr_matrix = adjacency.copy()
-            for i in range(self.n_intermediate):
-                if i == self.n_intermediate - 1:
-                    adjacency_previous: csr_matrix = adjacency_pair.copy()
-                adjacency_pair = adjacency_pair @ adjacency
-            adjacency_pair[adjacency_previous.nonzero()] = 0
-            adjacency_pair.eliminate_zeros()
-            adata.obsp[ADJ_PAIR] = adjacency_pair
-
-            adata.obs[IS_VALID_KEY] = adjacency_pair.sum(1).A1 > 0
+            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops)
+            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
+            adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
     def init_obs_indices(self):
         if self.slide_key is None:
@@ -89,6 +77,7 @@ class LocalAugmentationDataset(Dataset):
             self.batch_size is not None
         ), "When using `slide_key`, you need to also provide `batch_size`"
 
+        # TODO: finish updating this
         self.batch_counts = self.adata.obs[self.slide_key][self.valid_indices].value_counts()
         self.batches_per_slide = (self.batch_counts // self.batch_size).clip(1)
         self.slides = self.batch_counts.index
@@ -98,6 +87,7 @@ class LocalAugmentationDataset(Dataset):
         if self.slide_key is None:
             return
 
+        # TODO: finish updating this + rename obs_indices?
         obs_indices = np.empty((0, self.batch_size), dtype=int)
 
         for slide in self.slides:
@@ -146,9 +136,9 @@ class LocalAugmentationDataset(Dataset):
 
         indices = adjacency_local[obs_index].indices
 
-        x = self.anndata_loader[adata_index, indices]
+        x = self.anndata_torch[adata_index, indices]
 
-        x = self.transform(x)
+        x = self.transform(x, self.adatas[adata_index].var_names)
 
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[indices][:, indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
@@ -162,9 +152,11 @@ class LocalAugmentationDataset(Dataset):
 
         return data
 
-    def transform(self, x: torch.Tensor) -> torch.Tensor:
+    def transform(self, x: torch.Tensor, var_names: list[str]) -> torch.Tensor:
+        genes_indices = self.genes_embedding.genes_to_indices(var_names)
+
         if self.eval:
-            return self.embedding(x, self.genes_indices)
+            return self.genes_embedding(x, genes_indices)
 
         # noise background + sensitivity
         addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],))
@@ -176,9 +168,27 @@ class LocalAugmentationDataset(Dataset):
         # x[:, indices] = 0
 
         # gene subset (= panel change)
-        n_vars = len(self.genes_indices)
-        gene_indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
+        n_vars = len(genes_indices)
+        gene_subset_indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
 
-        x = self.embedding(x[:, gene_indices], self.genes_indices[gene_indices])
+        x = self.genes_embedding(x[:, gene_subset_indices], genes_indices[gene_subset_indices])
 
         return x
+
+
+def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
+    adjacency_local = adjacency.copy()
+    for _ in range(n_hops - 1):
+        adjacency_local = adjacency_local @ adjacency
+    return adjacency_local
+
+
+def _to_adjacency_pair(adjacency: csr_matrix, n_intermediate: int) -> csr_matrix:
+    adjacency_pair: csr_matrix = adjacency.copy()
+    for i in range(n_intermediate):
+        if i == n_intermediate - 1:
+            adjacency_previous: csr_matrix = adjacency_pair.copy()
+        adjacency_pair = adjacency_pair @ adjacency
+    adjacency_pair[adjacency_previous.nonzero()] = 0
+    adjacency_pair.eliminate_zeros()
+    return adjacency_pair

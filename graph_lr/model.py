@@ -40,8 +40,8 @@ class GraphLR(pl.LightningModule):
         self.slide_key = slide_key
 
         ### Embeddings
-        self.embedding = GenesEmbedding(self.var_names, embedding_size)
-        # self.embedding.pca_init(self.adatas) # TODO: fix it
+        self.genes_embedding = GenesEmbedding(self.var_names, embedding_size)
+        # self.genes_embedding.pca_init(self.adatas) # TODO: fix it
 
         ### Modules
         self.backbone = GraphEncoder(
@@ -83,7 +83,7 @@ class GraphLR(pl.LightningModule):
     def train_dataloader(self):
         self.dataset = LocalAugmentationDataset(
             self.adatas,
-            self.embedding,
+            self.genes_embedding,
             eval=False,
             slide_key=self.slide_key,
             batch_size=self.hparams.batch_size,
@@ -98,7 +98,7 @@ class GraphLR(pl.LightningModule):
     def test_dataloader(self):
         dataset = LocalAugmentationDataset(
             self.adatas,
-            self.embedding,
+            self.genes_embedding,
             slide_key=self.slide_key,
             batch_size=self.hparams.batch_size,
             n_hops=self.hparams.n_hops,
@@ -163,7 +163,7 @@ class GraphLR(pl.LightningModule):
         return res
 
     @torch.no_grad()
-    def embeddings(self) -> np.ndarray:
+    def representations(self) -> np.ndarray:
         emb = []
 
         loader = self.test_dataloader()
@@ -173,9 +173,9 @@ class GraphLR(pl.LightningModule):
             out1 = F.normalize(np_, dim=1, p=2)
             emb.append(out1)
 
-        embeddings = torch.concat(emb, dim=0).numpy(force=True)
-        res = np.zeros((self.adata.n_obs, embeddings.shape[1]))
-        res[loader.dataset.valid_indices] = embeddings
+        representations = torch.concat(emb, dim=0).numpy(force=True)
+        res = np.zeros((self.adata.n_obs, representations.shape[1]))
+        res[loader.dataset.valid_indices] = representations
 
         return res
 
