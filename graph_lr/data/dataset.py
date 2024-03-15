@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Tuple, Union
-
 import numpy as np
 import torch
 from anndata import AnnData
@@ -11,7 +9,6 @@ from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from ..module import GenesEmbedding
-from ..utils import all_genes
 
 IS_VALID_KEY = "is_valid"
 
@@ -32,6 +29,7 @@ class LocalAugmentationDataset(Dataset):
         n_hops: int = 2,
         n_intermediate: int = None,
     ) -> None:
+        # TODO: fix adata, A, A_local, A_pair, genes_indices, ...
         self.adatas = adatas
         self.embedding = embedding
         self.eval = eval
@@ -49,8 +47,6 @@ class LocalAugmentationDataset(Dataset):
         self.delta_th = delta_th
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
-
-        self.genes_indices = self.embedding.genes_to_indices(all_genes(self.adatas))
 
         self.A = adata.obsp["spatial_distances"]
 
@@ -111,7 +107,7 @@ class LocalAugmentationDataset(Dataset):
         np.random.shuffle(obs_indices)
         self.obs_indices = obs_indices.flatten()
 
-        # TODO: remove
+        # TODO: remove?
         self.obs_indices = self.obs_indices[: self.batch_size * 200]
 
     def __len__(self) -> int:

@@ -13,11 +13,9 @@ from .._constants import COUNTS_LAYER, VAR_MEAN, VAR_STD
 log = logging.getLogger(__name__)
 
 
-def prepare_adatas(adatas: AnnData | list[AnnData]):
+def prepare_adatas(adata: AnnData | list[AnnData]) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
-    if isinstance(adatas, AnnData):
-        prepare_adatas([adatas])
-        return
+    adatas = [adata] if isinstance(adata, AnnData) else adata
 
     sanity_check(adatas)
 
@@ -27,6 +25,8 @@ def prepare_adatas(adatas: AnnData | list[AnnData]):
 
         std = adata.X.std(0) if isinstance(std, np.ndarray) else sparse_std(adata.X, 0).A1
         adata.var[VAR_STD] = std
+
+    return adatas
 
 
 def sanity_check(adatas: list[AnnData]):
@@ -42,12 +42,12 @@ def sanity_check(adatas: list[AnnData]):
             sc.pp.log1p(adata)
 
     if count_raw:
-        log.warn(
+        log.info(
             f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{COUNTS_LAYER}'])"
         )
 
 
-def all_genes(adatas: list[AnnData]) -> list[str]:
+def genes_union(adatas: list[AnnData]) -> list[str]:
     return set.union(set(adata.var_names) for adata in adatas)
 
 

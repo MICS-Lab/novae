@@ -7,7 +7,7 @@ import scanpy as sc
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 
-from . import GraphCL
+from . import GraphLR
 from .utils import repository_path
 
 
@@ -20,7 +20,7 @@ def main(args):
     slide_key = None  # "ID"
 
     mode = "swav" if swav else "shuffle"
-    model = GraphCL(adata, swav, n_hops=2, heads=4, slide_key=slide_key)
+    model = GraphLR(adata, swav, n_hops=2, heads=4, slide_key=slide_key)
 
     wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{mode}")
 

@@ -6,18 +6,16 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 from anndata import AnnData
-from sklearn.decomposition import PCA
-from torch import nn, optim
+from torch import Tensor, nn, optim
 from torch.nn import functional as F
 from torch_geometric.loader import DataLoader
 
-from ._constants import EPS
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
-from .utils import prepare_adatas
+from .utils import genes_union, prepare_adatas
 
 
-class GraphCL(pl.LightningModule):
+class GraphLR(pl.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData],
@@ -38,32 +36,28 @@ class GraphCL(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["adata", "slide_key"])
 
-        self.adatas = [adata] if isinstance(adata, AnnData) else adata
+        self.adatas = prepare_adatas(adata)
         self.slide_key = slide_key
 
-        prepare_adatas(self.adatas)
+        ### Embeddings
+        self.embedding = GenesEmbedding(self.var_names, embedding_size)
+        self.embedding.pca_init(self.adatas)
 
-        self.embedding = GenesEmbedding(adata.var_names, embedding_size)
-
-        # PCA init embeddings (valid only if x centered)
-        pca = PCA(n_components=embedding_size)
-        pca.fit(self.x_numpy)  # TODO: fix it
-        self.embedding.embedding.weight.data = torch.tensor(pca.components_.T)
-
-        self.module = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
-        self.projection = nn.Sequential(
-            nn.Linear(out_channels, out_channels),
-            nn.ReLU(inplace=True),
-            nn.Linear(out_channels, out_channels),
+        ### Modules
+        self.backbone = GraphEncoder(
+            embedding_size, hidden_channels, num_layers, out_channels, heads
         )
-
-        self.classifier = nn.Linear(out_channels, 1)
-        self.bce_loss = nn.BCELoss()
-
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
 
-    def forward(self, batch):
-        return [self.module(view) for view in batch]
+        ### Losses
+        self.bce_loss = nn.BCELoss()
+
+    @property
+    def var_names(self) -> list[str]:
+        return genes_union(self.adatas)
+
+    def forward(self, batch: list[Tensor]) -> list[Tensor]:
+        return [self.backbone(view) for view in batch]
 
     def training_step(self, batch, batch_idx):
         (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
@@ -130,7 +124,7 @@ class GraphCL(pl.LightningModule):
 
         out = torch.concatenate(
             [
-                self.module(batch[0])[1] - self.module(batch[1])[1]
+                self.backbone(batch[0])[1] - self.backbone(batch[1])[1]
                 for batch in tqdm(loader, desc="DataLoader")
             ]
         )
@@ -147,7 +141,7 @@ class GraphCL(pl.LightningModule):
         loader = self.test_dataloader()
 
         for h1, _, _ in loader:
-            np_, _ = self.module(h1)
+            np_, _ = self.backbone(h1)
             out1 = F.normalize(np_, dim=1, p=2)
             scores1 = out1 @ self.swav_head.prototypes
 
@@ -175,7 +169,7 @@ class GraphCL(pl.LightningModule):
         loader = self.test_dataloader()
 
         for h1, _, _ in loader:
-            np_, _ = self.module(h1)
+            np_, _ = self.backbone(h1)
             out1 = F.normalize(np_, dim=1, p=2)
             emb.append(out1)
 

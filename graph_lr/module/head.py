@@ -1,40 +1,16 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, Tuple, Union
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.nn import Parameter
-from torch_geometric.data import Data
-from torch_geometric.nn import global_mean_pool
-from torch_geometric.nn.aggr import AttentionalAggregation
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense.linear import Linear
 from torch_geometric.nn.inits import glorot, zeros
-from torch_geometric.nn.models import GAT
 from torch_geometric.typing import Adj, OptTensor
-
-
-class GenesEmbedding(pl.LightningModule):
-    def __init__(self, gene_names: list[str], embedding_size: int) -> None:
-        super().__init__()
-        self.voc_size = len(gene_names)
-        self.gene_to_index = {gene: i for i, gene in enumerate(gene_names)}
-
-        self.embedding = nn.Embedding(self.voc_size, embedding_size)
-        self.softmax = nn.Softmax(dim=0)
-
-    def genes_to_indices(self, gene_names: list[str]) -> torch.Tensor:
-        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long)
-
-    def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
-        genes_embeddings = self.embedding(genes_indices)
-        genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
-
-        return x @ genes_embeddings
 
 
 class SwavHead(pl.LightningModule):
@@ -118,45 +94,6 @@ class SwavHead(pl.LightningModule):
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
 
-class GraphEncoder(pl.LightningModule):
-    def __init__(
-        self,
-        num_features: int,
-        hidden_channels: int,
-        num_layers: int,
-        out_channels: int,
-        heads: int,
-    ) -> None:
-        super().__init__()
-        self.gnn = GAT(
-            num_features,
-            hidden_channels=hidden_channels,
-            num_layers=num_layers,
-            out_channels=out_channels,
-            edge_dim=1,
-            v2=True,
-            heads=heads,
-            act="ELU",
-        )
-
-        # Node pooling
-        self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
-        self.attention_aggregation = AttentionalAggregation(self.seq)
-
-        # Edge pooling
-        self.edge_scorer = EdgeScorer(out_channels, out_channels, heads=heads)
-
-    def forward(self, data: Data):
-        out = self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
-
-        node_pooling = self.attention_aggregation(out, ptr=data.ptr)
-
-        scores = self.edge_scorer(x=out, edge_index=data.edge_index)
-        edge_pooling = global_mean_pool(x=scores, batch=data.batch[data.edge_index[0]])
-
-        return node_pooling, edge_pooling
-
-
 class EdgeScorer(MessagePassing):
     def __init__(
         self,
@@ -166,8 +103,8 @@ class EdgeScorer(MessagePassing):
         concat: bool = True,
         negative_slope: float = 0.2,
         dropout: float = 0.0,
-        edge_dim: Optional[int] = None,
-        fill_value: Union[float, Tensor, str] = "mean",
+        edge_dim: int | None = None,
+        fill_value: float | Tensor | str = "mean",
         bias: bool = True,
         share_weights: bool = False,
         **kwargs,
@@ -216,10 +153,7 @@ class EdgeScorer(MessagePassing):
         self,
         x: Tensor,
         edge_index: Adj,
-    ) -> Union[
-        Tensor,
-        Tuple[Tensor, Tuple[Tensor, Tensor]],
-    ]:
+    ) -> Tensor | tuple[Tensor, tuple[Tensor, Tensor]]:
         r"""Runs the forward pass of the module.
 
         Args:
