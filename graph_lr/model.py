@@ -41,7 +41,7 @@ class GraphLR(pl.LightningModule):
 
         ### Embeddings
         self.embedding = GenesEmbedding(self.var_names, embedding_size)
-        self.embedding.pca_init(self.adatas)
+        # self.embedding.pca_init(self.adatas) # TODO: fix it
 
         ### Modules
         self.backbone = GraphEncoder(

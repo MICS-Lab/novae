@@ -3,14 +3,15 @@ from __future__ import annotations
 import numpy as np
 import torch
 from anndata import AnnData
+from scipy.sparse import csr_matrix
 from torch.distributions import Exponential
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
+from .._constants import ADJ, ADJ_LOCAL, ADJ_PAIR, IS_VALID_KEY
 from ..module import GenesEmbedding
-
-IS_VALID_KEY = "is_valid"
+from .loader import AnnDataLoader
 
 
 class LocalAugmentationDataset(Dataset):
@@ -31,6 +32,8 @@ class LocalAugmentationDataset(Dataset):
     ) -> None:
         # TODO: fix adata, A, A_local, A_pair, genes_indices, ...
         self.adatas = adatas
+        self.anndata_loader = AnnDataLoader(self.adatas)
+
         self.embedding = embedding
         self.eval = eval
 
@@ -48,29 +51,38 @@ class LocalAugmentationDataset(Dataset):
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
-        self.A = adata.obsp["spatial_distances"]
-
-        self.A_local = self.A.copy()
-        for _ in range(self.n_hops - 1):
-            self.A_local = self.A_local @ self.A
-
-        self.A_pair = self.A.copy()
-        for i in range(self.n_intermediate):
-            if i == self.n_intermediate - 1:
-                A_previous = self.A_pair.copy()
-            self.A_pair = self.A_pair @ self.A
-
-        self.A_pair[A_previous.nonzero()] = 0
-        self.A_pair.eliminate_zeros()
-
-        self.adata.obs[IS_VALID_KEY] = self.A_pair.sum(1).A1 > 0
-        self.valid_indices = np.where(self.adata.obs[IS_VALID_KEY])[0]
+        self.init_adjacencies()  # TODO: move in utils prepare adatas + add spatial_neighbors?
+        self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
 
         self.init_obs_indices()
 
+    def init_adjacencies(self):
+        for adata in self.adatas:
+            adjacency: csr_matrix = adata.obsp[ADJ]
+
+            adjacency_local = adjacency.copy()
+            for _ in range(self.n_hops - 1):
+                adjacency_local = adjacency_local @ adjacency
+            adata.obsp[ADJ_LOCAL] = adjacency_local
+
+            adjacency_pair: csr_matrix = adjacency.copy()
+            for i in range(self.n_intermediate):
+                if i == self.n_intermediate - 1:
+                    adjacency_previous: csr_matrix = adjacency_pair.copy()
+                adjacency_pair = adjacency_pair @ adjacency
+            adjacency_pair[adjacency_previous.nonzero()] = 0
+            adjacency_pair.eliminate_zeros()
+            adata.obsp[ADJ_PAIR] = adjacency_pair
+
+            adata.obs[IS_VALID_KEY] = adjacency_pair.sum(1).A1 > 0
+
     def init_obs_indices(self):
         if self.slide_key is None:
-            self.obs_indices = self.valid_indices
+            self.obs_indices = [
+                (i, obs_index)
+                for i, indices in enumerate(self.valid_indices)
+                for obs_index in indices
+            ]
             return
 
         assert (
@@ -113,23 +125,32 @@ class LocalAugmentationDataset(Dataset):
     def __len__(self) -> int:
         return len(self.obs_indices)
 
-    def __getitem__(self, dataset_index):
-        index = self.obs_indices[dataset_index]
+    def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
+        adata_index, obs_index = self.obs_indices[index]
 
-        plausible_nghs = self.A_pair[index].indices
+        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[ADJ_PAIR]
+
+        plausible_nghs = adjacency_pair[obs_index].indices
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
 
-        data, data_shuffled = self.hop_travel(index, shuffle_pair=True)
-        data_ngh = self.hop_travel(ngh_index)
+        data, data_shuffled = self.hop_travel(adata_index, obs_index, shuffle_pair=True)
+        data_ngh = self.hop_travel(adata_index, ngh_index)
 
         return data, data_shuffled, data_ngh
 
-    def hop_travel(self, index: int, shuffle_pair: bool = False):
-        indices = self.A_local[index].indices
+    def hop_travel(
+        self, adata_index: int, obs_index: int, shuffle_pair: bool = False
+    ) -> Data | tuple[Data, Data]:
+        adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
+        adjacency_local: csr_matrix = self.adatas[adata_index].obsp[ADJ_LOCAL]
 
-        x = self.x[indices]
+        indices = adjacency_local[obs_index].indices
+
+        x = self.anndata_loader[adata_index, indices]
+
         x = self.transform(x)
-        edge_index, edge_weight = from_scipy_sparse_matrix(self.A[indices][:, indices])
+
+        edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[indices][:, indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
 
         data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
