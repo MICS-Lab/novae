@@ -10,7 +10,8 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
-from .module import GenesEmbedding
+from ..module import GenesEmbedding
+from ..utils import all_genes
 
 IS_VALID_KEY = "is_valid"
 
@@ -18,8 +19,7 @@ IS_VALID_KEY = "is_valid"
 class LocalAugmentationDataset(Dataset):
     def __init__(
         self,
-        adata: AnnData,
-        x: torch.Tensor,
+        adatas: list[AnnData],
         embedding: GenesEmbedding,
         eval: bool = True,
         panel_dropout: float = 0.4,
@@ -32,8 +32,7 @@ class LocalAugmentationDataset(Dataset):
         n_hops: int = 2,
         n_intermediate: int = None,
     ) -> None:
-        self.adata = adata
-        self.x = x
+        self.adatas = adatas
         self.embedding = embedding
         self.eval = eval
 
@@ -51,7 +50,7 @@ class LocalAugmentationDataset(Dataset):
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
-        self.genes_indices = self.embedding.genes_to_indices(adata.var_names)
+        self.genes_indices = self.embedding.genes_to_indices(all_genes(self.adatas))
 
         self.A = adata.obsp["spatial_distances"]
 

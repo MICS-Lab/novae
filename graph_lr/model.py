@@ -11,16 +11,16 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torch_geometric.loader import DataLoader
 
+from ._constants import EPS
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
-
-EPS = 1e-8
+from .utils import prepare_adatas
 
 
 class GraphCL(pl.LightningModule):
     def __init__(
         self,
-        adata: AnnData,
+        adata: AnnData | list[AnnData],
         swav: bool,
         slide_key: str = None,
         embedding_size: int = 256,
@@ -38,23 +38,16 @@ class GraphCL(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["adata", "slide_key"])
 
-        self.adata = adata
+        self.adatas = [adata] if isinstance(adata, AnnData) else adata
         self.slide_key = slide_key
 
-        self.swav = swav
-        self.x_numpy = self.adata.X  # log1p expressions
-        self.x_numpy = self.x_numpy if isinstance(self.x_numpy, np.ndarray) else self.x_numpy.A
-        self.x_numpy = self.x_numpy.astype(np.float32)
-
-        # TODO: keep? how with multi adata?
-        self.x_numpy = (self.x_numpy - self.x_numpy.mean(0)) / (self.x_numpy.std(0) + EPS)
-        self.x = torch.tensor(self.x_numpy)
+        prepare_adatas(self.adatas)
 
         self.embedding = GenesEmbedding(adata.var_names, embedding_size)
 
         # PCA init embeddings (valid only if x centered)
         pca = PCA(n_components=embedding_size)
-        pca.fit(self.x_numpy)
+        pca.fit(self.x_numpy)  # TODO: fix it
         self.embedding.embedding.weight.data = torch.tensor(pca.components_.T)
 
         self.module = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
@@ -75,7 +68,7 @@ class GraphCL(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
 
-        if self.swav:
+        if self.hparams.swav:
             loss = self.swav_head(np, np_ngh)
         else:
             loss = self.bce_loss(ep, torch.ones_like(ep, device=ep.device)) + self.bce_loss(
@@ -95,8 +88,7 @@ class GraphCL(pl.LightningModule):
 
     def train_dataloader(self):
         self.dataset = LocalAugmentationDataset(
-            self.adata,
-            self.x,
+            self.adatas,
             self.embedding,
             eval=False,
             slide_key=self.slide_key,
@@ -111,8 +103,7 @@ class GraphCL(pl.LightningModule):
 
     def test_dataloader(self):
         dataset = LocalAugmentationDataset(
-            self.adata,
-            self.x,
+            self.adatas,
             self.embedding,
             slide_key=self.slide_key,
             batch_size=self.hparams.batch_size,

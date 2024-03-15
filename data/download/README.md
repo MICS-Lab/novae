@@ -4,11 +4,11 @@ This directory contains `shell` and `python` scripts used to download public spa
 
 ## Scripts
 
-### MERSCOPE
+For conveniency, all the scripts below need to be executed at the root of the `data` directory.
+
+### MERSCOPE (18 samples)
 
 Requirements: the `gsutil` command line should be installed. See [here](https://cloud.google.com/storage/docs/gsutil_install).
-
-At the root of the `data` directory, run the following commands:
 
 ```sh
 # download all MERSCOPE datasets
@@ -18,16 +18,18 @@ sh download/merscope_download.sh
 python download/merscope_convert.py
 ```
 
-### Xenium
+### Xenium (17 samples)
 
 Requirements: a Python environment with `spatialdata-io` installed.
 
-At the root of the `data` directory, run the following commands:
-
 ```sh
-# download all MERSCOPE datasets
+# download all Xenium datasets
 sh download/xenium_download.sh
 
 # convert all datasets to h5ad files
 python download/xenium_convert.py
 ```
+
+## Notes
+- Missing technologies: CosMX, Curio Seeker, Resolve
+- Public institute datasets with [STOmics DB](https://db.cngb.org/stomics/)
