@@ -38,7 +38,6 @@ class LocalAugmentationDataset(Dataset):
         sensitivity_noise_std: float = 0.05,
         slide_key: bool = None,
         batch_size: int = None,
-        delta_th: float = None,
         n_hops: int = 2,
         n_intermediate: int = None,
     ) -> None:
@@ -58,7 +57,6 @@ class LocalAugmentationDataset(Dataset):
         self.slide_key = slide_key
         self.batch_size = batch_size
 
-        self.delta_th = delta_th
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 

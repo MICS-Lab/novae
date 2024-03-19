@@ -16,3 +16,7 @@ ADJ_PAIR = "spatial_distances_pair"
 SLIDE_KEY = "slide_id"
 N_BATCHES = "n_batches"
 ADATA_INDEX_KEY = "adata_index"
+
+# obsm keys
+SWAV_CLASSES = "swav_classes"
+REPR = "representation"

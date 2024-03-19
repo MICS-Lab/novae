@@ -8,8 +8,10 @@ import torch
 from anndata import AnnData
 from torch import Tensor, nn, optim
 from torch.nn import functional as F
+from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
+from ._constants import REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
 from .utils import genes_union, prepare_adatas
@@ -38,6 +40,7 @@ class GraphLR(pl.LightningModule):
 
         self.adatas = prepare_adatas(adata)
         self.slide_key = slide_key
+        self.dataset = self.init_dataset()
 
         ### Embeddings
         self.genes_embedding = GenesEmbedding(self.var_names, embedding_size)
@@ -56,18 +59,25 @@ class GraphLR(pl.LightningModule):
     def var_names(self) -> list[str]:
         return genes_union(self.adatas)
 
-    def forward(self, batch: list[Tensor]) -> list[Tensor]:
+    def n_obs(self) -> int:
+        return sum(adata.n_obs for adata in self.adatas)
+
+    def forward(self, batch: tuple[Data, Data, Data]) -> tuple[Data, Data, Data]:
         return [self.backbone(view) for view in batch]
 
-    def training_step(self, batch, batch_idx):
-        (np, ep), (_, ep_shuffle), (np_ngh, _) = self(batch)
-
+    def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
         if self.hparams.swav:
-            loss = self.swav_head(np, np_ngh)
+            x_main = self.backbone.node_x(batch[0])
+            x_ngh = self.backbone.node_x(batch[2])
+
+            loss = self.swav_head(x_main, x_ngh)
         else:
-            loss = self.bce_loss(ep, torch.ones_like(ep, device=ep.device)) + self.bce_loss(
-                ep_shuffle, torch.zeros_like(ep_shuffle, device=ep_shuffle.device)
-            )
+            x_main = self.backbone.edge_x(batch[0])
+            x_ngh = self.backbone.edge_x(batch[1])
+
+            loss = self.bce_loss(
+                x_main, torch.ones_like(x_main, device=x_main.device)
+            ) + self.bce_loss(x_ngh, torch.zeros_like(x_ngh, device=x_ngh.device))
 
         self.log(
             "loss",
@@ -80,7 +90,14 @@ class GraphLR(pl.LightningModule):
 
         return loss
 
-    def train_dataloader(self):
+    def init_dataset(self, adata: AnnData | list[AnnData] | None):
+        if adata is None:
+            adata = self.adatas
+        elif isinstance(adata, AnnData):
+            adata = [adata]
+        else:
+            assert isinstance(adata, list), f"Invalid `adata` argument of type {type(adata)}"
+
         self.dataset = LocalAugmentationDataset(
             self.adatas,
             self.genes_embedding,
@@ -91,22 +108,24 @@ class GraphLR(pl.LightningModule):
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
+
+    def train_dataloader(self):
+        self.dataset.eval = False
         return DataLoader(
             self.dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
         )
 
     def test_dataloader(self):
-        dataset = LocalAugmentationDataset(
-            self.adatas,
-            self.genes_embedding,
-            slide_key=self.slide_key,
-            batch_size=self.hparams.batch_size,
-            n_hops=self.hparams.n_hops,
-            n_intermediate=self.hparams.n_intermediate,
+        if importlib.util.find_spec("ipywidgets") is not None:
+            from tqdm.autonotebook import tqdm
+        else:
+            from tqdm import tqdm
+
+        self.dataset.eval = True
+        loader = DataLoader(
+            self.dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
-        return DataLoader(
-            dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
-        )
+        return tqdm(loader, desc="DataLoader")
 
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
@@ -114,28 +133,21 @@ class GraphLR(pl.LightningModule):
         self.dataset.shuffle_grouped_indices()
 
     @torch.no_grad()
-    def delta(self) -> np.ndarray:
-        if importlib.util.find_spec("ipywidgets") is not None:
-            from tqdm.autonotebook import tqdm
-        else:
-            from tqdm import tqdm
-
-        loader = self.test_dataloader()
-
+    def interaction_confidence(self) -> np.ndarray:
         out = torch.concatenate(
             [
                 self.backbone(batch[0])[1] - self.backbone(batch[1])[1]
-                for batch in tqdm(loader, desc="DataLoader")
+                for batch in self.test_dataloader()
             ]
         )
 
         delta = np.zeros(self.adata.n_obs, dtype=float)
-        delta[loader.dataset.valid_indices] = out.numpy(force=True)
+        delta[self.dataset.valid_indices] = out.numpy(force=True)
 
         return delta
 
     @torch.no_grad()
-    def swav_clusters(self, use_codes: bool = False) -> np.ndarray:
+    def swav_clusters(self, adata: AnnData | None = None, use_codes: bool = False) -> None:
         preds = []
 
         loader = self.test_dataloader()
@@ -158,12 +170,12 @@ class GraphLR(pl.LightningModule):
             preds = preds.argmax(1)
 
         res = np.full(self.adata.n_obs, "nan")
-        res[loader.dataset.valid_indices] = preds.numpy(force=True).astype(str)
+        res[self.dataset.valid_indices] = preds.numpy(force=True).astype(str)
 
-        return res
+        adata.obsm[SWAV_CLASSES] = res
 
     @torch.no_grad()
-    def representations(self) -> np.ndarray:
+    def representations(self, adata: AnnData | None = None) -> None:
         emb = []
 
         loader = self.test_dataloader()
@@ -177,7 +189,7 @@ class GraphLR(pl.LightningModule):
         res = np.zeros((self.adata.n_obs, representations.shape[1]))
         res[loader.dataset.valid_indices] = representations
 
-        return res
+        adata.obsm[REPR] = res
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)

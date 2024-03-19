@@ -1,3 +1,3 @@
-from .backbone import GraphEncoder
-from .head import SwavHead, EdgeScorer
+from .head import SwavHead
 from .embedding import GenesEmbedding
+from .backbone import GraphEncoder
