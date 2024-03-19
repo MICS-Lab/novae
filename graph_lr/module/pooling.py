@@ -16,6 +16,7 @@ from torch_geometric.typing import Adj, OptTensor
 
 class NodeAttentionPooling(pl.LightningModule):
     def __init__(self, out_channels: int):
+        super().__init__()
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
         self.attention_aggregation = AttentionalAggregation(self.seq)
 
@@ -25,6 +26,7 @@ class NodeAttentionPooling(pl.LightningModule):
 
 class EdgeAttentionPooling(pl.LightningModule):
     def __init__(self, in_channels: int, out_channels: int, heads: int = 1, **kwargs):
+        super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)
 
     def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor) -> torch.Tensor:
@@ -32,7 +34,7 @@ class EdgeAttentionPooling(pl.LightningModule):
         return global_mean_pool(x=scores, batch=batch[edge_index[0]])
 
 
-class EdgeScorer(pl.LightningModule, MessagePassing):
+class EdgeScorer(MessagePassing, pl.LightningModule):
     def __init__(
         self,
         in_channels: int,

@@ -1,5 +1,6 @@
 # general
 EPS = 1e-8
+N_OBS_THRESHOLD = 1_000_000
 
 # anndata general keys
 COUNTS_LAYER = "counts"
@@ -20,3 +21,4 @@ ADATA_INDEX_KEY = "adata_index"
 # obsm keys
 SWAV_CLASSES = "swav_classes"
 REPR = "representation"
+INT_CONF = "interaction_confidence"

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytorch_lightning as pl
 import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix
 from torch.distributions import Exponential
-from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
@@ -23,7 +23,7 @@ from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
 
-class LocalAugmentationDataset(Dataset):
+class LocalAugmentationDataset(pl.LightningDataModule):
     valid_indices: list[np.ndarray]
     obs_ilocs: list[tuple[int, int]]
 
@@ -31,7 +31,6 @@ class LocalAugmentationDataset(Dataset):
         self,
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
-        eval: bool = True,
         panel_dropout: float = 0.4,
         gene_expression_dropout: float = 0.1,
         background_noise_lambda: float = 5.0,
@@ -39,36 +38,28 @@ class LocalAugmentationDataset(Dataset):
         slide_key: bool = None,
         batch_size: int = None,
         n_hops: int = 2,
-        n_intermediate: int = None,
+        n_intermediate: int = 4,
     ) -> None:
+        super().__init__()
         self.adatas = adatas
         self.anndata_torch = AnnDataTorch(self.adatas)
 
         self.genes_embedding = genes_embedding
-        self.eval = eval
-
-        self.panel_dropout = panel_dropout
-        self.gene_expression_dropout = gene_expression_dropout
-        self.background_noise_lambda = background_noise_lambda
-        self.sensitivity_noise_std = sensitivity_noise_std
-
-        self.background_noise_distribution = Exponential(torch.tensor(background_noise_lambda))
-
         self.slide_key = slide_key
-        self.batch_size = batch_size
+        self.eval = False
 
-        self.n_hops = n_hops
-        self.n_intermediate = n_intermediate or 2 * self.n_hops
+        self.save_hyperparameters(ignore=["adata", "genes_embedding", "slide_key"])
 
         self.init_dataset()
 
+        self.background_noise_distribution = Exponential(torch.tensor(background_noise_lambda))
+
     def init_dataset(self):
         for adata in self.adatas:
-            # TODO: do not redo
             adjacency: csr_matrix = adata.obsp[ADJ]
 
-            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops)
-            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
+            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.hparams.n_hops)
+            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.hparams.n_intermediate)
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
@@ -84,7 +75,7 @@ class LocalAugmentationDataset(Dataset):
             return
 
         assert (
-            self.batch_size is not None
+            self.hparams.batch_size is not None
         ), "When using `slide_key`, you need to also provide `batch_size`"
 
         self.slides_metadata: pd.DataFrame = pd.concat(
@@ -100,7 +91,7 @@ class LocalAugmentationDataset(Dataset):
         obs_counts: pd.Series = self.adatas[adata_index].obs[SLIDE_KEY][obs_indices].value_counts()
         slides_metadata = obs_counts.to_frame()
         slides_metadata[ADATA_INDEX_KEY] = adata_index
-        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
+        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.hparams.batch_size).clip(1)
         return slides_metadata
 
     def shuffle_grouped_indices(self):
@@ -108,7 +99,7 @@ class LocalAugmentationDataset(Dataset):
             return
 
         adata_indices = []
-        batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
+        batched_obs_indices = np.empty((0, self.hparams.batch_size), dtype=int)
 
         for uid in self.slides_metadata.index:
             adata_index = self.slides_metadata.loc[uid, ADATA_INDEX_KEY]
@@ -116,13 +107,13 @@ class LocalAugmentationDataset(Dataset):
             _obs_indices = np.where((adata.obs[SLIDE_KEY] == uid) & adata.obs[IS_VALID_KEY])[0]
             _obs_indices = np.random.permutation(_obs_indices)
 
-            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.batch_size
+            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.hparams.batch_size
             if len(_obs_indices) >= n_elements:
                 _obs_indices = _obs_indices[:n_elements]
             else:
                 _obs_indices = np.random.choice(_obs_indices, size=n_elements)
 
-            _obs_indices = _obs_indices.reshape((-1, self.batch_size))
+            _obs_indices = _obs_indices.reshape((-1, self.hparams.batch_size))
 
             adata_indices += [adata_index] * len(_obs_indices)
             batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
@@ -132,7 +123,7 @@ class LocalAugmentationDataset(Dataset):
         self.obs_ilocs = list(zip(adata_indices, obs_indices))
 
         # TODO: remove?
-        self.obs_ilocs = self.obs_ilocs[: self.batch_size * 200]
+        self.obs_ilocs = self.obs_ilocs[: self.hparams.batch_size * 200]
 
     def __len__(self) -> int:
         return len(self.obs_ilocs)
@@ -182,7 +173,7 @@ class LocalAugmentationDataset(Dataset):
 
         # noise background + sensitivity
         addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],))
-        factor = (1 + torch.randn(x.shape[1]) * self.sensitivity_noise_std).clip(0, 2)
+        factor = (1 + torch.randn(x.shape[1]) * self.hparams.sensitivity_noise_std).clip(0, 2)
         x = x * factor + addition
 
         # gene expression dropout (= low quality gene)
@@ -191,7 +182,9 @@ class LocalAugmentationDataset(Dataset):
 
         # gene subset (= panel change)
         n_vars = len(genes_indices)
-        gene_subset_indices = torch.randperm(n_vars)[: int(n_vars * (1 - self.panel_dropout))]
+        gene_subset_indices = torch.randperm(n_vars)[
+            : int(n_vars * (1 - self.hparams.panel_dropout))
+        ]
 
         x = self.genes_embedding(x[:, gene_subset_indices], genes_indices[gene_subset_indices])
 

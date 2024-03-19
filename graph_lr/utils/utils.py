@@ -25,10 +25,11 @@ def prepare_adatas(
 
     for adata in adatas:
         mean = adata.X.mean(0)
-        adata.var[VAR_MEAN] = mean.A1 if isinstance(mean, np.matrix) else mean
+        mean = mean.A1 if isinstance(mean, np.matrix) else mean
+        adata.var[VAR_MEAN] = mean.astype(np.float32)
 
         std = adata.X.std(0) if isinstance(adata.X, np.ndarray) else sparse_std(adata.X, 0).A1
-        adata.var[VAR_STD] = std
+        adata.var[VAR_STD] = std.astype(np.float32)
 
     return adatas
 
