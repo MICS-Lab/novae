@@ -62,18 +62,19 @@ class LocalAugmentationDataset(Dataset):
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate or 2 * self.n_hops
 
-        self.init_adjacencies()
-        self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
+        self.init_dataset()
 
-        self.init_obs_ilocs()
-
-    def init_adjacencies(self):
+    def init_dataset(self):
         for adata in self.adatas:
+            # TODO: do not redo
             adjacency: csr_matrix = adata.obsp[ADJ]
 
             adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops)
             adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
+
+        self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
+        self.init_obs_ilocs()
 
     def init_obs_ilocs(self):
         if self.slide_key is None:
