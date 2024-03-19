@@ -27,7 +27,7 @@ def prepare_adatas(
         mean = adata.X.mean(0)
         adata.var[VAR_MEAN] = mean.A1 if isinstance(mean, np.matrix) else mean
 
-        std = adata.X.std(0) if isinstance(std, np.ndarray) else sparse_std(adata.X, 0).A1
+        std = adata.X.std(0) if isinstance(adata.X, np.ndarray) else sparse_std(adata.X, 0).A1
         adata.var[VAR_STD] = std
 
     return adatas
@@ -57,7 +57,7 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
 
 
 def genes_union(adatas: list[AnnData]) -> list[str]:
-    return set.union(set(adata.var_names) for adata in adatas)
+    return set.union(*[set(adata.var_names) for adata in adatas])
 
 
 def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
