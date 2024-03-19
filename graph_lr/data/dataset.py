@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix
@@ -9,12 +10,23 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
-from .._constants import ADJ, ADJ_LOCAL, ADJ_PAIR, IS_VALID_KEY
+from .._constants import (
+    ADATA_INDEX_KEY,
+    ADJ,
+    ADJ_LOCAL,
+    ADJ_PAIR,
+    IS_VALID_KEY,
+    N_BATCHES,
+    SLIDE_KEY,
+)
 from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
 
 class LocalAugmentationDataset(Dataset):
+    valid_indices: list[np.ndarray]
+    obs_ilocs: list[tuple[int, int]]
+
     def __init__(
         self,
         adatas: list[AnnData],
@@ -30,7 +42,6 @@ class LocalAugmentationDataset(Dataset):
         n_hops: int = 2,
         n_intermediate: int = None,
     ) -> None:
-        # TODO: fix adata, A, A_local, A_pair, genes_indices, ...
         self.adatas = adatas
         self.anndata_torch = AnnDataTorch(self.adatas)
 
@@ -54,7 +65,7 @@ class LocalAugmentationDataset(Dataset):
         self.init_adjacencies()
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
 
-        self.init_obs_indices()
+        self.init_obs_ilocs()
 
     def init_adjacencies(self):
         for adata in self.adatas:
@@ -64,12 +75,12 @@ class LocalAugmentationDataset(Dataset):
             adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
-    def init_obs_indices(self):
+    def init_obs_ilocs(self):
         if self.slide_key is None:
-            self.obs_indices = [
-                (i, obs_index)
-                for i, indices in enumerate(self.valid_indices)
-                for obs_index in indices
+            self.obs_ilocs = [
+                (adata_index, obs_index)
+                for adata_index, obs_indices in enumerate(self.valid_indices)
+                for obs_index in obs_indices
             ]
             return
 
@@ -77,46 +88,58 @@ class LocalAugmentationDataset(Dataset):
             self.batch_size is not None
         ), "When using `slide_key`, you need to also provide `batch_size`"
 
-        # TODO: finish updating this
-        self.batch_counts = self.adata.obs[self.slide_key][self.valid_indices].value_counts()
-        self.batches_per_slide = (self.batch_counts // self.batch_size).clip(1)
-        self.slides = self.batch_counts.index
+        self.slides_metadata: pd.DataFrame = pd.concat(
+            [
+                self._adata_slides_metadata(adata_index, obs_indices)
+                for adata_index, obs_indices in enumerate(self.valid_indices)
+            ],
+            axis=0,
+        )
         self.shuffle_grouped_indices()
+
+    def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
+        obs_counts: pd.Series = self.adatas[adata_index].obs[SLIDE_KEY][obs_indices].value_counts()
+        slides_metadata = obs_counts.to_frame()
+        slides_metadata[ADATA_INDEX_KEY] = adata_index
+        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
+        return slides_metadata
 
     def shuffle_grouped_indices(self):
         if self.slide_key is None:
             return
 
-        # TODO: finish updating this + rename obs_indices?
-        obs_indices = np.empty((0, self.batch_size), dtype=int)
+        adata_indices = []
+        batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
 
-        for slide in self.slides:
-            indices = np.where(
-                (self.adata.obs[self.slide_key] == slide) & self.adata.obs[IS_VALID_KEY]
-            )[0]
-            indices = np.random.permutation(indices)
+        for uid in self.slides_metadata.index:
+            adata_index = self.slides_metadata.loc[uid, ADATA_INDEX_KEY]
+            adata = self.adatas[adata_index]
+            _obs_indices = np.where((adata.obs[SLIDE_KEY] == uid) & adata.obs[IS_VALID_KEY])[0]
+            _obs_indices = np.random.permutation(_obs_indices)
 
-            n_elements = self.batches_per_slide[slide] * self.batch_size
-            if len(indices) >= n_elements:
-                indices = indices[:n_elements]
+            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.batch_size
+            if len(_obs_indices) >= n_elements:
+                _obs_indices = _obs_indices[:n_elements]
             else:
-                indices = np.random.choice(indices, size=n_elements)
+                _obs_indices = np.random.choice(_obs_indices, size=n_elements)
 
-            indices = indices.reshape((-1, self.batch_size))
+            _obs_indices = _obs_indices.reshape((-1, self.batch_size))
 
-            obs_indices = np.concatenate([obs_indices, indices], axis=0)
+            adata_indices += [adata_index] * len(_obs_indices)
+            batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
 
-        np.random.shuffle(obs_indices)
-        self.obs_indices = obs_indices.flatten()
+        permutation = np.random.permutation(range(len(batched_obs_indices)))
+        obs_indices = batched_obs_indices[permutation].flatten()
+        self.obs_ilocs = list(zip(adata_indices, obs_indices))
 
         # TODO: remove?
-        self.obs_indices = self.obs_indices[: self.batch_size * 200]
+        self.obs_ilocs = self.obs_ilocs[: self.batch_size * 200]
 
     def __len__(self) -> int:
-        return len(self.obs_indices)
+        return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
-        adata_index, obs_index = self.obs_indices[index]
+        adata_index, obs_index = self.obs_ilocs[index]
 
         adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[ADJ_PAIR]
 

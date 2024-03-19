@@ -11,3 +11,8 @@ IS_VALID_KEY = "neighborhood_valid"
 ADJ = "spatial_distances"
 ADJ_LOCAL = "spatial_distances_local"
 ADJ_PAIR = "spatial_distances_pair"
+
+# torch dataset keys
+SLIDE_KEY = "slide_id"
+N_BATCHES = "n_batches"
+ADATA_INDEX_KEY = "adata_index"

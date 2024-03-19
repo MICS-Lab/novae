@@ -4,20 +4,24 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 from scipy.sparse import csr_matrix
 
-from .._constants import COUNTS_LAYER, VAR_MEAN, VAR_STD
+from .._constants import COUNTS_LAYER, SLIDE_KEY, VAR_MEAN, VAR_STD
 
 log = logging.getLogger(__name__)
 
 
-def prepare_adatas(adata: AnnData | list[AnnData]) -> list[AnnData]:
+def prepare_adatas(
+    adata: AnnData | list[AnnData],
+    slide_key: str = None,
+) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
     adatas = [adata] if isinstance(adata, AnnData) else adata
 
-    sanity_check(adatas)
+    sanity_check(adatas, slide_key=slide_key)
 
     for adata in adatas:
         mean = adata.X.mean(0)
@@ -29,11 +33,16 @@ def prepare_adatas(adata: AnnData | list[AnnData]) -> list[AnnData]:
     return adatas
 
 
-def sanity_check(adatas: list[AnnData]):
+def sanity_check(adatas: list[AnnData], slide_key: str = None):
     """Check that the AnnData objects does not contain raw counts"""
     count_raw = 0
 
     for adata in adatas:
+        if slide_key is not None:
+            assert slide_key in adata.obs, f"{slide_key=} must be in all adata.obs"
+            values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
+            adata.obs[SLIDE_KEY] = values.astype("category")
+
         if adata.X.max() >= 10:
             count_raw += 1
 
