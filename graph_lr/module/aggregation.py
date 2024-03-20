@@ -14,7 +14,7 @@ from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.typing import Adj, OptTensor
 
 
-class NodeAttentionPooling(pl.LightningModule):
+class NodeAttentionAggregation(pl.LightningModule):
     def __init__(self, out_channels: int):
         super().__init__()
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
@@ -24,7 +24,7 @@ class NodeAttentionPooling(pl.LightningModule):
         return self.attention_aggregation(x, ptr=ptr)
 
 
-class EdgeAttentionPooling(pl.LightningModule):
+class EdgeAttentionAggregation(pl.LightningModule):
     def __init__(self, in_channels: int, out_channels: int, heads: int = 1, **kwargs):
         super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)

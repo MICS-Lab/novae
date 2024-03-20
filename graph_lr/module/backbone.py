@@ -5,7 +5,7 @@ from torch_geometric.data import Data
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.models import GAT
 
-from .pooling import EdgeAttentionPooling, NodeAttentionPooling
+from .aggregation import EdgeAttentionAggregation, NodeAttentionAggregation
 
 
 class GraphEncoder(pl.LightningModule):
@@ -29,18 +29,18 @@ class GraphEncoder(pl.LightningModule):
             act="ELU",
         )
 
-        self.node_pooling = NodeAttentionPooling(out_channels)
-        self.edge_pooling = EdgeAttentionPooling(out_channels, out_channels, heads=heads)
+        self.node_aggregation = NodeAttentionAggregation(out_channels)
+        self.edge_aggregation = EdgeAttentionAggregation(out_channels, out_channels, heads=heads)
 
     def forward(self, data: Data):
         return self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
 
     def node_x(self, data: Data):
         out = self(data)
-        return self.node_pooling(out, ptr=data.ptr)
+        return self.node_aggregation(out, ptr=data.ptr)
 
     def edge_x(self, data: Data):
         out = self(data)
-        x = self.edge_pooling(x=out, edge_index=data.edge_index)
+        x = self.edge_aggregation(x=out, edge_index=data.edge_index)
         x = global_mean_pool(x=x, batch=data.batch[data.edge_index[0]])
         return x
