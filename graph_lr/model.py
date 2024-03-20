@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import numpy as np
+import logging
+
 import pytorch_lightning as pl
 import torch
 from anndata import AnnData
@@ -13,6 +14,8 @@ from ._constants import INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
 from .utils import fill_invalid_indices, genes_union, prepare_adatas, tqdm
+
+log = logging.getLogger(__name__)
 
 
 class GraphLR(pl.LightningModule):

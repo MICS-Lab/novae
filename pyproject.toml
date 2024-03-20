@@ -27,6 +27,7 @@ mkdocs-jupyter = "^0.21.0"
 ipykernel = "^6.22.0"
 ipywidgets = "^8.1.2"
 iprogress = "^0.4"
+pyyaml = "^6.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

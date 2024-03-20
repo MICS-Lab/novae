@@ -204,6 +204,8 @@ def _to_adjacency_pair(adjacency: csr_matrix, n_intermediate: int) -> csr_matrix
         if i == n_intermediate - 1:
             adjacency_previous: csr_matrix = adjacency_pair.copy()
         adjacency_pair = adjacency_pair @ adjacency
+    adjacency_pair = adjacency_pair.tolil()
     adjacency_pair[adjacency_previous.nonzero()] = 0
+    adjacency_pair = adjacency_pair.tocsr()
     adjacency_pair.eliminate_zeros()
     return adjacency_pair
