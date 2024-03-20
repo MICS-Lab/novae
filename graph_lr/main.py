@@ -26,7 +26,7 @@ def init_project(args) -> tuple[AnnData, dict, WandbLogger]:
     mode = "swav" if config["swav"] else "shuffle"
     log.info(f"Training mode: {mode}")
 
-    if config["use_logger"]:
+    if config["use_wandb"]:
         wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{mode}")
     else:
         wandb_logger = None

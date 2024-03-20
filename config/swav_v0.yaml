@@ -1,5 +1,5 @@
 swav: true
-use_logger: false
+use_wandb: true
 
 model_kwargs:
   n_hops: 2
