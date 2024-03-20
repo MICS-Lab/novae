@@ -128,7 +128,7 @@ class GraphLR(pl.LightningModule):
         loader = DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
-        return tqdm(loader, desc="DataLoader", total=len(loader))
+        return loader
 
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
@@ -147,7 +147,7 @@ class GraphLR(pl.LightningModule):
             out = torch.concatenate(
                 [
                     self.backbone.edge_x(batch[0]) - self.backbone.edge_x(batch[1])
-                    for batch in loader
+                    for batch in tqdm(loader)
                 ]
             )
 
@@ -159,7 +159,7 @@ class GraphLR(pl.LightningModule):
             loader = self.test_dataloader(adata)
 
             out = []
-            for data_main, *_ in loader:
+            for data_main, *_ in tqdm(loader):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 scores = out_ @ self.swav_head.prototypes
@@ -182,7 +182,7 @@ class GraphLR(pl.LightningModule):
             loader = self.test_dataloader(adata)
 
             out = []
-            for data_main, *_ in loader:
+            for data_main, *_ in tqdm(loader):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 out.append(out_)

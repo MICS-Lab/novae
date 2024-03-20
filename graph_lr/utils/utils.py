@@ -94,14 +94,14 @@ def repository_path() -> Path:
     return Path(__file__).parents[2]
 
 
-def tqdm(*args, **kwargs):
+def tqdm(*args, desc="DataLoader", **kwargs):
     try:
         import IProgress
         from tqdm.notebook import tqdm
     except ImportError:
         from tqdm import tqdm
 
-    return tqdm(*args, **kwargs)
+    return tqdm(*args, desc=desc, **kwargs)
 
 
 def fill_invalid_indices(
