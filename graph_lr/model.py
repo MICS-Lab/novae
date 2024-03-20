@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
 from anndata import AnnData
@@ -125,10 +126,9 @@ class GraphLR(pl.LightningModule):
             dataset = self.init_dataset(adata)
 
         dataset.eval = True
-        loader = DataLoader(
+        return DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
-        return loader
 
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
@@ -173,7 +173,7 @@ class GraphLR(pl.LightningModule):
                 out = out.argmax(1)
 
             adata.obs[SWAV_CLASSES] = fill_invalid_indices(
-                out, adata, loader.dataset.valid_indices, fillna="nan"
+                out, adata, loader.dataset.valid_indices, fill_value=np.nan
             )
 
     @torch.no_grad()

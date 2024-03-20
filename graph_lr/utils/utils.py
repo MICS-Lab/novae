@@ -105,17 +105,16 @@ def tqdm(*args, desc="DataLoader", **kwargs):
 
 
 def fill_invalid_indices(
-    out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int], fillna: int | str = 0
+    out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int], fill_value: float | str = 0
 ) -> np.ndarray:
     if isinstance(out, Tensor):
         out = out.numpy(force=True)
 
     dtype = np.float32
 
-    if isinstance(fillna, str):
-        out = out.astype(str)
-        dtype = "str"
+    if isinstance(fill_value, str) or np.isnan(fill_value):
+        dtype = object
 
-    res = np.full((adata.n_obs, *out.shape[1:]), fillna, dtype=dtype)
+    res = np.full((adata.n_obs, *out.shape[1:]), fill_value, dtype=dtype)
     res[valid_indices] = out
     return res
