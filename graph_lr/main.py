@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import pytorch_lightning as pl
 import scanpy as sc
@@ -20,8 +21,14 @@ def init_project(args) -> tuple[AnnData, dict, WandbLogger]:
         config: dict = yaml.safe_load(f)
         log.info(f"Using config {args.config}:\n{config}")
 
-    log.info(f"Loading data {args.dataset}")
-    adata = sc.read_h5ad(repo_path / "data" / args.dataset)
+    data_path: Path = repo_path / "data" / args.dataset
+    if data_path.is_dir():
+        all_paths = list(map(str, data_path.rglob("*.h5ad")))
+        log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
+        adata = [sc.read_h5ad(path) for path in all_paths]
+    else:
+        log.info(f"Loading one adata: {args.dataset}")
+        adata = sc.read_h5ad(data_path)
 
     mode = "swav" if config["swav"] else "shuffle"
     log.info(f"Training mode: {mode}")

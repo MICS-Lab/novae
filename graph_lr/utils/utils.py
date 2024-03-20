@@ -10,7 +10,15 @@ from anndata import AnnData
 from scipy.sparse import csr_matrix
 from torch import Tensor
 
-from .._constants import COUNTS_LAYER, SLIDE_KEY, VAR_MEAN, VAR_STD
+from .._constants import (
+    ADJ,
+    COUNTS_LAYER,
+    DELAUNAY_RADIUS_TH,
+    SLIDE_KEY,
+    VAR_MEAN,
+    VAR_STD,
+)
+from ._build import spatial_neighbors
 
 log = logging.getLogger(__name__)
 
@@ -36,8 +44,9 @@ def prepare_adatas(
 
 
 def sanity_check(adatas: list[AnnData], slide_key: str = None):
-    """Check that the AnnData objects does not contain raw counts"""
+    """Check that the AnnData objects are preprocessed correctly"""
     count_raw = 0
+    count_no_adj = 0
 
     for adata in adatas:
         if slide_key is not None:
@@ -51,6 +60,15 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
             adata.layers[COUNTS_LAYER] = adata.X.copy()
             sc.pp.normalize_total(adata)
             sc.pp.log1p(adata)
+
+        if ADJ not in adata.obsp:
+            spatial_neighbors(adata, radius=[0, DELAUNAY_RADIUS_TH], library_key=slide_key)
+            count_no_adj += 1
+
+    if count_no_adj:
+        log.warn(
+            f"Added delaunay graph to {count_no_adj} adata object(s) with radius threshold {DELAUNAY_RADIUS_TH}"
+        )
 
     if count_raw:
         log.info(

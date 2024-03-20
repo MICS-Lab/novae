@@ -1,6 +1,7 @@
 # general
 EPS = 1e-8
 N_OBS_THRESHOLD = 1_000_000
+DELAUNAY_RADIUS_TH = 100
 
 # anndata general keys
 COUNTS_LAYER = "counts"
