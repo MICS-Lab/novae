@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import importlib
-
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -14,7 +12,7 @@ from torch_geometric.loader import DataLoader
 from ._constants import INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
-from .utils import genes_union, prepare_adatas
+from .utils import fill_invalid_indices, genes_union, prepare_adatas, tqdm
 
 
 class GraphLR(pl.LightningModule):
@@ -117,15 +115,15 @@ class GraphLR(pl.LightningModule):
             self.dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
         )
 
-    def test_dataloader(self):
-        if importlib.util.find_spec("ipywidgets") is not None:
-            from tqdm.autonotebook import tqdm
+    def test_dataloader(self, adata: AnnData | list[AnnData] | None = None):
+        if adata is None:
+            dataset = self.dataset
         else:
-            from tqdm import tqdm
+            dataset = self.init_dataset(adata)
 
-        self.dataset.eval = True
+        dataset.eval = True
         loader = DataLoader(
-            self.dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
+            dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
         return tqdm(loader, desc="DataLoader", total=len(loader))
 
@@ -140,61 +138,51 @@ class GraphLR(pl.LightningModule):
 
     @torch.no_grad()
     def interaction_confidence(self) -> None:
-        adata = self.adatas[0]  # TODO: use all adatas
+        for adata in self.adatas:
+            loader = self.test_dataloader(adata)
 
-        out = torch.concatenate(
-            [
-                self.backbone.edge_x(batch[0]) - self.backbone.edge_x(batch[1])
-                for batch in self.test_dataloader()
-            ]
-        )
+            out = torch.concatenate(
+                [
+                    self.backbone.edge_x(batch[0]) - self.backbone.edge_x(batch[1])
+                    for batch in loader
+                ]
+            )
 
-        delta = np.zeros(adata.n_obs, dtype=float)
-        delta[self.dataset.valid_indices] = out.numpy(force=True)
-
-        adata.obs[INT_CONF] = delta
+            adata.obs[INT_CONF] = fill_invalid_indices(out, adata, loader.dataset.valid_indices)
 
     @torch.no_grad()
     def swav_clusters(self, use_codes: bool = False) -> None:
-        adata = self.adatas[0]  # TODO: use all adatas
+        for adata in self.adatas:
+            loader = self.test_dataloader(adata)
 
-        preds = []
+            out = []
+            for data_main, *_ in loader:
+                x_main = self.backbone.node_x(data_main)
+                out_ = F.normalize(x_main, dim=1, p=2)
+                scores = out_ @ self.swav_head.prototypes
 
-        loader = self.test_dataloader()
+                out.append(scores if use_codes else scores.argmax(1))
 
-        for data_main, _, _ in loader:
-            x_main = self.backbone.node_x(data_main)
-            out = F.normalize(x_main, dim=1, p=2)
-            scores = out @ self.swav_head.prototypes
+            out = torch.cat(out)
 
-            preds.append(scores if use_codes else scores.argmax(1))
+            if use_codes:
+                out = self.swav_head.sinkhorn(out)
+                out = out.argmax(1)
 
-        preds = torch.cat(preds)
-
-        if use_codes:
-            preds = self.swav_head.sinkhorn(preds)
-            preds = preds.argmax(1)
-
-        res = np.full(adata.n_obs, "nan")
-        res[self.dataset.valid_indices] = preds.numpy(force=True).astype(str)
-
-        adata.obs[SWAV_CLASSES] = res
+            adata.obs[SWAV_CLASSES] = fill_invalid_indices(
+                out, adata, loader.dataset.valid_indices, fillna="nan"
+            )
 
     @torch.no_grad()
     def representations(self) -> None:
-        adata = self.adatas[0]  # TODO: use all adatas
+        for adata in self.adatas:
+            loader = self.test_dataloader(adata)
 
-        emb = []
+            out = []
+            for data_main, *_ in loader:
+                x_main = self.backbone.node_x(data_main)
+                out_ = F.normalize(x_main, dim=1, p=2)
+                out.append(out_)
 
-        loader = self.test_dataloader()
-
-        for h1, _, _ in loader:
-            np_, _ = self.backbone(h1)
-            out1 = F.normalize(np_, dim=1, p=2)
-            emb.append(out1)
-
-        repr = torch.concat(emb, dim=0).numpy(force=True)
-        res = np.zeros((adata.n_obs, repr.shape[1]))
-        res[self.dataset.valid_indices] = repr
-
-        adata.obs[REPR] = res
+            out = torch.concat(out, dim=0)
+            adata.obsm[REPR] = fill_invalid_indices(out, adata, loader.dataset.valid_indices)

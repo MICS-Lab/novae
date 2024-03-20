@@ -8,6 +8,7 @@ import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 from scipy.sparse import csr_matrix
+from torch import Tensor
 
 from .._constants import COUNTS_LAYER, SLIDE_KEY, VAR_MEAN, VAR_STD
 
@@ -73,3 +74,30 @@ def repository_path() -> Path:
         `graph_lr` repository path
     """
     return Path(__file__).parents[2]
+
+
+def tqdm(*args, **kwargs):
+    try:
+        import IProgress
+        from tqdm.notebook import tqdm
+    except ImportError:
+        from tqdm import tqdm
+
+    return tqdm(*args, **kwargs)
+
+
+def fill_invalid_indices(
+    out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int], fillna: int | str = 0
+) -> np.ndarray:
+    if isinstance(out, Tensor):
+        out = out.numpy(force=True)
+
+    dtype = np.float32
+
+    if isinstance(fillna, str):
+        out = out.astype(str)
+        dtype = "str"
+
+    res = np.full((adata.n_obs, *out.shape[1:]), fillna, dtype=dtype)
+    res[valid_indices] = out
+    return res
