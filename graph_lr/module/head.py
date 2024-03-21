@@ -3,8 +3,11 @@ from __future__ import annotations
 import math
 
 import lightning as L
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
+from sklearn.cluster import AgglomerativeClustering
 from torch import nn
 
 
@@ -87,3 +90,28 @@ class SwavHead(L.LightningModule):
 
     def cross_entropy_loss(self, q, p):
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
+
+    def hierarchical_clustering(self):
+        X = self.prototypes.data.T.numpy(force=True)  # shape (n_proto, out_channels)
+
+        clustering = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=0,
+            compute_full_tree=True,
+            metric="cosine",
+            linkage="average",
+        )
+        clustering.fit(X)
+
+        self.clusters_levels = np.zeros((len(X), len(X)), dtype=np.uint16)
+        self.clusters_levels[0] = np.arange(len(X))
+
+        for i, (a, b) in enumerate(clustering.children_):
+            clusters = self.clusters_levels[i]
+            self.clusters_levels[i + 1] = clusters
+            self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
+
+    def assign_classes_level(self, series: pd.Series, n_classes: int) -> pd.Series:
+        return series.map(
+            lambda x: x if np.isnan(float(x)) else str(self.clusters_levels[-n_classes, int(x)])
+        )

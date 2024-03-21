@@ -35,7 +35,7 @@ class GraphLR(L.LightningModule):
         batch_size: int = 256,
         lr: float = 1e-3,
         temperature: float = 0.1,
-        num_prototypes: int = 32,
+        num_prototypes: int = 256,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["adata", "slide_key"])
@@ -140,8 +140,8 @@ class GraphLR(L.LightningModule):
         return optimizer
 
     @torch.no_grad()
-    def interaction_confidence(self) -> None:
-        for adata in self.adatas:
+    def interaction_confidence(self, adata: AnnData | list[AnnData] | None = None) -> None:
+        for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 
             out = torch.concatenate(
@@ -154,8 +154,10 @@ class GraphLR(L.LightningModule):
             adata.obs[INT_CONF] = fill_invalid_indices(out, adata, loader.dataset.valid_indices)
 
     @torch.no_grad()
-    def swav_clusters(self, use_codes: bool = False) -> None:
-        for adata in self.adatas:
+    def swav_classes(
+        self, adata: AnnData | list[AnnData] | None = None, use_codes: bool = False
+    ) -> None:
+        for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 
             out = []
@@ -177,8 +179,8 @@ class GraphLR(L.LightningModule):
             )
 
     @torch.no_grad()
-    def representations(self) -> None:
-        for adata in self.adatas:
+    def representations(self, adata: AnnData | list[AnnData] | None = None) -> None:
+        for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 
             out = []
@@ -189,3 +191,8 @@ class GraphLR(L.LightningModule):
 
             out = torch.concat(out, dim=0)
             adata.obsm[REPR] = fill_invalid_indices(out, adata, loader.dataset.valid_indices)
+
+    def get_adatas(self, adata: AnnData | list[AnnData] | None):
+        if adata is None:
+            return self.adatas
+        return prepare_adatas(adata)
