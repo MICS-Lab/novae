@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytorch_lightning as pl
+import lightning as L
 from torch_geometric.data import Data
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.models import GAT
@@ -8,7 +8,7 @@ from torch_geometric.nn.models import GAT
 from .aggregation import EdgeAttentionAggregation, NodeAttentionAggregation
 
 
-class GraphEncoder(pl.LightningModule):
+class GraphEncoder(L.LightningModule):
     def __init__(
         self,
         num_features: int,

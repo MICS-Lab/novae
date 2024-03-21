@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import lightning as L
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix
@@ -23,7 +23,7 @@ from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
 
-class LocalAugmentationDataset(pl.LightningDataModule):
+class LocalAugmentationDataset(L.LightningDataModule):
     valid_indices: list[np.ndarray]
     obs_ilocs: list[tuple[int, int]]
 

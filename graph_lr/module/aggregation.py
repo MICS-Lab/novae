@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytorch_lightning as pl
+import lightning as L
 import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
@@ -14,7 +14,7 @@ from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.typing import Adj, OptTensor
 
 
-class NodeAttentionAggregation(pl.LightningModule):
+class NodeAttentionAggregation(L.LightningModule):
     def __init__(self, out_channels: int):
         super().__init__()
         self.seq = nn.Sequential(nn.Linear(out_channels, 1), nn.Sigmoid())
@@ -24,7 +24,7 @@ class NodeAttentionAggregation(pl.LightningModule):
         return self.attention_aggregation(x, ptr=ptr)
 
 
-class EdgeAttentionAggregation(pl.LightningModule):
+class EdgeAttentionAggregation(L.LightningModule):
     def __init__(self, in_channels: int, out_channels: int, heads: int = 1, **kwargs):
         super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)
@@ -34,7 +34,7 @@ class EdgeAttentionAggregation(pl.LightningModule):
         return global_mean_pool(x=scores, batch=batch[edge_index[0]])
 
 
-class EdgeScorer(MessagePassing, pl.LightningModule):
+class EdgeScorer(MessagePassing, L.LightningModule):
     def __init__(
         self,
         in_channels: int,

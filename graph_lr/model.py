@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 
+import lightning as L
 import numpy as np
-import pytorch_lightning as pl
 import torch
 from anndata import AnnData
 from torch import Tensor, nn, optim
@@ -19,7 +19,7 @@ from .utils import fill_invalid_indices, genes_union, prepare_adatas, tqdm
 log = logging.getLogger(__name__)
 
 
-class GraphLR(pl.LightningModule):
+class GraphLR(L.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData],

@@ -3,12 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import pytorch_lightning as pl
+import lightning as L
 import scanpy as sc
 import yaml
 from anndata import AnnData
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import WandbLogger
+from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers import WandbLogger
 
 from . import GraphLR, log
 from .utils import repository_path
@@ -48,7 +48,7 @@ def main(args):
 
     callbacks = [ModelCheckpoint(monitor="loss_epoch")]
 
-    trainer = pl.Trainer(logger=wandb_logger, callbacks=callbacks, **config["trainer_kwargs"])
+    trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config["trainer_kwargs"])
     trainer.fit(model)
 
 

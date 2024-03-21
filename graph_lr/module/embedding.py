@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pytorch_lightning as pl
+import lightning as L
 import torch
 import torch.nn.functional as F
 from anndata import AnnData
@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from torch import nn
 
 
-class GenesEmbedding(pl.LightningModule):
+class GenesEmbedding(L.LightningModule):
     def __init__(self, gene_names: list[str], embedding_size: int) -> None:
         super().__init__()
         self.embedding_size = embedding_size
