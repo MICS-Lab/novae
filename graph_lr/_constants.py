@@ -19,7 +19,8 @@ SLIDE_KEY = "slide_id"
 N_BATCHES = "n_batches"
 ADATA_INDEX_KEY = "adata_index"
 
-# obsm keys
+# output keys
+CODES = "codes"
 SWAV_CLASSES = "swav_classes"
 REPR = "representation"
 INT_CONF = "interaction_confidence"

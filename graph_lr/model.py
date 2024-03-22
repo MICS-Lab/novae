@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-from ._constants import INT_CONF, REPR, SWAV_CLASSES
+from ._constants import CODES, INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
 from .utils import fill_invalid_indices, genes_union, prepare_adatas, tqdm
@@ -155,8 +155,19 @@ class GraphLR(L.LightningModule):
 
     @torch.no_grad()
     def swav_classes(
-        self, adata: AnnData | list[AnnData] | None = None, use_codes: bool = False
+        self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True
     ) -> None:
+        for adata in self.get_adatas(adata):
+            if CODES not in adata.obsm:
+                self.codes(adata, sinkhorn=sinkhorn)
+
+            codes = adata.obsm[CODES]
+            adata.obs[SWAV_CLASSES] = np.where(
+                np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object)
+            )
+
+    @torch.no_grad()
+    def codes(self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True) -> None:
         for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 
@@ -166,20 +177,18 @@ class GraphLR(L.LightningModule):
                 out_ = F.normalize(x_main, dim=1, p=2)
                 scores = out_ @ self.swav_head.prototypes
 
-                out.append(scores if use_codes else scores.argmax(1))
+                out.append(scores)
 
             out = torch.cat(out)
-
-            if use_codes:
+            if sinkhorn:
                 out = self.swav_head.sinkhorn(out)
-                out = out.argmax(1)
 
-            adata.obs[SWAV_CLASSES] = fill_invalid_indices(
-                out, adata, loader.dataset.valid_indices, fill_value=np.nan
+            adata.obsm[CODES] = fill_invalid_indices(
+                out, adata, loader.dataset.valid_indices, fill_value=np.nan, dtype=np.float32
             )
 
     @torch.no_grad()
-    def representations(self, adata: AnnData | list[AnnData] | None = None) -> None:
+    def representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 

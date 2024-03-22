@@ -135,6 +135,6 @@ def _build_connectivity(
 
 
 def _check_has_delaunay(adata: AnnData):
-    message = "key not in adata.obsp, consider running the delaunay graph (e.g., spatial_neighbors(adata, [0, 40])`)"
+    message = "key not in adata.obsp, consider running the delaunay graph (e.g., spatial_neighbors(adata, [0, 100])`)"
     assert "spatial_connectivities" in adata.obsp, f"spatial_connectivities {message}"
     assert "spatial_distances" in adata.obsp, f"spatial_distances {message}"

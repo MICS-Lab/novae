@@ -12,23 +12,27 @@ from lightning.pytorch.loggers import WandbLogger
 
 from . import GraphLR, log
 from .utils import repository_path
+from .utils.monitor import show_niches
 
 
-def init_project(args) -> tuple[AnnData, dict, WandbLogger]:
+def load_datasets(data_path: Path) -> list[AnnData]:
+    if data_path.is_dir():
+        all_paths = list(map(str, data_path.rglob("*.h5ad")))
+        log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
+        return [sc.read_h5ad(path) for path in all_paths]
+    else:
+        log.info(f"Loading one adata: {data_path}")
+        return sc.read_h5ad(data_path)
+
+
+def main(args):
     repo_path = repository_path()
 
     with open(repo_path / "config" / args.config, "r") as f:
         config: dict = yaml.safe_load(f)
         log.info(f"Using config {args.config}:\n{config}")
 
-    data_path: Path = repo_path / "data" / args.dataset
-    if data_path.is_dir():
-        all_paths = list(map(str, data_path.rglob("*.h5ad")))
-        log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
-        adata = [sc.read_h5ad(path) for path in all_paths]
-    else:
-        log.info(f"Loading one adata: {args.dataset}")
-        adata = sc.read_h5ad(data_path)
+    adata = load_datasets(repo_path / "data" / args.dataset)
 
     mode = "swav" if config["swav"] else "shuffle"
     log.info(f"Training mode: {mode}")
@@ -38,18 +42,18 @@ def init_project(args) -> tuple[AnnData, dict, WandbLogger]:
     else:
         wandb_logger = None
 
-    return adata, config, wandb_logger
-
-
-def main(args):
-    adata, config, wandb_logger = init_project(args)
-
     model = GraphLR(adata, config["swav"], **config["model_kwargs"])
 
     callbacks = [ModelCheckpoint(monitor="loss_epoch")]
 
     trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config["trainer_kwargs"])
     trainer.fit(model)
+
+    model.swav_head.hierarchical_clustering()
+
+    adata_eval = load_datasets(repo_path / "data" / args.eval_dataset)
+    model.swav_classes(adata_eval)
+    show_niches(model, adata_eval)  # TODO: work with multi adata
 
 
 if __name__ == "__main__":
@@ -67,6 +71,13 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="Name (or path) of the dataset to train on (relative to the 'data' directory)",
+    )
+    parser.add_argument(
+        "-e",
+        "--eval_dataset",
+        type=str,
+        required=True,
+        help="Name (or path) of the dataset to evaluate on (relative to the 'data' directory)",
     )
 
     main(parser.parse_args())
