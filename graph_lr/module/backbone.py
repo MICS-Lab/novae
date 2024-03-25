@@ -37,7 +37,7 @@ class GraphEncoder(L.LightningModule):
 
     def node_x(self, data: Data):
         out = self(data)
-        return self.node_aggregation(out, ptr=data.ptr)
+        return self.node_aggregation(out, index=data.batch)
 
     def edge_x(self, data: Data):
         out = self(data)
