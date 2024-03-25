@@ -1,5 +1,9 @@
-swav: true
+mode: swav
 use_wandb: true
+
+data:
+  train_dataset: sdm_bench
+  eval_dataset: sdm_bench
 
 model_kwargs:
   n_hops: 2
@@ -10,4 +14,4 @@ trainer_kwargs:
   max_epochs: 1
   log_every_n_steps: 10
   accelerator: "cpu"
-  fast_dev_run: True
+  #fast_dev_run: True

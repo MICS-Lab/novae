@@ -149,9 +149,9 @@ class LocalAugmentationDataset(L.LightningDataModule):
 
         indices = adjacency_local[obs_index].indices
 
-        x = self.anndata_torch[adata_index, indices]
+        x, var_names = self.anndata_torch[adata_index, indices]
 
-        x = self.transform(x, self.adatas[adata_index].var_names)
+        x = self.transform(x, var_names)
 
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[indices][:, indices])
         edge_attr = edge_weight[:, None].to(torch.float32)

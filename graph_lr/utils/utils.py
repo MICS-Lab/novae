@@ -14,6 +14,7 @@ from .._constants import (
     ADJ,
     COUNTS_LAYER,
     DELAUNAY_RADIUS_TH,
+    IS_KNOWN_GENE_KEY,
     SLIDE_KEY,
     VAR_MEAN,
     VAR_STD,
@@ -26,6 +27,7 @@ log = logging.getLogger(__name__)
 def prepare_adatas(
     adata: AnnData | list[AnnData],
     slide_key: str = None,
+    vocabulary: set | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
     adatas = [adata] if isinstance(adata, AnnData) else adata
@@ -39,6 +41,9 @@ def prepare_adatas(
 
         std = adata.X.std(0) if isinstance(adata.X, np.ndarray) else sparse_std(adata.X, 0).A1
         adata.var[VAR_STD] = std.astype(np.float32)
+
+        if vocabulary is not None and IS_KNOWN_GENE_KEY not in adata.var:
+            lookup_valid_genes(adata, vocabulary)
 
     return adatas
 
@@ -76,8 +81,21 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
         )
 
 
+def lower_var_names(var_names: pd.Index) -> pd.Index:
+    return var_names.map(lambda s: s.lower())
+
+
+def lookup_valid_genes(adata: AnnData, vocabulary: set):
+    adata.var[IS_KNOWN_GENE_KEY] = np.isin(lower_var_names(adata.var_names), list(vocabulary))
+
+    n_known = sum(adata.var[IS_KNOWN_GENE_KEY])
+    assert n_known >= 5, f"Too few genes ({n_known}) are known by the model."
+    if n_known / adata.n_vars < 0.50:
+        log.warn(f"Only {n_known / adata.n_vars:.1%} of genes are known by the model.")
+
+
 def genes_union(adatas: list[AnnData]) -> list[str]:
-    return set.union(*[set(adata.var_names) for adata in adatas])
+    return set.union(*[set(lower_var_names(adata.var_names)) for adata in adatas])
 
 
 def sparse_std(a: csr_matrix, axis=None) -> np.matrix:

@@ -41,6 +41,4 @@ class GraphEncoder(L.LightningModule):
 
     def edge_x(self, data: Data):
         out = self(data)
-        x = self.edge_aggregation(x=out, edge_index=data.edge_index)
-        x = global_mean_pool(x=x, batch=data.batch[data.edge_index[0]])
-        return x
+        return self.edge_aggregation(x=out, edge_index=data.edge_index)

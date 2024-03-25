@@ -7,6 +7,7 @@ DELAUNAY_RADIUS_TH = 100
 COUNTS_LAYER = "counts"
 VAR_MEAN = "mean"
 VAR_STD = "std"
+IS_KNOWN_GENE_KEY = "in_vocabulary"
 
 # anndata neighborhood keys
 IS_VALID_KEY = "neighborhood_valid"

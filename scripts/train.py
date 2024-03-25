@@ -10,9 +10,9 @@ from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
-from . import GraphLR, log
-from .utils import repository_path
-from .utils.monitor import show_niches
+from graph_lr import GraphLR, log
+from graph_lr.utils import repository_path
+from graph_lr.utils.monitor import log_domains_plots
 
 
 def load_datasets(data_path: Path) -> list[AnnData]:
@@ -32,17 +32,16 @@ def main(args):
         config: dict = yaml.safe_load(f)
         log.info(f"Using config {args.config}:\n{config}")
 
-    adata = load_datasets(repo_path / "data" / args.dataset)
+    adata = load_datasets(repo_path / "data" / config["data"]["train_dataset"])
 
-    mode = "swav" if config["swav"] else "shuffle"
-    log.info(f"Training mode: {mode}")
+    is_swav = config["mode"] == "swav"
+    log.info(f"Training mode: {config['mode']}")
 
+    wandb_logger = None
     if config["use_wandb"]:
-        wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{mode}")
-    else:
-        wandb_logger = None
+        wandb_logger = WandbLogger(log_model="all", project=f"graph_lr_{config['mode']}")
 
-    model = GraphLR(adata, config["swav"], **config["model_kwargs"])
+    model = GraphLR(adata, is_swav, **config["model_kwargs"])
 
     callbacks = [ModelCheckpoint(monitor="loss_epoch")]
 
@@ -51,9 +50,9 @@ def main(args):
 
     model.swav_head.hierarchical_clustering()
 
-    adata_eval = load_datasets(repo_path / "data" / args.eval_dataset)
+    adata_eval = load_datasets(repo_path / "data" / config["data"]["eval_dataset"])
     model.swav_classes(adata_eval)
-    show_niches(model, adata_eval)  # TODO: work with multi adata
+    log_domains_plots(model, adata_eval)
 
 
 if __name__ == "__main__":
@@ -63,21 +62,7 @@ if __name__ == "__main__":
         "--config",
         type=str,
         required=True,
-        help="Name of the config to be used",
-    )
-    parser.add_argument(
-        "-d",
-        "--dataset",
-        type=str,
-        required=True,
-        help="Name (or path) of the dataset to train on (relative to the 'data' directory)",
-    )
-    parser.add_argument(
-        "-e",
-        "--eval_dataset",
-        type=str,
-        required=True,
-        help="Name (or path) of the dataset to evaluate on (relative to the 'data' directory)",
+        help="Name of the YAML config to be used for training",
     )
 
     main(parser.parse_args())

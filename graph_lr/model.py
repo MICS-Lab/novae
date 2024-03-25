@@ -204,4 +204,4 @@ class GraphLR(L.LightningModule):
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return prepare_adatas(adata)
+        return prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
