@@ -11,8 +11,8 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 from graph_lr import GraphLR, log
+from graph_lr.monitor.log import log_domains_plots
 from graph_lr.utils import repository_path
-from graph_lr.utils.monitor import log_domains_plots
 
 
 def load_datasets(data_path: Path) -> list[AnnData]:

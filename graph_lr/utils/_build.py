@@ -80,7 +80,16 @@ def _spatial_neighbor(
     set_diag: bool = False,
     percentile: float | None = None,
 ) -> tuple[csr_matrix, csr_matrix]:
+    assert (
+        "spatial" in adata.obsm
+    ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
+
     coords = adata.obsm["spatial"]
+
+    assert (
+        coords.shape[1] == 2
+    ), f"adata.obsm['spatial'] has {coords.shape[1]} dimension(s). Expected 2."
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SparseEfficiencyWarning)
         Adj, Dst = _build_connectivity(
