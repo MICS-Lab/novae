@@ -24,7 +24,7 @@ graph_lr_*
 
 # Data files
 data/*
-!data/download
+!data/scripts
 !data/README.md
 
 # Jupyter Notebook

@@ -1,8 +1,8 @@
-# Download public data
+# Public datasets
 
-This directory contains `shell` and `python` scripts used to download public spatial transcriptomics datasets.
+We detail below how to download public spatial transcriptomics datasets. The data will be saved in this directory, and will be used to train `novae`.
 
-## Scripts
+## Download
 
 For consistency, all the scripts below need to be executed at the root of this directory (i.e., `novae/data`).
 
@@ -12,10 +12,10 @@ Requirements: the `gsutil` command line should be installed. See [here](https://
 
 ```sh
 # download all MERSCOPE datasets
-sh download/merscope_download.sh
+sh scripts/merscope_download.sh
 
 # convert all datasets to h5ad files
-python download/merscope_convert.py
+python scripts/merscope_convert.py
 ```
 
 ### Xenium (17 samples)
@@ -24,11 +24,15 @@ Requirements: a Python environment with `spatialdata-io` installed.
 
 ```sh
 # download all Xenium datasets
-sh download/xenium_download.sh
+sh scripts/xenium_download.sh
 
 # convert all datasets to h5ad files
-python download/xenium_convert.py
+python scripts/xenium_convert.py
 ```
+
+## Usage
+
+These datasets can be used during training (see the `scripts` directory).
 
 ## Notes
 - Missing technologies: CosMX, Curio Seeker, Resolve
