@@ -11,7 +11,7 @@ model_kwargs:
   heads: 4
 
 trainer_kwargs:
-  max_epochs: 1
+  max_epochs: 5
   log_every_n_steps: 10
   accelerator: "cpu"
   #fast_dev_run: True

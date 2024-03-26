@@ -11,7 +11,11 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 from graph_lr import GraphLR, log
-from graph_lr.monitor.log import log_domains_plots
+from graph_lr.monitor import (
+    ComputeSwavOutputsCallback,
+    EvalCallback,
+    LogDomainsCallback,
+)
 from graph_lr.utils import repository_path
 
 
@@ -43,16 +47,19 @@ def main(args):
 
     model = GraphLR(adata, is_swav, **config["model_kwargs"])
 
-    callbacks = [ModelCheckpoint(monitor="loss_epoch")]
+    callbacks = [
+        ModelCheckpoint(monitor="loss_epoch"),
+        ComputeSwavOutputsCallback(),
+        LogDomainsCallback(),
+        EvalCallback(),
+    ]
 
     trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config["trainer_kwargs"])
     trainer.fit(model)
 
-    model.swav_head.hierarchical_clustering()
-
-    adata_eval = load_datasets(repo_path / "data" / config["data"]["eval_dataset"])
-    model.swav_classes(adata_eval)
-    log_domains_plots(model, adata_eval)
+    # adata_eval = load_datasets(repo_path / "data" / config["data"]["eval_dataset"])
+    # model.swav_classes(adata_eval)
+    # log_domains_plots(model, adata_eval)
 
 
 if __name__ == "__main__":
