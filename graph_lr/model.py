@@ -78,10 +78,10 @@ class GraphLR(L.LightningModule):
             loss = self.swav_head(x_main, x_ngh)
         else:
             x_main = self.backbone.edge_x(batch[0])
-            x_ngh = self.backbone.edge_x(batch[1])
+            x_shuffle = self.backbone.edge_x(batch[1])
 
             loss = self.bce_loss(x_main, torch.ones_like(x_main, device=x_main.device))
-            loss += self.bce_loss(x_ngh, torch.zeros_like(x_ngh, device=x_ngh.device))
+            loss += self.bce_loss(x_shuffle, torch.zeros_like(x_shuffle, device=x_shuffle.device))
 
         self.log(
             "train/loss",
