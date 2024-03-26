@@ -84,7 +84,7 @@ class GraphLR(L.LightningModule):
             loss += self.bce_loss(x_ngh, torch.zeros_like(x_ngh, device=x_ngh.device))
 
         self.log(
-            "loss",
+            "train/loss",
             loss,
             on_epoch=True,
             on_step=True,

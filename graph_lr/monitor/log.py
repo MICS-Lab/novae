@@ -29,4 +29,4 @@ def log_domains_plots(
 def log_metrics(adata: AnnData | list[AnnData], n_domains: list = [7, 11, 15]):
     for k in n_domains:
         obs_key = f"{SWAV_CLASSES}_{k}"
-        wandb.log({f"mean_pide_score_{k}": mean_pide_score(adata, obs_key=obs_key)})
+        wandb.log({f"metrics/mean_pide_score_{k}": mean_pide_score(adata, obs_key=obs_key)})

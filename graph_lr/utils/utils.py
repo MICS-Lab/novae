@@ -113,10 +113,13 @@ def repository_path() -> Path:
 
 
 def tqdm(*args, desc="DataLoader", **kwargs):
-    try:
-        import IProgress
-        from tqdm.notebook import tqdm
-    except ImportError:
+    import importlib
+
+    # check if ipywidgets is installed before importing tqdm.auto
+    # to ensure it won't fail and a progress bar is displayed
+    if importlib.util.find_spec("ipywidgets") is not None:
+        from tqdm.auto import tqdm
+    else:
         from tqdm import tqdm
 
     return tqdm(*args, desc=desc, **kwargs)
