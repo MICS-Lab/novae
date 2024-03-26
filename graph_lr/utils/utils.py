@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import logging
 from pathlib import Path
 
@@ -113,16 +114,14 @@ def repository_path() -> Path:
 
 
 def tqdm(*args, desc="DataLoader", **kwargs):
-    import importlib
-
     # check if ipywidgets is installed before importing tqdm.auto
     # to ensure it won't fail and a progress bar is displayed
     if importlib.util.find_spec("ipywidgets") is not None:
-        from tqdm.auto import tqdm
+        from tqdm.auto import tqdm as _tqdm
     else:
-        from tqdm import tqdm
+        from tqdm import tqdm as _tqdm
 
-    return tqdm(*args, desc=desc, **kwargs)
+    return _tqdm(*args, desc=desc, **kwargs)
 
 
 def fill_invalid_indices(
