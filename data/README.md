@@ -1,10 +1,10 @@
-# Downloading public data
+# Download public data
 
 This directory contains `shell` and `python` scripts used to download public spatial transcriptomics datasets.
 
 ## Scripts
 
-For conveniency, all the scripts below need to be executed at the root of the `data` directory.
+For consistency, all the scripts below need to be executed at the root of this directory (i.e., `novae/data`).
 
 ### MERSCOPE (18 samples)
 

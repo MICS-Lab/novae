@@ -1,8 +1,20 @@
-# Graph LR
+# Novae
 
-Graph Representation Learning
+Graph-based foundation model for spatial transcriptomics data
+
+## Documentation
+
+TODO
+
+## Overview
+
+TODO
 
 ## Installation
+
+### PyPI
+
+TODO
 
 ### Poetry
 
@@ -10,8 +22,15 @@ Graph Representation Learning
 poetry install --all-extras
 ```
 
-### Pip
-
+### pip (editable mode)
 ```sh
 pip install -e .
 ```
+
+## Usage
+
+TODO
+
+## Cite us
+
+TODO
