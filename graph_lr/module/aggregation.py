@@ -5,7 +5,6 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torch.nn import Parameter
-from torch_geometric.data import Data
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.aggr import AttentionalAggregation
 from torch_geometric.nn.conv import MessagePassing

@@ -4,7 +4,7 @@ These scripts are used to train and monitor Novae with Weight & Biases. To see t
 
 ## Setup
 
-For monitoring, `novae` must be installed with de `dev` extra, for instance via Poetry: 
+For monitoring, `novae` must be installed with de `dev` extra, for instance via Poetry:
 
 ```sh
 poetry install --all-extras

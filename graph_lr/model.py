@@ -6,7 +6,7 @@ import lightning as L
 import numpy as np
 import torch
 from anndata import AnnData
-from torch import Tensor, nn, optim
+from torch import nn, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader

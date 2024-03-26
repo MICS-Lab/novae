@@ -8,7 +8,7 @@ import wandb
 
 from .._constants import SWAV_CLASSES
 from ..model import GraphLR
-from .eval import jensen_shannon_divergence, mean_pide_score, pide_score
+from .eval import mean_pide_score
 
 
 def log_domains_plots(

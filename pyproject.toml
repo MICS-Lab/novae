@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "graph_lr"
 version = "0.0.1"
-description = "Graph Representation Learning"
+description = "Graph-based foundation model for spatial transcriptomics data"
 authors = ["Quentin Blampey <quentin.blampey@centralesupelec.fr>"]
 packages = [{ include = "graph_lr" }]
 
@@ -15,6 +15,7 @@ torch-geometric = ">=2.5.2"
 [tool.poetry.group.dev.dependencies]
 wandb = ">=0.16.5"
 black = ">=22.8.0"
+flake8 = ">=7.0.0"
 isort = ">=5.10.1"
 pytest = ">=7.1.3"
 pyyaml = ">=6.0.1"
