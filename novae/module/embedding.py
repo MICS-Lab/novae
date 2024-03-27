@@ -25,7 +25,7 @@ class GenesEmbedding(L.LightningModule):
 
     def genes_to_indices(self, gene_names: pd.Index) -> torch.Tensor:
         gene_names = lower_var_names(gene_names)
-        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long)
+        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long, device=self.device)
 
     def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
         genes_embeddings = self.embedding(genes_indices)
@@ -38,4 +38,4 @@ class GenesEmbedding(L.LightningModule):
         # TODO: handle adatas
         pca = PCA(n_components=self.embedding_size)
         pca.fit(self.x_numpy)
-        self.embedding.weight.data = torch.tensor(pca.components_.T)
+        self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)

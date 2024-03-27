@@ -13,6 +13,7 @@ from torch import Tensor
 
 from .._constants import (
     ADJ,
+    ADJ_LOCAL,
     COUNTS_LAYER,
     DELAUNAY_RADIUS_TH,
     IS_KNOWN_GENE_KEY,
@@ -142,3 +143,20 @@ def fill_invalid_indices(
     res = np.full((adata.n_obs, *out.shape[1:]), fill_value, dtype=dtype)
     res[valid_indices] = out
     return res
+
+
+def fill_edge_scores(
+    out: np.ndarray | Tensor,
+    adata: AnnData,
+    valid_indices: list[int],
+    fill_value: float | str = 0,
+    dtype: object = None,
+) -> np.ndarray:
+    """
+    TODO
+    """
+    for index in valid_indices[0]:
+        indices = adata.obsp[ADJ_LOCAL][index].indices
+        adjacency = adata.obsp[ADJ]
+        adjacency_scores = adjacency.copy()
+    pass
