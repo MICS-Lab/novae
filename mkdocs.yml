@@ -1,5 +1,5 @@
-site_name: graph_lr
-repo_name: graph_lr
+site_name: novae
+repo_name: novae
 copyright: Copyright &copy; 2021 - 2022 Quentin Blampey
 theme:
   name: material

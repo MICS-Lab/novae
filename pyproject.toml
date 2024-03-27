@@ -1,9 +1,9 @@
 [tool.poetry]
-name = "graph_lr"
+name = "novae"
 version = "0.0.1"
 description = "Graph-based foundation model for spatial transcriptomics data"
 authors = ["Quentin Blampey <quentin.blampey@centralesupelec.fr>"]
-packages = [{ include = "graph_lr" }]
+packages = [{ include = "novae" }]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"

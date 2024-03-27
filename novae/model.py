@@ -19,7 +19,7 @@ from .utils import fill_invalid_indices, genes_union, prepare_adatas, tqdm
 log = logging.getLogger(__name__)
 
 
-class GraphLR(L.LightningModule):
+class Novae(L.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData],
@@ -60,7 +60,7 @@ class GraphLR(L.LightningModule):
         self.dataset = self.init_dataset()
 
     def __repr__(self) -> str:
-        return f"GraphLR model with {self.n_obs} cells and {len(self.var_names)} genes"
+        return f"Novae model with {self.n_obs} cells and {len(self.var_names)} genes"
 
     @property
     def var_names(self) -> list[str]:

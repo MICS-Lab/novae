@@ -7,12 +7,12 @@ from anndata import AnnData
 import wandb
 
 from .._constants import SWAV_CLASSES
-from ..model import GraphLR
+from ..model import Novae
 from .eval import mean_pide_score
 
 
 def log_domains_plots(
-    model: GraphLR, adata: AnnData | list[AnnData], n_domains: list = [7, 11, 15], suffix=""
+    model: Novae, adata: AnnData | list[AnnData], n_domains: list = [7, 11, 15], suffix=""
 ):
     if isinstance(adata, list):
         for i, adata_ in enumerate(adata):

@@ -108,7 +108,7 @@ def repository_path() -> Path:
     """Get the repository path (dev-mode users only)
 
     Returns:
-        `graph_lr` repository path
+        `novae` repository path
     """
     return Path(__file__).parents[2]
 
