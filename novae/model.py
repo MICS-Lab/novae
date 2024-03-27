@@ -14,7 +14,13 @@ from torch_geometric.loader import DataLoader
 from ._constants import CODES, INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphEncoder, SwavHead
-from .utils import fill_invalid_indices, fill_edge_scores, genes_union, prepare_adatas, tqdm
+from .utils import (
+    fill_edge_scores,
+    fill_invalid_indices,
+    genes_union,
+    prepare_adatas,
+    tqdm,
+)
 
 log = logging.getLogger(__name__)
 
@@ -188,7 +194,9 @@ class Novae(L.LightningModule):
             )
 
     @torch.no_grad()
-    def edge_scores(self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True) -> None:
+    def edge_scores(
+        self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True
+    ) -> None:
         for adata in self.get_adatas(adata):
             loader = self.test_dataloader(adata)
 
@@ -199,7 +207,11 @@ class Novae(L.LightningModule):
             edge_scores = torch.cat(edge_scores)
 
             adata.obsm[CODES] = fill_edge_scores(
-                out, adata, loader.dataset.valid_indices, fill_value=np.nan, dtype=np.float32
+                edge_scores,
+                adata,
+                loader.dataset.valid_indices,
+                fill_value=np.nan,
+                dtype=np.float32,
             )
 
     @torch.no_grad()
