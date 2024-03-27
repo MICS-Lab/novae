@@ -13,6 +13,7 @@ from torch import Tensor
 
 from .._constants import (
     ADJ,
+    ADJ_LOCAL,
     COUNTS_LAYER,
     DELAUNAY_RADIUS_TH,
     IS_KNOWN_GENE_KEY,
@@ -154,4 +155,8 @@ def fill_edge_scores(
     """
     TODO
     """
+    for index in valid_indices[0]:
+        indices = adata.obsp[ADJ_LOCAL][index].indices
+        adjacency = adata.obsp[ADJ]
+        adjacency_scores = adjacency.copy()
     pass
