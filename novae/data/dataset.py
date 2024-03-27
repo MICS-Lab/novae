@@ -172,10 +172,13 @@ class LocalAugmentationDataset(L.LightningModule):
             return self.genes_embedding(x, genes_indices)
 
         # noise background + sensitivity
-        addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],)).to(self.device)
-        factor = (1 + torch.randn(x.shape[1], device=self.device) * self.hparams.sensitivity_noise_std).clip(0, 2)
+        addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],)).to(
+            self.device
+        )
+        factor = (
+            1 + torch.randn(x.shape[1], device=self.device) * self.hparams.sensitivity_noise_std
+        ).clip(0, 2)
         x = x * factor + addition
-
 
         # gene expression dropout (= low quality gene)
         # indices = torch.randperm(x.shape[1])[: int(x.shape[1] * self.gene_expression_dropout)]

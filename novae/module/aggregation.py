@@ -28,13 +28,15 @@ class EdgeAttentionAggregation(L.LightningModule):
         super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)
 
-    def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor, return_weights: bool = False) -> torch.Tensor:
+    def forward(
+        self, x: Tensor, edge_index: Tensor, batch: Tensor, return_weights: bool = False
+    ) -> torch.Tensor:
         scores = self.edge_scorer(x=x, edge_index=edge_index)
         if return_weights:
             return self._get_edge_scores_per_batch(scores, batch[edge_index[0]])
         else:
             return global_mean_pool(x=scores, batch=batch[edge_index[0]])
-    
+
     def _get_edge_scores_per_batch(self, scores: Tensor, batch: Tensor):
         batches = torch.unique(batch)
         edge_scores_per_batch = []
