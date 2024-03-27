@@ -6,7 +6,7 @@ import torch
 from anndata import AnnData
 from torch import Tensor
 
-import Lightning as L
+import lightning as L
 
 from .._constants import EPS, IS_KNOWN_GENE_KEY, N_OBS_THRESHOLD
 
