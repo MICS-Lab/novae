@@ -6,20 +6,23 @@ import torch
 from anndata import AnnData
 from torch import Tensor
 
+import Lightning as L
+
 from .._constants import EPS, IS_KNOWN_GENE_KEY, N_OBS_THRESHOLD
 
 
-class AnnDataTorch:
+class AnnDataTorch(L.LightningModule):
     tensors: list[Tensor] | None
     var_names_list: list[pd.Index]
 
     def __init__(self, adatas: list[AnnData]):
+        super().__init__()
         self.adatas = adatas
 
         self.tensors = None
         # Tensors are loaded in-memory for low numbers of cells
         if sum(adata.n_obs for adata in self.adatas) < N_OBS_THRESHOLD:
-            self.tensors = [torch.tensor(self.array(adata)) for adata in self.adatas]
+            self.tensors = [torch.tensor(self.array(adata, device=self.device)) for adata in self.adatas]
 
         self.var_names_list = [self.get_var_names(adata) for adata in self.adatas]
 
@@ -48,4 +51,4 @@ class AnnDataTorch:
         adata = self.adatas[adata_index]
         adata_view = adata[obs_indices]
 
-        return torch.tensor(self.array(adata_view)), self.var_names_list[adata_index]
+        return torch.tensor(self.array(adata_view), device=self.device), self.var_names_list[adata_index]
