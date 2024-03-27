@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 from anndata import AnnData
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, lil_matrix
 from torch.distributions import Exponential
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
@@ -192,20 +192,21 @@ class LocalAugmentationDataset(L.LightningDataModule):
 
 
 def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
-    adjacency_local = adjacency.copy()
+    adjacency_local: lil_matrix = adjacency.copy().tolil()
+    adjacency_local.setdiag(1)
     for _ in range(n_hops - 1):
         adjacency_local = adjacency_local @ adjacency
-    return adjacency_local
+    return adjacency_local.tocsr()
 
 
 def _to_adjacency_pair(adjacency: csr_matrix, n_intermediate: int) -> csr_matrix:
-    adjacency_pair: csr_matrix = adjacency.copy()
+    adjacency_pair: lil_matrix = adjacency.copy().tolil()
+    adjacency_pair.setdiag(1)
     for i in range(n_intermediate):
         if i == n_intermediate - 1:
-            adjacency_previous: csr_matrix = adjacency_pair.copy()
+            adjacency_previous: lil_matrix = adjacency_pair.copy()
         adjacency_pair = adjacency_pair @ adjacency
-    adjacency_pair = adjacency_pair.tolil()
     adjacency_pair[adjacency_previous.nonzero()] = 0
-    adjacency_pair = adjacency_pair.tocsr()
+    adjacency_pair: csr_matrix = adjacency_pair.tocsr()
     adjacency_pair.eliminate_zeros()
     return adjacency_pair

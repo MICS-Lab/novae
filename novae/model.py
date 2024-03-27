@@ -116,7 +116,7 @@ class Novae(L.LightningModule):
     def train_dataloader(self):
         self.dataset.eval = False
         return DataLoader(
-            self.dataset, batch_size=self.hparams.batch_size, shuffle=True, drop_last=True
+            self.dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=True
         )
 
     def test_dataloader(self, adata: AnnData | list[AnnData] | None = None):
