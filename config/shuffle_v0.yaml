@@ -1,11 +1,9 @@
-mode: shuffle
-use_wandb: false
-
 data:
   train_dataset: example.h5ad
   eval_dataset: example.h5ad
 
 model_kwargs:
+  swav: false
   n_hops: 2
   n_intermediate: 4
   heads: 4

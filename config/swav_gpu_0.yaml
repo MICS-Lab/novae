@@ -1,6 +1,3 @@
-mode: swav
-use_wandb: true
-
 data:
   train_dataset: igr
   eval_dataset: false

@@ -29,7 +29,7 @@ class Novae(L.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData],
-        swav: bool,
+        swav: bool = True,
         slide_key: str = None,
         embedding_size: int = 100,
         heads: int = 4,
