@@ -15,14 +15,20 @@ from novae import log
 from novae.monitor import ComputeSwavOutputsCallback, EvalCallback, LogDomainsCallback
 
 
-def load_datasets(data_path: Path) -> list[AnnData]:
-    if data_path.is_dir():
-        all_paths = list(map(str, data_path.rglob("*.h5ad")))
-        log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
-        return [sc.read_h5ad(path) for path in all_paths]
+def load_datasets(data_dir: Path, relative_path: str) -> list[AnnData]:
+    full_path = data_dir / relative_path
+
+    if full_path.is_file():
+        log.info(f"Loading one adata: {full_path}")
+        return sc.read_h5ad(full_path)
+
+    if ".h5ad" in relative_path:
+        all_paths = list(map(str, data_dir.rglob(relative_path)))
     else:
-        log.info(f"Loading one adata: {data_path}")
-        return sc.read_h5ad(data_path)
+        all_paths = list(map(str, full_path.rglob("*.h5ad")))
+
+    log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
+    return [sc.read_h5ad(path) for path in all_paths]
 
 
 def main(args):
@@ -32,7 +38,7 @@ def main(args):
         config: dict = yaml.safe_load(f)
         log.info(f"Using config {args.config}:\n{config}")
 
-    adata = load_datasets(repo_path / "data" / config["data"]["train_dataset"])
+    adata = load_datasets(repo_path / "data", config["data"]["train_dataset"])
 
     is_swav = config["mode"] == "swav"
     log.info(f"Training mode: {config['mode']}")
@@ -52,10 +58,6 @@ def main(args):
 
     trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config["trainer_kwargs"])
     trainer.fit(model)
-
-    # adata_eval = load_datasets(repo_path / "data" / config["data"]["eval_dataset"])
-    # model.swav_classes(adata_eval)
-    # log_domains_plots(model, adata_eval)
 
 
 if __name__ == "__main__":
