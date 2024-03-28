@@ -59,7 +59,7 @@ def main(args: argparse.Namespace) -> None:
     model = novae.Novae(adata, **config.get("model_kwargs", {}))
 
     callbacks = [
-        ModelCheckpoint(monitor="loss_epoch"),
+        ModelCheckpoint(monitor="train/loss_epoch"),
         ComputeSwavOutputsCallback(),
         LogDomainsCallback(),
         EvalCallback(),

@@ -13,4 +13,4 @@ trainer_kwargs:
   accelerator: "cpu"
 
 wandb_init_kwargs:
-  mode: "disabled"
+  mode: "online"
