@@ -32,7 +32,7 @@ class LocalAugmentationDataset(L.LightningModule):
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
         batch_size: int,
-        panel_dropout: float = 0.4,
+        panel_dropout: float = 0.2,
         gene_expression_dropout: float = 0.1,
         background_noise_lambda: float = 5.0,
         sensitivity_noise_std: float = 0.05,
