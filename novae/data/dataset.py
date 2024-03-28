@@ -31,12 +31,11 @@ class LocalAugmentationDataset(L.LightningModule):
         self,
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
+        batch_size: int,
         panel_dropout: float = 0.4,
         gene_expression_dropout: float = 0.1,
         background_noise_lambda: float = 5.0,
         sensitivity_noise_std: float = 0.05,
-        slide_key: bool = None,
-        batch_size: int = None,
         n_hops: int = 2,
         n_intermediate: int = 4,
     ) -> None:
@@ -45,10 +44,9 @@ class LocalAugmentationDataset(L.LightningModule):
         self.anndata_torch = AnnDataTorch(self.adatas)
 
         self.genes_embedding = genes_embedding
-        self.slide_key = slide_key
-        self.eval = False
+        self.training = False
 
-        self.save_hyperparameters(ignore=["adata", "genes_embedding", "slide_key"])
+        self.save_hyperparameters(ignore=["adata", "genes_embedding"])
 
         self.init_dataset()
 
@@ -66,39 +64,37 @@ class LocalAugmentationDataset(L.LightningModule):
         self.init_obs_ilocs()
 
     def init_obs_ilocs(self):
-        if self.slide_key is None:
-            self.obs_ilocs = [
-                (adata_index, obs_index)
-                for adata_index, obs_indices in enumerate(self.valid_indices)
-                for obs_index in obs_indices
-            ]
-            return
+        if len(self.adatas) == 1:
+            self.obs_ilocs = np.array([(0, obs_index) for obs_index in self.valid_indices[0]])
+        else:
+            self.obs_ilocs = None
+            self.slides_metadata: pd.DataFrame = pd.concat(
+                [
+                    self._adata_slides_metadata(adata_index, obs_indices)
+                    for adata_index, obs_indices in enumerate(self.valid_indices)
+                ],
+                axis=0,
+            )
 
-        assert (
-            self.hparams.batch_size is not None
-        ), "When using `slide_key`, you need to also provide `batch_size`"
+        self.shuffle_obs_ilocs()
 
-        self.slides_metadata: pd.DataFrame = pd.concat(
-            [
-                self._adata_slides_metadata(adata_index, obs_indices)
-                for adata_index, obs_indices in enumerate(self.valid_indices)
-            ],
-            axis=0,
-        )
-        self.shuffle_grouped_indices()
+    def shuffle_obs_ilocs(self):
+        if len(self.adatas) == 1:
+            self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
+        else:
+            self.shuffled_obs_ilocs = self.shuffle_grouped_indices()
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
-        obs_counts: pd.Series = self.adatas[adata_index].obs[SLIDE_KEY][obs_indices].value_counts()
+        obs_counts: pd.Series = (
+            self.adatas[adata_index].obs.iloc[obs_indices][SLIDE_KEY].value_counts()
+        )
         slides_metadata = obs_counts.to_frame()
         slides_metadata[ADATA_INDEX_KEY] = adata_index
         slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.hparams.batch_size).clip(1)
         return slides_metadata
 
     def shuffle_grouped_indices(self):
-        if self.slide_key is None:
-            return
-
-        adata_indices = []
+        adata_indices = np.empty((0, self.hparams.batch_size), dtype=int)
         batched_obs_indices = np.empty((0, self.hparams.batch_size), dtype=int)
 
         for uid in self.slides_metadata.index:
@@ -115,21 +111,30 @@ class LocalAugmentationDataset(L.LightningModule):
 
             _obs_indices = _obs_indices.reshape((-1, self.hparams.batch_size))
 
-            adata_indices += [adata_index] * len(_obs_indices)
+            adata_indices = np.concatenate(
+                [adata_indices, np.full_like(_obs_indices, adata_index)], axis=0
+            )
             batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
 
-        permutation = np.random.permutation(range(len(batched_obs_indices)))
+        permutation = np.random.permutation(len(batched_obs_indices))
+        adata_indices = adata_indices[permutation].flatten()
         obs_indices = batched_obs_indices[permutation].flatten()
-        self.obs_ilocs = list(zip(adata_indices, obs_indices))
+        shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
 
-        # TODO: remove?
-        self.obs_ilocs = self.obs_ilocs[: self.hparams.batch_size * 200]
+        # TODO: remove cropped batch?
+        return shuffled_obs_ilocs[: self.hparams.batch_size * 200]
 
     def __len__(self) -> int:
+        if self.training:
+            return len(self.shuffled_obs_ilocs)
+        assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
-        adata_index, obs_index = self.obs_ilocs[index]
+        if self.training:
+            adata_index, obs_index = self.shuffled_obs_ilocs[index]
+        else:
+            adata_index, obs_index = self.obs_ilocs[index]
 
         adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[ADJ_PAIR]
 
@@ -168,7 +173,7 @@ class LocalAugmentationDataset(L.LightningModule):
     def transform(self, x: torch.Tensor, var_names: list[str]) -> torch.Tensor:
         genes_indices = self.genes_embedding.genes_to_indices(var_names)
 
-        if self.eval:
+        if not self.training:
             return self.genes_embedding(x, genes_indices)
 
         # noise background + sensitivity

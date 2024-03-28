@@ -21,7 +21,6 @@ class GenesEmbedding(L.LightningModule):
         self.gene_to_index = {gene: i for i, gene in enumerate(self.vocabulary)}
 
         self.embedding = nn.Embedding(self.voc_size, embedding_size)
-        self.softmax = nn.Softmax(dim=0)
 
     def genes_to_indices(self, gene_names: pd.Index) -> torch.Tensor:
         gene_names = lower_var_names(gene_names)

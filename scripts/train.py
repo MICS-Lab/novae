@@ -10,9 +10,9 @@ from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
-from novae import Novae, log
+import novae
+from novae import log
 from novae.monitor import ComputeSwavOutputsCallback, EvalCallback, LogDomainsCallback
-from novae.utils import repository_path
 
 
 def load_datasets(data_path: Path) -> list[AnnData]:
@@ -26,7 +26,7 @@ def load_datasets(data_path: Path) -> list[AnnData]:
 
 
 def main(args):
-    repo_path = repository_path()
+    repo_path = novae.utils.repository_path()
 
     with open(repo_path / "config" / args.config, "r") as f:
         config: dict = yaml.safe_load(f)
@@ -41,7 +41,7 @@ def main(args):
     if config["use_wandb"]:
         wandb_logger = WandbLogger(log_model="all", project=f"novae_{config['mode']}")
 
-    model = Novae(adata, is_swav, **config["model_kwargs"])
+    model = novae.Novae(adata, is_swav, **config["model_kwargs"])
 
     callbacks = [
         ModelCheckpoint(monitor="loss_epoch"),

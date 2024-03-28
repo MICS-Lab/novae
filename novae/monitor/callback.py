@@ -9,6 +9,7 @@ from .log import log_domains_plots, log_metrics
 
 class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
+        model.codes()
         model.swav_classes()
         model.swav_head.hierarchical_clustering()
 
