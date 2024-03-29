@@ -70,10 +70,6 @@ def main(args: argparse.Namespace) -> None:
     )
     trainer.fit(model)
 
-    adata_eval = load_datasets(repo_path / "data" / config["data"]["eval_dataset"])
-    model.edge_scores(adata_eval)
-    # model.swav_classes(adata_eval)
-    # log_domains_plots(model, adata_eval)
 
 
 if __name__ == "__main__":
