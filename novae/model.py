@@ -29,10 +29,10 @@ class Novae(L.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData],
-        swav: bool,
+        swav: bool = True,
         slide_key: str = None,
-        embedding_size: int = 256,
-        heads: int = 1,
+        embedding_size: int = 100,
+        heads: int = 4,
         n_hops: int = 2,
         n_intermediate: int = 4,
         hidden_channels: int = 64,
@@ -113,14 +113,13 @@ class Novae(L.LightningModule):
         return LocalAugmentationDataset(
             adatas,
             self.genes_embedding,
-            slide_key=self.slide_key,
             batch_size=self.hparams.batch_size,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
         )
 
     def train_dataloader(self):
-        self.dataset.eval = False
+        self.dataset.training = True
         return DataLoader(
             self.dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=True
         )
@@ -131,7 +130,7 @@ class Novae(L.LightningModule):
         else:
             dataset = self.init_dataset(adata)
 
-        dataset.eval = True
+        dataset.training = False
         return DataLoader(
             dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
@@ -139,7 +138,7 @@ class Novae(L.LightningModule):
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch > 0
 
-        self.dataset.shuffle_grouped_indices()
+        self.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
@@ -160,12 +159,9 @@ class Novae(L.LightningModule):
             adata.obs[INT_CONF] = fill_invalid_indices(out, adata, loader.dataset.valid_indices)
 
     @torch.no_grad()
-    def swav_classes(
-        self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True
-    ) -> None:
+    def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
-            if CODES not in adata.obsm:
-                self.codes(adata, sinkhorn=sinkhorn)
+            assert CODES in adata.obsm, f"Codes are not computed. Run model.codes() first."
 
             codes = adata.obsm[CODES]
             adata.obs[SWAV_CLASSES] = np.where(

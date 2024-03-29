@@ -1,6 +1,3 @@
-mode: swav
-use_wandb: true
-
 data:
   train_dataset: sdm_bench
   eval_dataset: sdm_bench
@@ -11,7 +8,9 @@ model_kwargs:
   heads: 4
 
 trainer_kwargs:
-  max_epochs: 5
+  max_epochs: 1
   log_every_n_steps: 10
   accelerator: "cpu"
-  #fast_dev_run: True
+
+wandb_init_kwargs:
+  mode: "online"

@@ -60,6 +60,8 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
             assert slide_key in adata.obs, f"{slide_key=} must be in all adata.obs"
             values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
             adata.obs[SLIDE_KEY] = values.astype("category")
+        else:
+            adata.obs[SLIDE_KEY] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
 
         if adata.X.max() >= 10:
             count_raw += 1

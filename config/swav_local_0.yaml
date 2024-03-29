@@ -1,15 +1,13 @@
 data:
-  train_dataset: example.h5ad
-  eval_dataset: example.h5ad
+  train_dataset: sdm_bench
+  eval_dataset: sdm_bench
 
 model_kwargs:
-  swav: false
   n_hops: 2
   n_intermediate: 4
   heads: 4
 
 trainer_kwargs:
-  max_epochs: 1
+  max_epochs: 4
   log_every_n_steps: 10
   accelerator: "cpu"
-  #fast_dev_run: True

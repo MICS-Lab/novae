@@ -1,0 +1,13 @@
+data:
+  train_dataset: igr
+  eval_dataset: false
+
+model_kwargs:
+  n_hops: 2
+  n_intermediate: 4
+  heads: 4
+
+trainer_kwargs:
+  max_epochs: 40
+  log_every_n_steps: 10
+  accelerator: "cuda"
