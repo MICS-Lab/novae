@@ -22,6 +22,7 @@ ADATA_INDEX_KEY = "adata_index"
 
 # output keys
 CODES = "codes"
+SCORES = "adjacency_scores"
 SWAV_CLASSES = "swav_classes"
 REPR = "representation"
 INT_CONF = "interaction_confidence"
