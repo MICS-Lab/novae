@@ -28,7 +28,7 @@ def load_datasets(relative_path: str) -> list[AnnData]:
     else:
         all_paths = list(map(str, full_path.rglob("*.h5ad")))
 
-    log.info(f"Loading {len(all_paths)} adatas: {', '.join(all_paths)}")
+    log.info(f"Loading {len(all_paths)} adata(s): {', '.join(all_paths)}")
     return [sc.read_h5ad(path) for path in all_paths]
 
 
@@ -68,7 +68,7 @@ def main(args: argparse.Namespace) -> None:
     trainer = L.Trainer(
         logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {})
     )
-    trainer.fit(model)
+    trainer.fit(model, model.dataset.train_dataloader())
 
 
 if __name__ == "__main__":

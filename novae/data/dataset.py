@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix, lil_matrix
-from torch.distributions import Exponential
 from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .._constants import (
@@ -19,11 +19,11 @@ from .._constants import (
     N_BATCHES,
     SLIDE_KEY,
 )
-from ..module import GenesEmbedding
+from ..module import GenesEmbedding, GraphAugmentation
 from .convert import AnnDataTorch
 
 
-class LocalAugmentationDataset(L.LightningModule):
+class LocalAugmentationDataset(torch.utils.data.Dataset):
     valid_indices: list[np.ndarray]
     obs_ilocs: list[tuple[int, int]]
 
@@ -31,11 +31,8 @@ class LocalAugmentationDataset(L.LightningModule):
         self,
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
+        augmentation: GraphAugmentation,
         batch_size: int,
-        panel_dropout: float = 0.2,
-        gene_expression_dropout: float = 0.1,
-        background_noise_lambda: float = 5.0,
-        sensitivity_noise_std: float = 0.05,
         n_hops: int = 2,
         n_intermediate: int = 4,
     ) -> None:
@@ -44,20 +41,21 @@ class LocalAugmentationDataset(L.LightningModule):
         self.anndata_torch = AnnDataTorch(self.adatas)
 
         self.genes_embedding = genes_embedding
-        self.training = False
+        self.augmentation = augmentation
+        self.transform = False
 
-        self.save_hyperparameters(ignore=["adata", "genes_embedding"])
+        self.batch_size = batch_size
+        self.n_hops = n_hops
+        self.n_intermediate = n_intermediate
 
         self.init_dataset()
-
-        self.background_noise_distribution = Exponential(torch.tensor(background_noise_lambda))
 
     def init_dataset(self):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[ADJ]
 
-            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.hparams.n_hops)
-            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.hparams.n_intermediate)
+            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops)
+            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
@@ -90,12 +88,12 @@ class LocalAugmentationDataset(L.LightningModule):
         )
         slides_metadata = obs_counts.to_frame()
         slides_metadata[ADATA_INDEX_KEY] = adata_index
-        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.hparams.batch_size).clip(1)
+        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
         return slides_metadata
 
     def shuffle_grouped_indices(self):
-        adata_indices = np.empty((0, self.hparams.batch_size), dtype=int)
-        batched_obs_indices = np.empty((0, self.hparams.batch_size), dtype=int)
+        adata_indices = np.empty((0, self.batch_size), dtype=int)
+        batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
 
         for uid in self.slides_metadata.index:
             adata_index = self.slides_metadata.loc[uid, ADATA_INDEX_KEY]
@@ -103,13 +101,13 @@ class LocalAugmentationDataset(L.LightningModule):
             _obs_indices = np.where((adata.obs[SLIDE_KEY] == uid) & adata.obs[IS_VALID_KEY])[0]
             _obs_indices = np.random.permutation(_obs_indices)
 
-            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.hparams.batch_size
+            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.batch_size
             if len(_obs_indices) >= n_elements:
                 _obs_indices = _obs_indices[:n_elements]
             else:
                 _obs_indices = np.random.choice(_obs_indices, size=n_elements)
 
-            _obs_indices = _obs_indices.reshape((-1, self.hparams.batch_size))
+            _obs_indices = _obs_indices.reshape((-1, self.batch_size))
 
             adata_indices = np.concatenate(
                 [adata_indices, np.full_like(_obs_indices, adata_index)], axis=0
@@ -122,16 +120,16 @@ class LocalAugmentationDataset(L.LightningModule):
         shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
 
         # TODO: remove cropped batch?
-        return shuffled_obs_ilocs[: self.hparams.batch_size * 200]
+        return shuffled_obs_ilocs[: self.batch_size * 200]
 
     def __len__(self) -> int:
-        if self.training:
+        if self.transform:
             return len(self.shuffled_obs_ilocs)
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
-        if self.training:
+        if self.transform:
             adata_index, obs_index = self.shuffled_obs_ilocs[index]
         else:
             adata_index, obs_index = self.obs_ilocs[index]
@@ -156,7 +154,7 @@ class LocalAugmentationDataset(L.LightningModule):
 
         x, var_names = self.anndata_torch[adata_index, indices]
 
-        x = self.transform(x, var_names)
+        x = self.augmentation(x, var_names, ignore=not self.transform)
 
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[indices][:, indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
@@ -170,34 +168,13 @@ class LocalAugmentationDataset(L.LightningModule):
 
         return data
 
-    def transform(self, x: torch.Tensor, var_names: list[str]) -> torch.Tensor:
-        genes_indices = self.genes_embedding.genes_to_indices(var_names)
+    def train_dataloader(self) -> np.Any:
+        self.transform = True
+        return DataLoader(self, batch_size=self.batch_size, shuffle=False, drop_last=True)
 
-        if not self.training:
-            return self.genes_embedding(x, genes_indices)
-
-        # noise background + sensitivity
-        addition = self.background_noise_distribution.sample(sample_shape=(x.shape[1],)).to(
-            self.device
-        )
-        factor = (
-            1 + torch.randn(x.shape[1], device=self.device) * self.hparams.sensitivity_noise_std
-        ).clip(0, 2)
-        x = x * factor + addition
-
-        # gene expression dropout (= low quality gene)
-        # indices = torch.randperm(x.shape[1])[: int(x.shape[1] * self.gene_expression_dropout)]
-        # x[:, indices] = 0
-
-        # gene subset (= panel change)
-        n_vars = len(genes_indices)
-        gene_subset_indices = torch.randperm(n_vars)[
-            : int(n_vars * (1 - self.hparams.panel_dropout))
-        ]
-
-        x = self.genes_embedding(x[:, gene_subset_indices], genes_indices[gene_subset_indices])
-
-        return x
+    def predict_dataloader(self):
+        self.transform = False
+        return DataLoader(self, batch_size=self.batch_size, shuffle=False, drop_last=False)
 
 
 def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:

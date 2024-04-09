@@ -13,7 +13,7 @@ from torch_geometric.loader import DataLoader
 
 from ._constants import CODES, INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
-from .module import GenesEmbedding, GraphEncoder, SwavHead
+from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 from .utils import (
     fill_edge_scores,
     fill_invalid_indices,
@@ -58,6 +58,7 @@ class Novae(L.LightningModule):
             embedding_size, hidden_channels, num_layers, out_channels, heads
         )
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
+        self.augmentation = GraphAugmentation(self.genes_embedding)
 
         ### Losses
         self.bce_loss = nn.BCELoss()
@@ -113,26 +114,10 @@ class Novae(L.LightningModule):
         return LocalAugmentationDataset(
             adatas,
             self.genes_embedding,
+            augmentation=self.augmentation,
             batch_size=self.hparams.batch_size,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
-        )
-
-    def train_dataloader(self):
-        self.dataset.training = True
-        return DataLoader(
-            self.dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=True
-        )
-
-    def test_dataloader(self, adata: AnnData | list[AnnData] | None = None):
-        if adata is None:
-            dataset = self.dataset
-        else:
-            dataset = self.init_dataset(adata)
-
-        dataset.training = False
-        return DataLoader(
-            dataset, batch_size=self.hparams.batch_size, shuffle=False, drop_last=False
         )
 
     def on_train_epoch_start(self):
@@ -147,7 +132,7 @@ class Novae(L.LightningModule):
     @torch.no_grad()
     def interaction_confidence(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
-            loader = self.test_dataloader(adata)
+            loader = self.predict_dataloader(adata)
 
             out = torch.concatenate(
                 [
@@ -168,13 +153,30 @@ class Novae(L.LightningModule):
                 np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object)
             )
 
+    def predict_step(self, batch):
+        data_main, *_ = batch
+        x_main = self.backbone.node_x(data_main)
+        out = F.normalize(x_main, dim=1, p=2)
+        return out @ self.swav_head.prototypes
+
+    def _get_trainer(self, trainer: L.Trainer | None) -> L.Trainer:
+        if trainer is not None:
+            return trainer
+        return L.Trainer()
+
     @torch.no_grad()
-    def codes(self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True) -> None:
+    def codes(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        sinkhorn: bool = True,
+        trainer: L.Trainer | None = None,
+    ) -> None:
         for adata in self.get_adatas(adata):
-            loader = self.test_dataloader(adata)
+            trainer = self._get_trainer(trainer)
+            dataset = self.init_dataset(adata)
 
             out = []
-            for data_main, *_ in tqdm(loader):
+            for data_main, *_ in tqdm(dataset.predict_dataloader()):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 scores = out_ @ self.swav_head.prototypes
@@ -182,11 +184,12 @@ class Novae(L.LightningModule):
                 out.append(scores)
 
             out = torch.cat(out)
+
             if sinkhorn:
                 out = self.swav_head.sinkhorn(out)
 
             adata.obsm[CODES] = fill_invalid_indices(
-                out, adata, loader.dataset.valid_indices, fill_value=np.nan, dtype=np.float32
+                out, adata, dataset.valid_indices, fill_value=np.nan, dtype=np.float32
             )
 
     @torch.no_grad()
@@ -194,7 +197,7 @@ class Novae(L.LightningModule):
         self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True
     ) -> None:
         for adata in self.get_adatas(adata):
-            loader = self.test_dataloader(adata)
+            loader = self.predict_dataloader(adata)
 
             edge_scores = []
             for data_main, *_ in tqdm(loader):
@@ -213,7 +216,7 @@ class Novae(L.LightningModule):
     @torch.no_grad()
     def representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
-            loader = self.test_dataloader(adata)
+            loader = self.predict_dataloader(adata)
 
             out = []
             for data_main, *_ in tqdm(loader):
