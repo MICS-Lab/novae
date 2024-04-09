@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-from ._constants import CODES, INT_CONF, REPR, SWAV_CLASSES
+from ._constants import CODES, SCORES, INT_CONF, REPR, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 from .utils import (
@@ -194,24 +194,39 @@ class Novae(L.LightningModule):
 
     @torch.no_grad()
     def edge_scores(
-        self, adata: AnnData | list[AnnData] | None = None, sinkhorn: bool = True
-    ) -> None:
+        self, adata: AnnData | list[AnnData] | None = None) -> None:
+        """
+        Computes and assigns edge scores to the given AnnData object(s).
+
+        This method processes either a single AnnData object, a list of AnnData objects, or all available
+        AnnData objects, to compute edge scores for each based on the model's backbone predictions.
+        The computed edge scores are then stored within the `obsp` attribute of each respective AnnData
+        object under a predefined key. After computation, the updated AnnData object(s) are saved to disk.
+
+        Parameters:
+        - adata (Union[AnnData, List[AnnData], None], optional): The AnnData object(s) to process. If None,
+          the method retrieves available AnnData objects using the `get_adatas` method. Default is None.
+
+        Returns:
+        - None: The AnnData object(s) are updated in-place and saved to disk. The computed edge scores
+          are stored within the `obsp` attribute of each AnnData object.
+        """
         for adata in self.get_adatas(adata):
             loader = self.predict_dataloader(adata)
 
             edge_scores = []
             for data_main, *_ in tqdm(loader):
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
-
-            edge_scores = torch.cat(edge_scores)
-
-            adata.obsm[CODES] = fill_edge_scores(
+                
+            adata.obsp[SCORES] = fill_edge_scores(
                 edge_scores,
                 adata,
                 loader.dataset.valid_indices,
                 fill_value=np.nan,
                 dtype=np.float32,
             )
+            adata.write_h5ad('results/interactions/results_adata.h5ad')
+
 
     @torch.no_grad()
     def representation(self, adata: AnnData | list[AnnData] | None = None) -> None:

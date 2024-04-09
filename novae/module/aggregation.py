@@ -11,6 +11,7 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.dense.linear import Linear
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.typing import Adj, OptTensor
+from torch_geometric.utils import to_scipy_sparse_matrix
 
 
 class NodeAttentionAggregation(L.LightningModule):
@@ -24,6 +25,32 @@ class NodeAttentionAggregation(L.LightningModule):
 
 
 class EdgeAttentionAggregation(L.LightningModule):
+    """
+    A PyTorch Lightning module for aggregating edge attention scores in graph neural networks.
+
+    This module computes edge attention scores using a defined edge scoring mechanism and
+    provides options for aggregating these scores. The aggregation can be performed either
+    by directly returning the edge scores per batch in the form of scipy sparse matrices
+    or by applying a global mean pooling operation over the computed scores.
+
+    Parameters:
+    - in_channels (int): The number of input channels (features) of each node in the graph.
+    - out_channels (int): The number of output channels (features) for each edge score computed.
+    - heads (int, optional): The number of attention heads used in the edge scoring mechanism.
+      Defaults to 1.
+
+    Attributes:
+    - edge_scorer (EdgeScorer): An instance of the EdgeScorer class, initialized with the provided
+      `in_channels`, `out_channels`, and `heads` parameters. This scorer is responsible for
+      computing the attention scores for each edge in the graph.
+
+    Methods:
+    - forward(x, edge_index, batch, return_weights=False): Computes the forward pass of the module.
+      Based on the `return_weights` flag, it either returns edge scores per batch as scipy sparse
+      matrices or applies global mean pooling on the scores.
+    - _get_edge_scores_per_batch(scores, edge_index, batch): A helper method that computes the edge
+      scores per batch and returns them as a list of scipy sparse matrices.
+    """
     def __init__(self, in_channels: int, out_channels: int, heads: int = 1, **kwargs):
         super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)
@@ -31,17 +58,50 @@ class EdgeAttentionAggregation(L.LightningModule):
     def forward(
         self, x: Tensor, edge_index: Tensor, batch: Tensor, return_weights: bool = False
     ) -> torch.Tensor:
+        """
+        Performs the forward pass of the EdgeAttentionAggregation module.
+
+        Parameters:
+        - x (Tensor): The node features tensor of shape [num_nodes, in_channels].
+        - edge_index (Tensor): The edge indices tensor of shape [2, num_edges].
+        - batch (Tensor): The batch tensor, indicating the graph to which each node belongs.
+        - return_weights (bool, optional): If True, returns the computed edge scores per batch
+          as scipy sparse matrices. If False, returns a tensor aggregated by global mean pooling.
+          Defaults to False.
+
+        Returns:
+        - torch.Tensor | list: Depending on `return_weights`, either returns a tensor of aggregated
+          scores or a list of scipy sparse matrices representing the edge scores per batch.
+        """
         scores = self.edge_scorer(x=x, edge_index=edge_index)
         if return_weights:
-            return self._get_edge_scores_per_batch(scores, batch[edge_index[0]])
+            return self._get_edge_scores_per_batch(scores, edge_index, batch[edge_index[0]])
         else:
             return global_mean_pool(x=scores, batch=batch[edge_index[0]])
 
-    def _get_edge_scores_per_batch(self, scores: Tensor, batch: Tensor):
+    def _get_edge_scores_per_batch(self, scores: Tensor, edge_index: Tensor, batch: Tensor):
+        """
+        Computes edge scores per batch and returns them as scipy sparse matrices.
+
+        This helper method isolates the edges and their corresponding scores for each unique
+        batch in the graph data and constructs a scipy sparse matrix for each batch.
+
+        Parameters:
+        - scores (Tensor): The tensor of computed edge scores.
+        - edge_index (Tensor): The tensor of edge indices.
+        - batch (Tensor): The tensor indicating the batch ID for each edge.
+
+        Returns:
+        - list: A list of scipy sparse matrices, each representing the edge scores for a graph
+          in the batch.
+        """
         batches = torch.unique(batch)
         edge_scores_per_batch = []
         for batch_idx in batches:
-            edge_scores_per_batch.append(scores[batch == batch_idx])
+            graph_per_batch = to_scipy_sparse_matrix(edge_index=edge_index[:, batch == batch_idx] - 
+                                                     torch.min(edge_index[:, batch == batch_idx]).item(), 
+                                                     edge_attr=scores[batch == batch_idx])
+            edge_scores_per_batch.append(graph_per_batch)
         return edge_scores_per_batch
 
 

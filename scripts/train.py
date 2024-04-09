@@ -71,6 +71,7 @@ def main(args: argparse.Namespace) -> None:
     trainer.fit(model, model.dataset.train_dataloader())
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
