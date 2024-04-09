@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 
-from ._constants import CODES, SCORES, INT_CONF, REPR, SWAV_CLASSES
+from ._constants import CODES, INT_CONF, REPR, SCORES, SWAV_CLASSES
 from .data import LocalAugmentationDataset
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 from .utils import (
@@ -159,20 +159,13 @@ class Novae(L.LightningModule):
         out = F.normalize(x_main, dim=1, p=2)
         return out @ self.swav_head.prototypes
 
-    def _get_trainer(self, trainer: L.Trainer | None) -> L.Trainer:
-        if trainer is not None:
-            return trainer
-        return L.Trainer()
-
     @torch.no_grad()
     def codes(
         self,
         adata: AnnData | list[AnnData] | None = None,
         sinkhorn: bool = True,
-        trainer: L.Trainer | None = None,
     ) -> None:
         for adata in self.get_adatas(adata):
-            trainer = self._get_trainer(trainer)
             dataset = self.init_dataset(adata)
 
             out = []
@@ -193,8 +186,7 @@ class Novae(L.LightningModule):
             )
 
     @torch.no_grad()
-    def edge_scores(
-        self, adata: AnnData | list[AnnData] | None = None) -> None:
+    def edge_scores(self, adata: AnnData | list[AnnData] | None = None) -> None:
         """
         Computes and assigns edge scores to the given AnnData object(s).
 
@@ -217,7 +209,7 @@ class Novae(L.LightningModule):
             edge_scores = []
             for data_main, *_ in tqdm(loader):
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
-                
+
             adata.obsp[SCORES] = fill_edge_scores(
                 edge_scores,
                 adata,
@@ -225,8 +217,7 @@ class Novae(L.LightningModule):
                 fill_value=np.nan,
                 dtype=np.float32,
             )
-            adata.write_h5ad('results/interactions/results_adata.h5ad')
-
+            adata.write_h5ad("results/interactions/results_adata.h5ad")
 
     @torch.no_grad()
     def representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
