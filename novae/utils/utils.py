@@ -27,11 +27,14 @@ log = logging.getLogger(__name__)
 
 
 def prepare_adatas(
-    adata: AnnData | list[AnnData],
+    adata: AnnData | list[AnnData] | None,
     slide_key: str = None,
     vocabulary: set | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
+    if adata is None:
+        return
+
     adatas = [adata] if isinstance(adata, AnnData) else adata
 
     sanity_check(adatas, slide_key=slide_key)

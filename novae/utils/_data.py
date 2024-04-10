@@ -45,7 +45,7 @@ def _load_wandb_artifact(name: str) -> Path:
     if artifact_path.exists():
         log.info(f"Artifact {artifact_path} already downloaded")
     else:
-        log.info(f"Downloading artifact at {artifact}")
+        log.info(f"Downloading artifact at {artifact_path}")
         artifact.download(root=artifact_path)
 
     return artifact_path

@@ -21,9 +21,10 @@ log = logging.getLogger(__name__)
 class Novae(L.LightningModule):
     def __init__(
         self,
-        adata: AnnData | list[AnnData],
+        adata: AnnData | list[AnnData] | None = None,
         swav: bool = True,
         slide_key: str = None,
+        var_names: list[str] = None,
         embedding_size: int = 100,
         heads: int = 4,
         n_hops: int = 2,
@@ -37,10 +38,18 @@ class Novae(L.LightningModule):
         num_prototypes: int = 256,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=["adata", "slide_key"])
-
         self.adatas = utils.prepare_adatas(adata)
         self.slide_key = slide_key
+
+        assert (
+            adata is not None or var_names is not None
+        ), f"One of `adata` and `var_names` must not be None"
+
+        if adata is not None:
+            var_names = list(utils.genes_union(self.adatas))
+        self.var_names = var_names
+
+        self.save_hyperparameters(ignore=["adata", "slide_key"])
 
         ### Embeddings
         self.genes_embedding = GenesEmbedding(self.var_names, embedding_size)
@@ -51,24 +60,24 @@ class Novae(L.LightningModule):
             embedding_size, hidden_channels, num_layers, out_channels, heads
         )
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
-        self.augmentation = GraphAugmentation(self.genes_embedding)
+        self.augmentation = GraphAugmentation()
 
         ### Losses
         self.bce_loss = nn.BCELoss()
 
-        ### Dataset
-        self.datamodule = self.init_datamodule()
+        ### Datamodule
+        if self.adatas is not None:
+            self._datamodule = self.init_datamodule()
+
+    @property
+    def datamodule(self) -> LocalAugmentationDatamodule:
+        assert hasattr(
+            self, "_datamodule"
+        ), "The datamodule was not initialized. Please provide an `adata` object."
+        return self._datamodule
 
     def __repr__(self) -> str:
-        return f"Novae model with {self.n_obs} cells and {len(self.var_names)} genes"
-
-    @property
-    def var_names(self) -> list[str]:
-        return utils.genes_union(self.adatas)
-
-    @property
-    def n_obs(self) -> int:
-        return sum(adata.n_obs for adata in self.adatas)
+        return f"Novae model with {len(self.var_names)} known genes"
 
     def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
         if self.hparams.swav:
@@ -232,6 +241,6 @@ class Novae(L.LightningModule):
         return utils.prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
 
     @classmethod
-    def load_from_wandb_artifact(cls, name: str, adata: AnnData | list[AnnData]) -> "Novae":
+    def load_from_wandb_artifact(cls, name: str) -> "Novae":
         artifact_dir = utils._load_wandb_artifact(name)
-        return cls.load_from_checkpoint(artifact_dir / "model.ckpt", adata=adata)
+        return cls.load_from_checkpoint(artifact_dir / "model.ckpt")
