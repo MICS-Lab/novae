@@ -38,21 +38,13 @@ class Novae(L.LightningModule):
         num_prototypes: int = 256,
     ) -> None:
         super().__init__()
-        self.adatas = utils.prepare_adatas(adata)
+        self.adatas, var_names = utils.prepare_adatas(adata, var_names)
         self.slide_key = slide_key
-
-        assert (
-            adata is not None or var_names is not None
-        ), f"One of `adata` and `var_names` must not be None"
-
-        if adata is not None:
-            var_names = list(utils.genes_union(self.adatas))
-        self.var_names = var_names
 
         self.save_hyperparameters(ignore=["adata", "slide_key"])
 
         ### Embeddings
-        self.genes_embedding = GenesEmbedding(self.var_names, embedding_size)
+        self.genes_embedding = GenesEmbedding(var_names, embedding_size)
         # self.genes_embedding.pca_init(self.adatas) # TODO: fix it
 
         ### Modules
@@ -77,7 +69,7 @@ class Novae(L.LightningModule):
         return self._datamodule
 
     def __repr__(self) -> str:
-        return f"Novae model with {len(self.var_names)} known genes"
+        return f"Novae model with {len(self.genes_embedding.voc_size)} known genes"
 
     def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
         if self.hparams.swav:

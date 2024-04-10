@@ -32,8 +32,12 @@ def prepare_adatas(
     vocabulary: set | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
+    assert (
+        adata is not None or var_names is not None
+    ), f"One of `adata` and `var_names` must not be None"
+
     if adata is None:
-        return
+        return None, var_names
 
     adatas = [adata] if isinstance(adata, AnnData) else adata
 
@@ -50,7 +54,9 @@ def prepare_adatas(
         if vocabulary is not None and IS_KNOWN_GENE_KEY not in adata.var:
             lookup_valid_genes(adata, vocabulary)
 
-    return adatas
+    var_names = list(genes_union(adatas))
+
+    return adatas, var_names
 
 
 def sanity_check(adatas: list[AnnData], slide_key: str = None):
