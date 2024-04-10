@@ -23,7 +23,7 @@ from ..module import GenesEmbedding, GraphAugmentation
 from .convert import AnnDataTorch
 
 
-class LocalAugmentationDataset(torch.utils.data.Dataset):
+class LocalAugmentationDatamodule(L.LightningDataModule):
     valid_indices: list[np.ndarray]
     obs_ilocs: list[tuple[int, int]]
 

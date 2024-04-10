@@ -68,8 +68,7 @@ def main(args: argparse.Namespace) -> None:
     trainer = L.Trainer(
         logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {})
     )
-    trainer.fit(model, model.dataset.train_dataloader())
-
+    trainer.fit(model, datamodule=model.datamodule)
 
 
 if __name__ == "__main__":
