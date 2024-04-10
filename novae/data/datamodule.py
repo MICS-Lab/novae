@@ -24,8 +24,18 @@ from .convert import AnnDataTorch
 
 
 class LocalAugmentationDatamodule(L.LightningDataModule):
+    """
+    Datamodule used for training and inference.
+
+    It extracts the the neighborhood of a cell, and convert it to PyTorch Geometric Data.
+
+    Attributes:
+        valid_indices (list[np.ndarray]): List containing, for each `adata`, an array that denotes the indices of the cells whose neighborhood is valid.
+        obs_ilocs (np.ndarray): An array of shape `(total_valid_indices, 2)`. The first column corresponds to the adata index, and the second column is the cell index for the corresponding adata.
+    """
+
     valid_indices: list[np.ndarray]
-    obs_ilocs: list[tuple[int, int]]
+    obs_ilocs: np.ndarray
 
     def __init__(
         self,
@@ -48,9 +58,15 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         self.n_hops = n_hops
         self.n_intermediate = n_intermediate
 
-        self.init_dataset()
+        self._init_dataset()
 
-    def init_dataset(self):
+    def shuffle_obs_ilocs(self):
+        if len(self.adatas) == 1:
+            self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
+        else:
+            self.shuffled_obs_ilocs = self._shuffle_grouped_indices()
+
+    def _init_dataset(self):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[ADJ]
 
@@ -59,9 +75,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
-        self.init_obs_ilocs()
 
-    def init_obs_ilocs(self):
         if len(self.adatas) == 1:
             self.obs_ilocs = np.array([(0, obs_index) for obs_index in self.valid_indices[0]])
         else:
@@ -76,12 +90,6 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
 
         self.shuffle_obs_ilocs()
 
-    def shuffle_obs_ilocs(self):
-        if len(self.adatas) == 1:
-            self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
-        else:
-            self.shuffled_obs_ilocs = self.shuffle_grouped_indices()
-
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
         obs_counts: pd.Series = (
             self.adatas[adata_index].obs.iloc[obs_indices][SLIDE_KEY].value_counts()
@@ -91,7 +99,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
         return slides_metadata
 
-    def shuffle_grouped_indices(self):
+    def _shuffle_grouped_indices(self):
         adata_indices = np.empty((0, self.batch_size), dtype=int)
         batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
 
@@ -147,6 +155,16 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
     def to_pyg_data(
         self, adata_index: int, obs_index: int, shuffle_pair: bool = False
     ) -> Data | tuple[Data, Data]:
+        """Create a PyTorch Geometric Data object for the input cell
+
+        Args:
+            adata_index: The index of the `AnnData` object
+            obs_index: The index of the input cell for the corresponding `AnnData` object
+            shuffle_pair: Whether to also return the shuffled view.
+
+        Returns:
+            A Data object (if not `shuffle_pair`), or the Data object and its shuffled view.
+        """
         adjacency_local: csr_matrix = self.adatas[adata_index].obsp[ADJ_LOCAL]
         cells_indices = adjacency_local[obs_index].indices
 
@@ -182,6 +200,10 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
 
 
 def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
+    """
+    Creates an adjancency matrix for which all nodes
+    at a distance inferior to `n_hops` are linked.
+    """
     adjacency_local: lil_matrix = adjacency.copy().tolil()
     adjacency_local.setdiag(1)
     for _ in range(n_hops - 1):
@@ -190,6 +212,10 @@ def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
 
 
 def _to_adjacency_pair(adjacency: csr_matrix, n_intermediate: int) -> csr_matrix:
+    """
+    Creates an adjacancy matrix for which all nodes separated by
+    precisely `n_intermediate` nodes are linked.
+    """
     adjacency_pair: lil_matrix = adjacency.copy().tolil()
     adjacency_pair.setdiag(1)
     for i in range(n_intermediate):
