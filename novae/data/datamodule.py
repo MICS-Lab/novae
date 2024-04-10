@@ -139,24 +139,28 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         plausible_nghs = adjacency_pair[obs_index].indices
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
 
-        data, data_shuffled = self.hop_travel(adata_index, obs_index, shuffle_pair=True)
-        data_ngh = self.hop_travel(adata_index, ngh_index)
+        data, data_shuffled = self.to_pyg_data(adata_index, obs_index, shuffle_pair=True)
+        data_ngh = self.to_pyg_data(adata_index, ngh_index)
 
         return data, data_shuffled, data_ngh
 
-    def hop_travel(
+    def to_pyg_data(
         self, adata_index: int, obs_index: int, shuffle_pair: bool = False
     ) -> Data | tuple[Data, Data]:
-        adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
         adjacency_local: csr_matrix = self.adatas[adata_index].obsp[ADJ_LOCAL]
+        cells_indices = adjacency_local[obs_index].indices
 
-        indices = adjacency_local[obs_index].indices
+        x, var_names = self.anndata_torch[adata_index, cells_indices]
+        genes_indices = self.genes_embedding.genes_to_indices(var_names)
 
-        x, var_names = self.anndata_torch[adata_index, indices]
+        if self.transform:
+            x, genes_indices = self.augmentation(x, genes_indices)
+        x = self.genes_embedding(x, genes_indices)
 
-        x = self.augmentation(x, var_names, ignore=not self.transform)
-
-        edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[indices][:, indices])
+        adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
+        edge_index, edge_weight = from_scipy_sparse_matrix(
+            adjacency[cells_indices][:, cells_indices]
+        )
         edge_attr = edge_weight[:, None].to(torch.float32)
 
         data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
