@@ -10,16 +10,10 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 
+from . import utils
 from ._constants import CODES, INT_CONF, REPR, SCORES, SWAV_CLASSES
 from .data import LocalAugmentationDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
-from .utils import (
-    fill_edge_scores,
-    fill_invalid_indices,
-    genes_union,
-    prepare_adatas,
-    tqdm,
-)
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +39,7 @@ class Novae(L.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["adata", "slide_key"])
 
-        self.adatas = prepare_adatas(adata)
+        self.adatas = utils.prepare_adatas(adata)
         self.slide_key = slide_key
 
         ### Embeddings
@@ -70,7 +64,7 @@ class Novae(L.LightningModule):
 
     @property
     def var_names(self) -> list[str]:
-        return genes_union(self.adatas)
+        return utils.genes_union(self.adatas)
 
     @property
     def n_obs(self) -> int:
@@ -136,11 +130,11 @@ class Novae(L.LightningModule):
             out = torch.concatenate(
                 [
                     self.backbone.edge_x(batch[0]) - self.backbone.edge_x(batch[1])
-                    for batch in tqdm(datamodule.predict_dataloader())
+                    for batch in utils.tqdm(datamodule.predict_dataloader())
                 ]
             )
 
-            adata.obs[INT_CONF] = fill_invalid_indices(out, adata, datamodule.valid_indices)
+            adata.obs[INT_CONF] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
 
     @torch.no_grad()
     def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
@@ -168,7 +162,7 @@ class Novae(L.LightningModule):
             datamodule = self.init_datamodule(adata)
 
             out = []
-            for data_main, *_ in tqdm(datamodule.predict_dataloader()):
+            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 scores = out_ @ self.swav_head.prototypes
@@ -180,7 +174,7 @@ class Novae(L.LightningModule):
             if sinkhorn:
                 out = self.swav_head.sinkhorn(out)
 
-            adata.obsm[CODES] = fill_invalid_indices(
+            adata.obsm[CODES] = utils.fill_invalid_indices(
                 out, adata, datamodule.valid_indices, fill_value=np.nan, dtype=np.float32
             )
 
@@ -206,10 +200,10 @@ class Novae(L.LightningModule):
             datamodule = self.init_datamodule(adata)
 
             edge_scores = []
-            for data_main, *_ in tqdm(datamodule.predict_dataloader()):
+            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
 
-            adata.obsp[SCORES] = fill_edge_scores(
+            adata.obsp[SCORES] = utils.fill_edge_scores(
                 edge_scores,
                 adata,
                 datamodule.valid_indices,
@@ -224,15 +218,20 @@ class Novae(L.LightningModule):
             datamodule = self.init_datamodule(adata)
 
             out = []
-            for data_main, *_ in tqdm(datamodule.predict_dataloader()):
+            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 out.append(out_)
 
             out = torch.concat(out, dim=0)
-            adata.obsm[REPR] = fill_invalid_indices(out, adata, datamodule.valid_indices)
+            adata.obsm[REPR] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
 
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
+        return utils.prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
+
+    @classmethod
+    def load_from_wandb_artifact(cls, name: str, adata: AnnData | list[AnnData]) -> "Novae":
+        artifact_dir = utils._load_wandb_artifact(name)
+        return cls.load_from_checkpoint(artifact_dir / "model.ckpt", adata=adata)

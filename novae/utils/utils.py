@@ -107,13 +107,24 @@ def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
     return np.sqrt(a_squared.mean(axis) - np.square(a.mean(axis)))
 
 
-def repository_path() -> Path:
-    """Get the repository path (dev-mode users only)
+def repository_root() -> Path:
+    """Get the path to the root of the repository (dev-mode users only)
 
     Returns:
         `novae` repository path
     """
-    return Path(__file__).parents[2]
+    path = Path(__file__).parents[2]
+
+    if path.name != "novae":
+        log.warn(
+            f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}"
+        )
+
+    return path
+
+
+def wandb_log_dir() -> Path:
+    return repository_root() / "wandb"
 
 
 def tqdm(*args, desc="DataLoader", **kwargs):
@@ -148,9 +159,7 @@ def fill_invalid_indices(
 
 
 def fill_edge_scores(
-    out: np.ndarray | Tensor,
-    adata: AnnData,
-    valid_indices: list[int]
+    out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int]
 ) -> np.ndarray:
     """
     Populates the adjacency matrix with edge scores for specified indices.
@@ -181,6 +190,6 @@ def fill_edge_scores(
         indices = adata.obsp[ADJ_LOCAL][index].indices
         csr_out = out[i].tolil()
         indices_array = np.array(indices)
-        rows, cols = np.meshgrid(indices_array, indices_array, indexing='ij')
+        rows, cols = np.meshgrid(indices_array, indices_array, indexing="ij")
         adjacency_scores[rows, cols] = csr_out
     return adjacency_scores.tocsr()
