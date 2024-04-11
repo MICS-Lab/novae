@@ -36,7 +36,7 @@ class SwavHead(L.LightningModule):
 
     @property
     def use_queue(self) -> bool:
-        return self.queue is not None and self.current_epoch >= 5
+        return self.queue is not None and self.current_epoch >= 15
 
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
