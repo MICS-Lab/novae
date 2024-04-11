@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     slide_key: str = None,
-    vocabulary: set | None = None,
+    var_names: set | list[str] | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
     assert (
@@ -51,10 +51,11 @@ def prepare_adatas(
         std = adata.X.std(0) if isinstance(adata.X, np.ndarray) else sparse_std(adata.X, 0).A1
         adata.var[VAR_STD] = std.astype(np.float32)
 
-        if vocabulary is not None and IS_KNOWN_GENE_KEY not in adata.var:
-            lookup_valid_genes(adata, vocabulary)
+        if var_names is not None and IS_KNOWN_GENE_KEY not in adata.var:
+            lookup_valid_genes(adata, var_names)
 
-    var_names = list(genes_union(adatas))
+    if var_names is None:
+        var_names = list(genes_union(adatas))
 
     return adatas, var_names
 
@@ -98,7 +99,7 @@ def lower_var_names(var_names: pd.Index) -> pd.Index:
     return var_names.map(lambda s: s.lower())
 
 
-def lookup_valid_genes(adata: AnnData, vocabulary: set):
+def lookup_valid_genes(adata: AnnData, vocabulary: set | list[str]):
     adata.var[IS_KNOWN_GENE_KEY] = np.isin(lower_var_names(adata.var_names), list(vocabulary))
 
     n_known = sum(adata.var[IS_KNOWN_GENE_KEY])

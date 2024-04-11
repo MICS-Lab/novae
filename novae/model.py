@@ -38,7 +38,7 @@ class Novae(L.LightningModule):
         num_prototypes: int = 256,
     ) -> None:
         super().__init__()
-        self.adatas, var_names = utils.prepare_adatas(adata, var_names)
+        self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
         self.slide_key = slide_key
 
         self.save_hyperparameters(ignore=["adata", "slide_key"])
@@ -233,6 +233,6 @@ class Novae(L.LightningModule):
         return utils.prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
 
     @classmethod
-    def load_from_wandb_artifact(cls, name: str) -> "Novae":
+    def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
         artifact_dir = utils._load_wandb_artifact(name)
-        return cls.load_from_checkpoint(artifact_dir / "model.ckpt")
+        return cls.load_from_checkpoint(artifact_dir / "model.ckpt", **kwargs)
