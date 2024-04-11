@@ -59,13 +59,16 @@ class Novae(L.LightningModule):
         if self.adatas is not None:
             self._datamodule = self.init_datamodule()
 
+        ### Checkpoint
+        self._checkpoint = None
+
     @property
     def datamodule(self) -> LocalAugmentationDatamodule:
         assert hasattr(self, "_datamodule"), "The datamodule was not initialized. Please provide an `adata` object."
         return self._datamodule
 
     def __repr__(self) -> str:
-        return f"Novae model with {len(self.genes_embedding.voc_size)} known genes"
+        return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
 
     def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
         if self.hparams.swav:
@@ -229,4 +232,6 @@ class Novae(L.LightningModule):
     @classmethod
     def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
         artifact_dir = utils._load_wandb_artifact(name)
-        return cls.load_from_checkpoint(artifact_dir / "model.ckpt", **kwargs)
+        model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", **kwargs)
+        model._checkpoint = f"wandb: {name}"
+        return model
