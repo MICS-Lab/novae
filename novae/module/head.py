@@ -18,12 +18,14 @@ class SwavHead(L.LightningModule):
         num_prototypes: int,
         temperature: float = 0.1,
         queue_size: int = 1000,
+        epoch_queue_starts: int = 15,
     ):
         super().__init__()
         self.out_channels = out_channels
         self.num_prototypes = num_prototypes
         self.temperature = temperature
         self.queue_size = queue_size
+        self.epoch_queue_starts = epoch_queue_starts
 
         if self.queue_size is not None:
             self.register_buffer("queue", torch.zeros((self.queue_size, out_channels), dtype=torch.float32))
@@ -36,7 +38,7 @@ class SwavHead(L.LightningModule):
 
     @property
     def use_queue(self) -> bool:
-        return self.queue is not None and self.current_epoch >= 15
+        return self.queue is not None and self.current_epoch >= self.epoch_queue_starts
 
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
