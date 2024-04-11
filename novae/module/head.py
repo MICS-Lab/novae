@@ -61,9 +61,9 @@ class SwavHead(L.LightningModule):
             q2 = self.sinkhorn(scores2)
 
         if self.queue is not None:
-            n = len(out1) + len(out2)
+            n = len(out1)
             self.queue[n:] = self.queue[:-n].clone()
-            self.queue[:n] = torch.cat([out1.detach(), out2.detach()], axis=0)
+            self.queue[:n] = out1.detach()
 
         return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
