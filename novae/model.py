@@ -45,7 +45,6 @@ class Novae(L.LightningModule):
 
         ### Embeddings
         self.genes_embedding = GenesEmbedding(var_names, embedding_size)
-        self.genes_embedding._pca_init(self.adatas)
 
         ### Modules
         self.backbone = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)

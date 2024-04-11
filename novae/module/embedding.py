@@ -7,9 +7,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from anndata import AnnData
-from scipy.sparse import issparse
-from sklearn.decomposition import PCA
 from torch import nn
 
 from ..utils import lower_var_names
@@ -40,18 +37,3 @@ class GenesEmbedding(L.LightningModule):
         genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
         return x @ genes_embeddings
-
-    def _pca_init(self, adatas: list[AnnData]):
-        if len(adatas) > 1 and any(adata.n_vars < self.voc_size for adata in adatas):
-            log.warn("PCA init for embeddings is not available for multi-panels")
-            return
-
-        X = []
-        for adata in adatas:
-            X_ = adata.X.toarray() if issparse(adata.X) else np.asarray(adata.X)
-            X.append(X_[:, self.genes_to_indices(adata.var_names, as_torch=False)])
-        X = np.concatenate(X, axis=0)
-
-        pca = PCA(n_components=self.embedding_size)
-        pca.fit(X)
-        self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)
