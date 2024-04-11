@@ -3,7 +3,7 @@
 #SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=mediumq
+#SBATCH --partition=longq
 
 module purge
 module load anaconda3/2020-11
