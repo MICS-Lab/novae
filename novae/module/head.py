@@ -26,9 +26,7 @@ class SwavHead(L.LightningModule):
         self.queue_size = queue_size
 
         if self.queue_size is not None:
-            self.register_buffer(
-                "queue", torch.zeros((self.queue_size, out_channels), dtype=torch.float32)
-            )
+            self.register_buffer("queue", torch.zeros((self.queue_size, out_channels), dtype=torch.float32))
         else:
             self.queue = None
 
@@ -112,6 +110,4 @@ class SwavHead(L.LightningModule):
             self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
 
     def assign_classes_level(self, series: pd.Series, n_classes: int) -> pd.Series:
-        return series.map(
-            lambda x: x if np.isnan(float(x)) else str(self.clusters_levels[-n_classes, int(x)])
-        )
+        return series.map(lambda x: x if np.isnan(float(x)) else str(self.clusters_levels[-n_classes, int(x)]))

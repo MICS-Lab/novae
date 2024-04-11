@@ -49,9 +49,7 @@ def main(args: argparse.Namespace) -> None:
         EvalCallback(),
     ]
 
-    trainer = L.Trainer(
-        logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {})
-    )
+    trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
     trainer.fit(model, datamodule=model.datamodule)
 
 

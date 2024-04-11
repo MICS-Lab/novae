@@ -11,9 +11,7 @@ from ..model import Novae
 from .eval import mean_pide_score
 
 
-def log_domains_plots(
-    model: Novae, adata: AnnData | list[AnnData], n_domains: list = [7, 11, 15], suffix=""
-):
+def log_domains_plots(model: Novae, adata: AnnData | list[AnnData], n_domains: list = [7, 11, 15], suffix=""):
     if isinstance(adata, list):
         for i, adata_ in enumerate(adata):
             log_domains_plots(model, adata_, n_domains=n_domains, suffix=f"_sample_{i}")

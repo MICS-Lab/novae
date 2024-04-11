@@ -24,9 +24,7 @@ class GenesEmbedding(L.LightningModule):
 
     def genes_to_indices(self, gene_names: pd.Index) -> torch.Tensor:
         gene_names = lower_var_names(gene_names)
-        return torch.tensor(
-            [self.gene_to_index[gene] for gene in gene_names], dtype=torch.long, device=self.device
-        )
+        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long, device=self.device)
 
     def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
         genes_embeddings = self.embedding(genes_indices)

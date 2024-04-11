@@ -51,13 +51,12 @@ class EdgeAttentionAggregation(L.LightningModule):
     - _get_edge_scores_per_batch(scores, edge_index, batch): A helper method that computes the edge
       scores per batch and returns them as a list of scipy sparse matrices.
     """
+
     def __init__(self, in_channels: int, out_channels: int, heads: int = 1, **kwargs):
         super().__init__()
         self.edge_scorer = EdgeScorer(in_channels, out_channels, heads, **kwargs)
 
-    def forward(
-        self, x: Tensor, edge_index: Tensor, batch: Tensor, return_weights: bool = False
-    ) -> torch.Tensor:
+    def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor, return_weights: bool = False) -> torch.Tensor:
         """
         Performs the forward pass of the EdgeAttentionAggregation module.
 
@@ -98,9 +97,10 @@ class EdgeAttentionAggregation(L.LightningModule):
         batches = torch.unique(batch)
         edge_scores_per_batch = []
         for batch_idx in batches:
-            graph_per_batch = to_scipy_sparse_matrix(edge_index=edge_index[:, batch == batch_idx] - 
-                                                     torch.min(edge_index[:, batch == batch_idx]).item(), 
-                                                     edge_attr=scores[batch == batch_idx])
+            graph_per_batch = to_scipy_sparse_matrix(
+                edge_index=edge_index[:, batch == batch_idx] - torch.min(edge_index[:, batch == batch_idx]).item(),
+                edge_attr=scores[batch == batch_idx],
+            )
             edge_scores_per_batch.append(graph_per_batch)
         return edge_scores_per_batch
 
@@ -132,15 +132,11 @@ class EdgeScorer(MessagePassing, L.LightningModule):
         self.fill_value = fill_value
         self.share_weights = share_weights
 
-        self.lin_l = Linear(
-            in_channels, heads * out_channels, bias=bias, weight_initializer="glorot"
-        )
+        self.lin_l = Linear(in_channels, heads * out_channels, bias=bias, weight_initializer="glorot")
         if share_weights:
             self.lin_r = self.lin_l
         else:
-            self.lin_r = Linear(
-                in_channels, heads * out_channels, bias=bias, weight_initializer="glorot"
-            )
+            self.lin_r = Linear(in_channels, heads * out_channels, bias=bias, weight_initializer="glorot")
 
         self.att = Parameter(torch.empty(1, heads, out_channels))
 
@@ -210,7 +206,4 @@ class EdgeScorer(MessagePassing, L.LightningModule):
         return x_j * alpha.unsqueeze(-1)
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}({self.in_channels}, "
-            f"{self.out_channels}, heads={self.heads})"
-        )
+        return f"{self.__class__.__name__}({self.in_channels}, " f"{self.out_channels}, heads={self.heads})"

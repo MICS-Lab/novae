@@ -32,9 +32,7 @@ def prepare_adatas(
     var_names: set | list[str] | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model"""
-    assert (
-        adata is not None or var_names is not None
-    ), f"One of `adata` and `var_names` must not be None"
+    assert adata is not None or var_names is not None, "One of `adata` and `var_names` must not be None"
 
     if adata is None:
         return None, var_names
@@ -85,9 +83,7 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
             count_no_adj += 1
 
     if count_no_adj:
-        log.warn(
-            f"Added delaunay graph to {count_no_adj} adata object(s) with radius threshold {DELAUNAY_RADIUS_TH}"
-        )
+        log.warn(f"Added delaunay graph to {count_no_adj} adata object(s) with radius threshold {DELAUNAY_RADIUS_TH}")
 
     if count_raw:
         log.info(
@@ -126,9 +122,7 @@ def repository_root() -> Path:
     path = Path(__file__).parents[2]
 
     if path.name != "novae":
-        log.warn(
-            f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}"
-        )
+        log.warn(f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}")
 
     return path
 
@@ -168,9 +162,7 @@ def fill_invalid_indices(
     return res
 
 
-def fill_edge_scores(
-    out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int]
-) -> np.ndarray:
+def fill_edge_scores(out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int]) -> np.ndarray:
     """
     Populates the adjacency matrix with edge scores for specified indices.
 

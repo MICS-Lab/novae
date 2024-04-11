@@ -21,9 +21,7 @@ class AnnDataTorch(L.LightningModule):
         self.tensors = None
         # Tensors are loaded in-memory for low numbers of cells
         if sum(adata.n_obs for adata in self.adatas) < N_OBS_THRESHOLD:
-            self.tensors = [
-                torch.tensor(self.array(adata), device=self.device) for adata in self.adatas
-            ]
+            self.tensors = [torch.tensor(self.array(adata), device=self.device) for adata in self.adatas]
 
         self.var_names_list = [self.get_var_names(adata) for adata in self.adatas]
 

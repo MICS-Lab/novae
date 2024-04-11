@@ -91,9 +91,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         self.shuffle_obs_ilocs()
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
-        obs_counts: pd.Series = (
-            self.adatas[adata_index].obs.iloc[obs_indices][SLIDE_KEY].value_counts()
-        )
+        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][SLIDE_KEY].value_counts()
         slides_metadata = obs_counts.to_frame()
         slides_metadata[ADATA_INDEX_KEY] = adata_index
         slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
@@ -117,9 +115,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
 
             _obs_indices = _obs_indices.reshape((-1, self.batch_size))
 
-            adata_indices = np.concatenate(
-                [adata_indices, np.full_like(_obs_indices, adata_index)], axis=0
-            )
+            adata_indices = np.concatenate([adata_indices, np.full_like(_obs_indices, adata_index)], axis=0)
             batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
 
         permutation = np.random.permutation(len(batched_obs_indices))
@@ -152,9 +148,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
 
         return data, data_shuffled, data_ngh
 
-    def to_pyg_data(
-        self, adata_index: int, obs_index: int, shuffle_pair: bool = False
-    ) -> Data | tuple[Data, Data]:
+    def to_pyg_data(self, adata_index: int, obs_index: int, shuffle_pair: bool = False) -> Data | tuple[Data, Data]:
         """Create a PyTorch Geometric Data object for the input cell
 
         Args:
@@ -176,9 +170,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         x = self.genes_embedding(x, genes_indices)
 
         adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
-        edge_index, edge_weight = from_scipy_sparse_matrix(
-            adjacency[cells_indices][:, cells_indices]
-        )
+        edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[cells_indices][:, cells_indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
 
         data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)

@@ -38,11 +38,9 @@ def spatial_neighbors(
         percentile: Percentile of the distances to use as threshold.
         set_diag: Whether to set the diagonal of the spatial connectivities to `1.0`.
     """
-    assert (
-        radius is None or len(radius) == 2
-    ), "Radius is expected to be a tuple (min_radius, max_radius)"
+    assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"
 
-    log.info("Computing delaunay graph")
+    log.info("Computing delaunay graph (function from squidpy)")
 
     if library_key is not None:
         assert adata.obs[library_key].dtype == "category"
@@ -73,6 +71,12 @@ def spatial_neighbors(
     adata.obsp["spatial_connectivities"] = Adj
     adata.obsp["spatial_distances"] = Dst
 
+    adata.uns["spatial_neighbors"] = {
+        "connectivities_key": "spatial_connectivities",
+        "distances_key": "spatial_distances",
+        "params": {"radius": radius, "set_diag": set_diag},
+    }
+
 
 def _spatial_neighbor(
     adata: AnnData,
@@ -86,9 +90,7 @@ def _spatial_neighbor(
 
     coords = adata.obsm["spatial"]
 
-    assert (
-        coords.shape[1] == 2
-    ), f"adata.obsm['spatial'] has {coords.shape[1]} dimension(s). Expected 2."
+    assert coords.shape[1] == 2, f"adata.obsm['spatial'] has {coords.shape[1]} dimension(s). Expected 2."
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SparseEfficiencyWarning)

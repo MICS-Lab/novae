@@ -48,9 +48,7 @@ class Novae(L.LightningModule):
         # self.genes_embedding.pca_init(self.adatas) # TODO: fix it
 
         ### Modules
-        self.backbone = GraphEncoder(
-            embedding_size, hidden_channels, num_layers, out_channels, heads
-        )
+        self.backbone = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
         self.augmentation = GraphAugmentation()
 
@@ -63,9 +61,7 @@ class Novae(L.LightningModule):
 
     @property
     def datamodule(self) -> LocalAugmentationDatamodule:
-        assert hasattr(
-            self, "_datamodule"
-        ), "The datamodule was not initialized. Please provide an `adata` object."
+        assert hasattr(self, "_datamodule"), "The datamodule was not initialized. Please provide an `adata` object."
         return self._datamodule
 
     def __repr__(self) -> str:
@@ -140,12 +136,10 @@ class Novae(L.LightningModule):
     @torch.no_grad()
     def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
-            assert CODES in adata.obsm, f"Codes are not computed. Run model.codes() first."
+            assert CODES in adata.obsm, "Codes are not computed. Run model.codes() first."
 
             codes = adata.obsm[CODES]
-            adata.obs[SWAV_CLASSES] = np.where(
-                np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object)
-            )
+            adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
     def predict_step(self, batch):
         data_main, *_ = batch

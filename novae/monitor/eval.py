@@ -8,9 +8,7 @@ from .._constants import ADJ, EPS
 
 def mean_pide_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Mean PIDE over all slides. A low score indicates a great domain continuity."""
-    return np.mean(
-        [pide_score(adata_slide, obs_key) for adata_slide in _iter_uid(adata, slide_key)]
-    )
+    return np.mean([pide_score(adata_slide, obs_key) for adata_slide in _iter_uid(adata, slide_key)])
 
 
 def pide_score(adata: AnnData, obs_key: str) -> float:
@@ -20,9 +18,7 @@ def pide_score(adata: AnnData, obs_key: str) -> float:
     return (classes_left.values != classes_right.values).mean()
 
 
-def jensen_shannon_divergence(
-    adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None
-) -> float:
+def jensen_shannon_divergence(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Jensen-Shannon divergence (JSD) over all slides
 
     Args:
@@ -34,8 +30,7 @@ def jensen_shannon_divergence(
         A float corresponding to the JSD
     """
     distributions = [
-        adata_slide.obs[obs_key].value_counts(sort=False).values
-        for adata_slide in _iter_uid(adata, slide_key, obs_key)
+        adata_slide.obs[obs_key].value_counts(sort=False).values for adata_slide in _iter_uid(adata, slide_key, obs_key)
     ]
 
     return _jensen_shannon_divergence(np.array(distributions))
@@ -77,9 +72,7 @@ def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None, obs_key: s
     if obs_key is not None:
         categories = set.union(*[set(adata.obs[obs_key].unique().dropna()) for adata in adatas])
         for adata in adatas:
-            adata.obs[obs_key] = (
-                adata.obs[obs_key].astype("category").cat.set_categories(categories)
-            )
+            adata.obs[obs_key] = adata.obs[obs_key].astype("category").cat.set_categories(categories)
 
     for adata in adatas:
         if slide_key is not None:
