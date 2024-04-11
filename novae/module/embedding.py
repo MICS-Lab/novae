@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import logging
+
 import lightning as L
+import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from anndata import AnnData
+from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from torch import nn
 
 from ..utils import lower_var_names
+
+log = logging.getLogger(__name__)
 
 
 class GenesEmbedding(L.LightningModule):
@@ -22,9 +28,12 @@ class GenesEmbedding(L.LightningModule):
 
         self.embedding = nn.Embedding(self.voc_size, embedding_size)
 
-    def genes_to_indices(self, gene_names: pd.Index) -> torch.Tensor:
-        gene_names = lower_var_names(gene_names)
-        return torch.tensor([self.gene_to_index[gene] for gene in gene_names], dtype=torch.long, device=self.device)
+    def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor:
+        indices = [self.gene_to_index[gene] for gene in lower_var_names(gene_names)]
+
+        if as_torch:
+            return torch.tensor(indices, dtype=torch.long, device=self.device)
+        return np.array(indices, dtype=np.int16)
 
     def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
         genes_embeddings = self.embedding(genes_indices)
@@ -32,9 +41,17 @@ class GenesEmbedding(L.LightningModule):
 
         return x @ genes_embeddings
 
-    def pca_init(self, adatas: list[AnnData]):
-        # PCA init embeddings (valid only if x centered)
-        # TODO: handle adatas
+    def _pca_init(self, adatas: list[AnnData]):
+        if len(adatas) > 1 and any(adata.n_vars < self.voc_size for adata in adatas):
+            log.warn("PCA init for embeddings is not available for multi-panels")
+            return
+
+        X = []
+        for adata in adatas:
+            X_ = adata.X.toarray() if issparse(adata.X) else np.asarray(adata.X)
+            X.append(X_[:, self.genes_to_indices(adata.var_names, as_torch=False)])
+        X = np.concatenate(X, axis=0)
+
         pca = PCA(n_components=self.embedding_size)
-        pca.fit(self.x_numpy)
+        pca.fit(X)
         self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)
