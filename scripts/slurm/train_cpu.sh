@@ -6,7 +6,7 @@
 #SBATCH --partition=cpu_long
 
 module purge
-module load anaconda3/2020-11
+module load anaconda3/2022.10/gcc-11.2.0
 source activate novae
 
 cd $WORKDIR/novae/scripts
