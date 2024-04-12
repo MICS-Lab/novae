@@ -36,6 +36,8 @@ class SwavHead(L.LightningModule):
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
         self.normalize_prototypes()
 
+        self.clusters_levels = None
+
     @property
     def use_queue(self) -> bool:
         return self.queue is not None and self.current_epoch >= self.epoch_queue_starts
@@ -112,4 +114,7 @@ class SwavHead(L.LightningModule):
             self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
 
     def assign_classes_level(self, series: pd.Series, n_classes: int) -> pd.Series:
+        if self.clusters_levels is None:
+            self.hierarchical_clustering()
+
         return series.map(lambda x: x if np.isnan(float(x)) else str(self.clusters_levels[-n_classes, int(x)]))

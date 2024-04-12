@@ -18,8 +18,7 @@ def log_domains_plots(model: Novae, adata: AnnData | list[AnnData], n_domains: l
         return
 
     for k in n_domains:
-        obs_key = f"{SWAV_CLASSES}_{k}"
-        adata.obs[obs_key] = model.swav_head.assign_classes_level(adata.obs[SWAV_CLASSES], k)
+        obs_key = model.assign_domains(adata, k)
         sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
         wandb.log({f"{obs_key}{suffix}": wandb.Image(plt)})
 

@@ -226,7 +226,14 @@ class Novae(L.LightningModule):
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return utils.prepare_adatas(adata, vocabulary=self.genes_embedding.vocabulary)
+        return utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)[0]
+
+    def assign_domains(self, adata: AnnData, k: int, key_added: str | None = None) -> str:
+        if key_added is None:
+            key_added = f"{SWAV_CLASSES}_{k}"
+        adata.obs[key_added] = self.swav_head.assign_classes_level(adata.obs[SWAV_CLASSES], k)
+        log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
+        return key_added
 
     @classmethod
     def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
