@@ -54,7 +54,7 @@ def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
 
 
 def _read_config(name: str) -> dict:
-    with open(novae.utils.repository_root() / "config" / name, "r") as f:
+    with open(novae.utils.repository_root() / "scripts" / "config" / name, "r") as f:
         return yaml.safe_load(f)
 
 
@@ -78,14 +78,7 @@ def main(args: argparse.Namespace) -> None:
     project = f"novae_{mode}"
     log.info(f"Training mode: {mode}")
 
-    if not "sweep" in config:
-        train(adata, config, project)
-        return
-
-    sweep_id = wandb.sweep(sweep=config["sweep"]["configuration"], project=project)
-    _train = lambda: train(adata, config, project, sweep=True)
-
-    wandb.agent(sweep_id, function=_train, count=config["sweep"]["count"])
+    train(adata, config, project, sweep=args.sweep)
 
 
 if __name__ == "__main__":
@@ -97,5 +90,6 @@ if __name__ == "__main__":
         required=True,
         help="Fullname of the YAML config to be used for training (see under the `config` directory)",
     )
+    parser.add_argument("-s", "--sweep", nargs="?", default=False, const=True, help="Whether it is a sweep or not")
 
     main(parser.parse_args())

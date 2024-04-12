@@ -12,8 +12,24 @@ pip install -e ".[monitor]"
 
 ## Usage
 
-Choose a config inside the `config` directory at the root of the project.
+### Normal training
+
+Choose a config inside the `config` directory.
 
 ```sh
-python scripts/train.py --config <NAME>.yaml
+python train.py --config <NAME>.yaml
+```
+
+### Sweep training
+
+Choose a sweep config inside the `sweep` directory.
+
+Inside the `scripts` directory, initialize the sweep with:
+```sh
+wandb sweep --project novae_swav sweep/<NAME>.yaml
+```
+
+Run the sweep with:
+```sh
+wandb agent <SWEEP_ID> --count 1
 ```

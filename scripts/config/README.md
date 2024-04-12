@@ -1,6 +1,6 @@
 # Config
 
-These `.yaml` files are used when training with Weight & Biases (as in the `scripts` directory).
+These `.yaml` files are used when training with Weight & Biases with the `train.py` script.
 
 ## Description
 
@@ -21,26 +21,4 @@ trainer_kwargs: # Trainer kwargs (from Lightning)
 
 wandb_init_kwargs: # wandb.init kwargs
   mode: "online"
-```
-
-## Running wandb sweep
-
-To run a wandb sweep, this has to be added to the YAML file:
-
-```yaml
-sweep:
-  count: 2 # number of trials
-  configuration:
-    method: random # search strategy (grid/random/bayes)
-
-    metric:
-      goal: minimize
-      name: train/loss_epoch # the metric to be optimized
-
-    parameters: # parameters to hyperoptimize (kwargs arguments of Novae)
-      heads:
-        values: [1, 4, 8]
-      lr:
-        min: 0.0001
-        max: 0.01
 ```

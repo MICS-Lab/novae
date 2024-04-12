@@ -1,0 +1,17 @@
+method: random
+metric:
+  goal: minimize
+  name: train/loss_epoch
+parameters:
+  heads:
+    values: [1, 4, 8]
+  lr:
+    min: 0.0001
+    max: 0.01
+
+command:
+  - python
+  - train.py
+  - --config
+  - debug_online.yaml
+  - --sweep
