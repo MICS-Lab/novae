@@ -12,8 +12,12 @@ lightning = ">=2.2.1"
 torch = ">=2.2.1"
 torch-geometric = ">=2.5.2"
 
+wandb = { version = ">=0.16.5", optional = true }
+
+[tool.poetry.extras]
+monitor = ["wandb"]
+
 [tool.poetry.group.dev.dependencies]
-wandb = ">=0.16.5"
 black = ">=22.8.0"
 flake8 = ">=7.0.0"
 isort = ">=5.10.1"
