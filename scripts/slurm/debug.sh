@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=novae
-#SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
+#SBATCH --output=$WORKDIR/.jobs_outputs/%j
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=shortq
@@ -9,7 +9,7 @@ module purge
 module load anaconda3/2020-11
 source activate novae
 
-cd /mnt/beegfs/userdata/q_blampey/novae/scripts
+cd $WORKDIR/novae/scripts
 
 # Get config
 DEFAULT_CONFIG=debug.yaml
