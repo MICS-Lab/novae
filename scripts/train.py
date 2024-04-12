@@ -1,3 +1,8 @@
+"""
+Novae model training with Weight&Biases monitoring
+This is **not** the actual Novae source code. Instead, see the `novae` directory
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -5,15 +10,55 @@ import argparse
 import lightning as L
 import pandas as pd
 import yaml
+from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 import novae
+import wandb
 from novae import log
 from novae.monitor import ComputeSwavOutputsCallback, EvalCallback, LogDomainsCallback
 
 
-def get_training_mode(config: dict) -> str:
+def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
+    """Train Novae on adata. This function can be used inside wandb sweeps.
+
+    If `sweep is True`, the sweep parameters will update the `model_kwargs` from the YAML config.
+
+    Args:
+        adata: One or multiple AnnData objects
+        config: The config dict corresponding to a YAML file inside the `config` directory
+        project: Name of the wandb project
+        sweep: Whether we are running wandb sweeps or not
+    """
+    wandb.init(project=project, **config.get("wandb_init_kwargs", {}))
+
+    if sweep:
+        config["model_kwargs"] = config.get("model_kwargs", {}) | dict(wandb.config)
+    log.info(f"Full config:\n{config}")
+
+    wandb_logger = WandbLogger(save_dir=novae.utils.wandb_log_dir(), log_model="all", project=project)
+
+    config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]
+    wandb_logger.experiment.config.update(config_flat)
+
+    model = novae.Novae(adata, **config.get("model_kwargs", {}))
+
+    callbacks = [ModelCheckpoint(monitor="train/loss_epoch")]
+
+    if not sweep:
+        callbacks.extend([ComputeSwavOutputsCallback(), LogDomainsCallback(), EvalCallback()])
+
+    trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
+    trainer.fit(model, datamodule=model.datamodule)
+
+
+def _read_config(name: str) -> dict:
+    with open(novae.utils.repository_root() / "config" / name, "r") as f:
+        return yaml.safe_load(f)
+
+
+def _get_training_mode(config: dict) -> str:
     if "model_kwargs" not in config or "swav" not in config["model_kwargs"]:
         return "swav"
     if config["model_kwargs"]["swav"]:
@@ -22,35 +67,25 @@ def get_training_mode(config: dict) -> str:
 
 
 def main(args: argparse.Namespace) -> None:
-    with open(novae.utils.repository_root() / "config" / args.config, "r") as f:
-        config: dict = yaml.safe_load(f)
-        config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]
-        log.info(f"Using config {args.config}:\n{config}")
+    """
+    Load the dataset, read the config, and run training (with or without sweeps)
+    """
+    config = _read_config(args.config)
 
     adata = novae.utils._load_dataset(config["data"]["train_dataset"])
 
-    mode = get_training_mode(config)
+    mode = _get_training_mode(config)
+    project = f"novae_{mode}"
     log.info(f"Training mode: {mode}")
 
-    wandb_logger = WandbLogger(
-        save_dir=novae.utils.wandb_log_dir(),
-        log_model="all",
-        project=f"novae_{mode}",
-        **config.get("wandb_init_kwargs", {}),
-    )
-    wandb_logger.experiment.config.update(config_flat)
+    if not "sweep" in config:
+        train(adata, config, project)
+        return
 
-    model = novae.Novae(adata, **config.get("model_kwargs", {}))
+    sweep_id = wandb.sweep(sweep=config["sweep"]["configuration"], project=project)
+    _train = lambda: train(adata, config, project, sweep=True)
 
-    callbacks = [
-        ModelCheckpoint(monitor="train/loss_epoch"),
-        ComputeSwavOutputsCallback(),
-        LogDomainsCallback(),
-        EvalCallback(),
-    ]
-
-    trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
-    trainer.fit(model, datamodule=model.datamodule)
+    wandb.agent(sweep_id, function=_train, count=config["sweep"]["count"])
 
 
 if __name__ == "__main__":
@@ -60,7 +95,7 @@ if __name__ == "__main__":
         "--config",
         type=str,
         required=True,
-        help="Name of the YAML config to be used for training",
+        help="Fullname of the YAML config to be used for training (see under the `config` directory)",
     )
 
     main(parser.parse_args())

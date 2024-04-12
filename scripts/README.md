@@ -4,16 +4,16 @@ These scripts are used to train and monitor Novae with Weight & Biases. To see t
 
 ## Setup
 
-For monitoring, `novae` must be installed with de `dev` extra, for instance via Poetry:
+For monitoring, `novae` must be installed with the `monitor` extra, for instance via pip:
 
 ```sh
-poetry install --all-extras
+pip install -e ".[monitor]"
 ```
 
 ## Usage
 
 Choose a config inside the `config` directory at the root of the project.
 
-```
+```sh
 python scripts/train.py --config <NAME>.yaml
 ```
