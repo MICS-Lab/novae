@@ -36,7 +36,7 @@ class Novae(L.LightningModule):
         lr: float = 1e-3,
         temperature: float = 0.1,
         num_prototypes: int = 1024,
-        epoch_unfreeze_prototypes: int = 1,
+        epoch_unfreeze_prototypes: int = 10,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
