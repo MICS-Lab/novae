@@ -19,8 +19,6 @@ log = logging.getLogger(__name__)
 
 
 class Novae(L.LightningModule):
-    _epoch_unfreeze_prototypes = 10
-
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -38,6 +36,7 @@ class Novae(L.LightningModule):
         lr: float = 1e-3,
         temperature: float = 0.1,
         num_prototypes: int = 1024,
+        epoch_unfreeze_prototypes: int = 1,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -115,7 +114,7 @@ class Novae(L.LightningModule):
         )
 
     def on_train_epoch_start(self):
-        self.swav_head.prototypes.requires_grad = self.current_epoch > self._epoch_unfreeze_prototypes
+        self.swav_head.prototypes.requires_grad = self.current_epoch >= self.hparams.epoch_unfreeze_prototypes
 
         self.datamodule.shuffle_obs_ilocs()
 
