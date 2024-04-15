@@ -1,5 +1,5 @@
 data:
-  train_dataset: igr
+  train_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
   eval_dataset: false
 
 model_kwargs:
