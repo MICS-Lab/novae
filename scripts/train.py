@@ -16,8 +16,7 @@ from lightning.pytorch.loggers import WandbLogger
 
 import novae
 import wandb
-from novae import log
-from novae.monitor import ComputeSwavOutputsCallback, EvalCallback, LogDomainsCallback
+from novae import log, monitor
 
 
 def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
@@ -47,7 +46,14 @@ def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
     callbacks = [ModelCheckpoint(monitor="train/loss_epoch")]
 
     if not sweep:
-        callbacks.extend([ComputeSwavOutputsCallback(), LogDomainsCallback(), EvalCallback()])
+        callbacks.extend(
+            [
+                monitor.ComputeSwavOutputsCallback(),
+                monitor.LogDomainsCallback(),
+                monitor.EvalCallback(),
+                monitor.LogLatent(),
+            ]
+        )
 
     trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
     trainer.fit(model, datamodule=model.datamodule)
