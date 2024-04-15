@@ -12,6 +12,9 @@ pip install -e ".[monitor]"
 
 ## Usage
 
+In the `data` directory, make sure to have `.h5ad` files. You can use the downloading scripts to get public data.
+The corresponding `AnnData` object should contain raw counts, or preprocessed with `normalize_total` and `log1p`.
+
 ### Normal training
 
 Choose a config inside the `config` directory.
