@@ -172,9 +172,7 @@ class Novae(L.LightningModule):
             if sinkhorn:
                 out = self.swav_head.sinkhorn(out)
 
-            adata.obsm[CODES] = utils.fill_invalid_indices(
-                out, adata, datamodule.valid_indices, fill_value=np.nan, dtype=np.float32
-            )
+            adata.obsm[CODES] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices, dtype=np.float32)
 
     @torch.no_grad()
     def edge_scores(self, adata: AnnData | list[AnnData] | None = None) -> None:
