@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 from anndata import AnnData
+from sklearn import metrics
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 from .._constants import ADJ, EPS
 
@@ -34,6 +37,33 @@ def jensen_shannon_divergence(adata: AnnData | list[AnnData], obs_key: str, slid
     ]
 
     return _jensen_shannon_divergence(np.array(distributions))
+
+
+def expressiveness(
+    adata: AnnData, obsm_key: str, obs_key: str, n_components: int = 30, metric: str = "calinski_harabasz_score"
+) -> float:
+    """Spatial domains separation in the latent space. It computes a cluster-separation metric
+    on the latent space (after performing a PCA).
+
+    Args:
+        adata: _description_
+        obsm_key: Key containing the latent embeddings
+        obs_key: Key containing the cluster assignments
+        n_components: Number of components for the PCA
+        metric: Name of the sklearn metric used to evaluate the separation of clusters
+
+    Returns:
+        The expressiveness of the latent space
+    """
+    X = adata.obsm[obsm_key]
+
+    assert X.shape[1] > n_components, f"Latent embedding size ({X.shape[1]}) must be > n_components ({n_components})"
+
+    X = StandardScaler().fit_transform(X)
+    X = PCA(n_components=n_components).fit_transform(X)
+
+    metric_function = getattr(metrics, metric)
+    return metric_function(X, adata.obs[obs_key])
 
 
 def _jensen_shannon_divergence(distributions: np.ndarray) -> float:
