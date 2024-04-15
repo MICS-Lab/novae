@@ -12,9 +12,9 @@ source activate novae
 cd /mnt/beegfs/userdata/q_blampey/novae/scripts
 
 # Get config
-DEFAULT_CONFIG=swav_cpu_0.yaml
-CONFIG=${1:-$DEFAULT_CONFIG}
-echo Running with CONFIG=$CONFIG
+SWEEP_ID=${1}
+AGENT_COUNT=${2:-1}
+echo "Running $AGENT_COUNT sequential agent(s) for SWEEP_ID=$SWEEP_ID"
 
-# Execute training
-python -u train.py --config $CONFIG
+# Run one agent
+wandb agent $SWEEP_ID --count $AGENT_COUNT
