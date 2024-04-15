@@ -63,13 +63,21 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
     count_raw = 0
     count_no_adj = 0
 
+    check_slide_key = True
+    if all(SLIDE_KEY in adata.obs for adata in adatas):
+        sets = [set(adata.obs[SLIDE_KEY].unique()) for adata in adatas]
+        if len(set.union(*sets)) == sum(len(s) for s in sets):
+            check_slide_key = False
+
     for adata in adatas:
-        if slide_key is not None:
+        if check_slide_key and slide_key is not None:
             assert slide_key in adata.obs, f"{slide_key=} must be in all adata.obs"
             values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
             adata.obs[SLIDE_KEY] = values.astype("category")
-        else:
+        elif check_slide_key:
             adata.obs[SLIDE_KEY] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+        else:
+            adata.obs[SLIDE_KEY] = adata.obs[SLIDE_KEY].astype("category")
 
         if adata.X.max() >= 10:
             count_raw += 1

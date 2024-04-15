@@ -15,8 +15,7 @@ def convert_to_h5ad(dataset_dir: Path):
         return
 
     region = "region_0"
-    slide = dataset_dir.name
-    dataset_id = f"{dataset_dir.name}_{region}"
+    slide_id = f"{dataset_dir.name}_{region}"
 
     data_dir = dataset_dir / "cell_by_gene.csv"
     obs_dir = dataset_dir / "cell_metadata.csv"
@@ -28,7 +27,7 @@ def convert_to_h5ad(dataset_dir: Path):
     data = pd.read_csv(data_dir, index_col=0, dtype={"cell": str})
     obs = pd.read_csv(obs_dir, index_col=0, dtype={"EntityID": str})
 
-    obs.index = obs.index.astype(str) + f"_{dataset_id}"
+    obs.index = obs.index.astype(str) + f"_{slide_id}"
     data.index = obs.index
 
     is_gene = ~data.columns.str.lower().str.contains("blank")
@@ -37,8 +36,7 @@ def convert_to_h5ad(dataset_dir: Path):
 
     adata.obsm["spatial"] = adata.obs[["center_x", "center_y"]].values
     adata.obs["region"] = pd.Series(region, index=adata.obs_names, dtype="category")
-    adata.obs["slide"] = pd.Series(slide, index=adata.obs_names, dtype="category")
-    adata.obs["dataset_id"] = pd.Series(dataset_id, index=adata.obs_names, dtype="category")
+    adata.obs["slide_id"] = pd.Series(slide_id, index=adata.obs_names, dtype="category")
 
     adata.X = csr_matrix(adata.X)
     adata.write_h5ad(res_path)

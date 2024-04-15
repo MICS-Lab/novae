@@ -16,10 +16,10 @@ def convert_to_h5ad(dataset_dir: Path):
     adata: anndata.AnnData = _get_tables_and_circles(dataset_dir, False, {"region": "region_0"})
     adata.obs["cell_id"] = adata.obs["cell_id"].apply(lambda x: x if isinstance(x, str) else x.decode("utf-8"))
 
-    dataset_id = dataset_dir.name
-    adata.obs.index = adata.obs["cell_id"].values + f"_{dataset_id}"
+    slide_id = dataset_dir.name
+    adata.obs.index = adata.obs["cell_id"].values + f"_{slide_id}"
 
-    adata.obs["dataset_id"] = pd.Series(dataset_id, index=adata.obs_names, dtype="category")
+    adata.obs["slide_id"] = pd.Series(slide_id, index=adata.obs_names, dtype="category")
 
     adata.write_h5ad(res_path)
 
