@@ -33,10 +33,10 @@ class Novae(L.LightningModule):
         num_layers: int = 10,
         out_channels: int = 64,
         batch_size: int = 512,
-        lr: float = 1e-3,
+        lr: float = 5e-3,
         temperature: float = 0.1,
         num_prototypes: int = 1024,
-        epoch_unfreeze_prototypes: int = 10,
+        epoch_unfreeze_prototypes: int = 3,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -72,7 +72,7 @@ class Novae(L.LightningModule):
         return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
 
     def on_train_start(self):
-        # self.init_prototypes()
+        self.init_prototypes()
         ...  # TODO: remove?
 
     def init_prototypes(self, method="sample"):
