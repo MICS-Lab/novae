@@ -76,8 +76,9 @@ class Novae(L.LightningModule):
         ...  # TODO: remove?
 
     def init_prototypes(self, method="sample"):
-        # TODO: do we keep it?
-        X = self.representation(self.adatas[0], return_res=True)
+        adata = max(self.adatas, key=lambda adata: adata.n_obs)
+
+        X = self.representation(adata, return_res=True)
 
         if method == "kmeans":
             self.swav_head.init_prototypes_kmeans(X)
