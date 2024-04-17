@@ -12,7 +12,7 @@ import wandb
 
 from .._constants import CODES, REPR, SLIDE_KEY, SWAV_CLASSES
 from ..model import Novae
-from ..utils._plot import latent_plot
+from ..utils._plot import partial_umap, plot_partial_umap
 from .eval import expressiveness, jensen_shannon_divergence, mean_pide_score
 
 DEFAULT_N_DOMAINS = [7, 14]
@@ -75,5 +75,6 @@ class LogLatent(Callback):
         representation = np.concatenate([adata.obsm[REPR] for adata in model.adatas])
         adata.obsm[REPR] = representation
 
-        latent_plot(model, adata, color=colors, **self.plot_kwargs)
+        partial_umap(adata)
+        plot_partial_umap(adata, color=colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})
