@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from anndata import AnnData
+from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from torch import nn
 
@@ -39,10 +41,13 @@ class GenesEmbedding(L.LightningModule):
 
         return x @ genes_embeddings
 
-    def pca_init(self, adatas):
+    def pca_init(self, adatas: list[AnnData]):
         # TODO: make it for any number of adatas, with different panel sizes
         log.info("Running PCA embedding initialization")
 
+        adata = adatas[0]
+        X = adata.X.toarray() if issparse(adata.X) else adata.X
+
         pca = PCA(n_components=self.embedding_size)
-        pca.fit(np.array(adatas[0].X, dtype=np.float32))
+        pca.fit(X)
         self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)
