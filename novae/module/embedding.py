@@ -41,9 +41,9 @@ class GenesEmbedding(L.LightningModule):
 
         return x @ genes_embeddings
 
-    def pca_init(self, adatas: list[AnnData]):
+    def pca_init(self, adatas: list[AnnData] | None):
         # TODO: make it for any number of adatas, with different panel sizes
-        if len(adatas):
+        if adatas is not None:
             log.info("Running PCA embedding initialization")
 
             adata = adatas[0]
