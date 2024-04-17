@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 
 import lightning as L
@@ -7,8 +8,10 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, KMeans
 from torch import nn
+
+log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
@@ -42,8 +45,20 @@ class SwavHead(L.LightningModule):
     def use_queue(self) -> bool:
         return self.queue is not None and self.current_epoch >= self.epoch_queue_starts
 
+    def init_prototypes_kmeans(self, X: torch.Tensor):
+        X = X.numpy(force=True)
+        log.info(f"Running Kmeans init on shape {X.shape} for {self.num_prototypes} proto")
+        kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0).fit(X)
+        self.prototypes.data = torch.tensor(kmeans.cluster_centers_.T, device=self.device)
+        log.info("done")
+
+    def init_prototypes_sample(self, X: torch.Tensor):
+        log.info(f"Running sample init on shape {X.shape} for {self.num_prototypes} proto")
+        self.prototypes.data = X[torch.randperm(X.size()[0])[: self.num_prototypes]].detach().clone().T
+        log.info("done")
+
     def normalize_prototypes(self):
-        self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
+        self.prototypes.data = F.normalize(self.prototypes.data, dim=0, p=2)
 
     def forward(self, out1, out2):
         self.normalize_prototypes()

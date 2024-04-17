@@ -79,6 +79,9 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
         else:
             adata.obs[SLIDE_KEY] = adata.obs[SLIDE_KEY].astype("category")
 
+        if adata.X.min() < 0:
+            log.warn(f"Found some negative values in adata.X. It is recommended to have unscaled data (raw or log1p).")
+
         if adata.X.max() >= 10:
             count_raw += 1
 

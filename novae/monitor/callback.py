@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import Callback
 
 import wandb
 
-from .._constants import CODES, SLIDE_KEY, SWAV_CLASSES
+from .._constants import CODES, REPR, SLIDE_KEY, SWAV_CLASSES
 from ..model import Novae
 from ..utils._plot import latent_plot
 from .eval import mean_pide_score
@@ -63,8 +63,8 @@ class LogLatent(Callback):
         obs.reset_index()
         adata = AnnData(obs=obs)
 
-        codes = np.concatenate([adata.obsm[CODES] for adata in model.adatas])
-        adata.obsm[CODES] = codes
+        representation = np.concatenate([adata.obsm[REPR] for adata in model.adatas])
+        adata.obsm[REPR] = representation
 
         latent_plot(model, adata, color=colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})

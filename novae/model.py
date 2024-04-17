@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import utils
-from ._constants import CODES, INT_CONF, REPR, SCORES, SWAV_CLASSES
+from ._constants import CODES, INT_CONF, QC, REPR, SCORES, SWAV_CLASSES
 from .data import LocalAugmentationDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
@@ -46,6 +46,7 @@ class Novae(L.LightningModule):
 
         ### Embeddings
         self.genes_embedding = GenesEmbedding(var_names, embedding_size)
+        self.genes_embedding.pca_init(self.adatas)
 
         ### Modules
         self.backbone = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
@@ -69,6 +70,19 @@ class Novae(L.LightningModule):
 
     def __repr__(self) -> str:
         return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
+
+    def on_train_start(self):
+        self.init_prototypes()
+        ...  # TODO: remove?
+
+    def init_prototypes(self, method="sample"):
+        # TODO: do we keep it?
+        X = self.representation(self.adatas[0], return_res=True)
+
+        if method == "kmeans":
+            self.swav_head.init_prototypes_kmeans(X)
+        if method == "sample":
+            self.swav_head.init_prototypes_sample(X)
 
     def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
         if self.hparams.swav:
@@ -159,19 +173,22 @@ class Novae(L.LightningModule):
         for adata in self.get_adatas(adata):
             datamodule = self.init_datamodule(adata)
 
+            out_rep = []
             out = []
             for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
-                scores = out_ @ self.swav_head.prototypes
 
-                out.append(scores)
+                out_rep.append(out_)
+                out.append(out_ @ self.swav_head.prototypes)
 
+            out_rep = torch.cat(out_rep)
             out = torch.cat(out)
 
             if sinkhorn:
                 out = self.swav_head.sinkhorn(out)
 
+            adata.obsm[REPR] = utils.fill_invalid_indices(out_rep, adata, datamodule.valid_indices, dtype=np.float32)
             adata.obsm[CODES] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices, dtype=np.float32)
 
     @torch.no_grad()
@@ -209,7 +226,7 @@ class Novae(L.LightningModule):
             adata.write_h5ad("results/interactions/results_adata.h5ad")
 
     @torch.no_grad()
-    def representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
+    def representation(self, adata: AnnData | list[AnnData] | None = None, return_res: bool = False) -> None:
         for adata in self.get_adatas(adata):
             datamodule = self.init_datamodule(adata)
 
@@ -220,6 +237,10 @@ class Novae(L.LightningModule):
                 out.append(out_)
 
             out = torch.concat(out, dim=0)
+
+            if return_res:
+                return out
+
             adata.obsm[REPR] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
 
     def get_adatas(self, adata: AnnData | list[AnnData] | None):

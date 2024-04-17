@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from sklearn.decomposition import PCA
 from torch import nn
 
 from ..utils import lower_var_names
@@ -37,3 +38,11 @@ class GenesEmbedding(L.LightningModule):
         genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
         return x @ genes_embeddings
+
+    def pca_init(self, adatas):
+        # TODO: make it for any number of adatas, with different panel sizes
+        log.info("Running PCA embedding initialization")
+
+        pca = PCA(n_components=self.embedding_size)
+        pca.fit(np.array(adatas[0].X, dtype=np.float32))
+        self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)
