@@ -1,6 +1,6 @@
 # general
 EPS = 1e-8
-N_OBS_THRESHOLD = 1_000_000
+N_OBS_THRESHOLD = 100_000_000  # TODO: improve this using total RAM
 DELAUNAY_RADIUS_TH = 100
 
 # anndata general keys
