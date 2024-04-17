@@ -72,7 +72,7 @@ class Novae(L.LightningModule):
         return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
 
     def on_train_start(self):
-        self.init_prototypes()
+        # self.init_prototypes()
         ...  # TODO: remove?
 
     def init_prototypes(self, method="sample"):
