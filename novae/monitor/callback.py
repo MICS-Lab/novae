@@ -13,7 +13,7 @@ import wandb
 from .._constants import CODES, REPR, SLIDE_KEY, SWAV_CLASSES
 from ..model import Novae
 from ..utils._plot import latent_plot
-from .eval import mean_pide_score
+from .eval import expressiveness, jensen_shannon_divergence, mean_pide_score
 
 DEFAULT_N_DOMAINS = [7, 14]
 
@@ -49,7 +49,16 @@ class EvalCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         for k in self.n_domains:
             obs_key = f"{SWAV_CLASSES}_{k}"
-            wandb.log({f"metrics/mean_pide_score_{k}": mean_pide_score(model.adatas, obs_key=obs_key)})
+
+            pide = mean_pide_score(model.adatas, obs_key=obs_key)
+            jsd = jensen_shannon_divergence(model.adatas, obs_key, model.slide_key)
+            expr_calinski = expressiveness(model.adatas, obsm_key=REPR, obs_key=obs_key)
+            expr_dbs = expressiveness(model.adatas, obsm_key=REPR, obs_key=obs_key, metric="davies_bouldin_score")
+
+            wandb.log({f"metrics/mean_pide_score_{k}": pide})
+            wandb.log({f"metrics/jensen_shannon_divergence_{k}": jsd})
+            wandb.log({f"metrics/expressiveness_calinski_{k}": expr_calinski})
+            wandb.log({f"metrics/expressiveness_dbs_{k}": expr_dbs})
 
 
 class LogLatent(Callback):

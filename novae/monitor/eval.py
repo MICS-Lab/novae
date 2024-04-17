@@ -40,7 +40,11 @@ def jensen_shannon_divergence(adata: AnnData | list[AnnData], obs_key: str, slid
 
 
 def expressiveness(
-    adata: AnnData, obsm_key: str, obs_key: str, n_components: int = 30, metric: str = "calinski_harabasz_score"
+    adata: AnnData | list[AnnData],
+    obsm_key: str,
+    obs_key: str,
+    n_components: int = 30,
+    metric: str = "calinski_harabasz_score",
 ) -> float:
     """Spatial domains separation in the latent space. It computes a cluster-separation metric
     on the latent space (after performing a PCA).
@@ -55,7 +59,10 @@ def expressiveness(
     Returns:
         The expressiveness of the latent space
     """
-    X = adata.obsm[obsm_key]
+    if len(adata) == 1:
+        X = adata.obsm[obsm_key]
+    else:
+        X = np.concatenate([adata_.obsm[obsm_key] for adata_ in adata], axis=0)
 
     assert X.shape[1] > n_components, f"Latent embedding size ({X.shape[1]}) must be > n_components ({n_components})"
 
