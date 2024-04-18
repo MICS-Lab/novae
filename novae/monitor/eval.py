@@ -59,10 +59,15 @@ def expressiveness(
     Returns:
         The expressiveness of the latent space
     """
+    if isinstance(adata, AnnData):
+        adata = [adata]
+
     if len(adata) == 1:
         X = adata.obsm[obsm_key]
+        labels = adata.obs[obs_key]
     else:
         X = np.concatenate([adata_.obsm[obsm_key] for adata_ in adata], axis=0)
+        labels = np.concatenate([adata_.obs[obs_key].values for adata_ in adata])
 
     assert X.shape[1] > n_components, f"Latent embedding size ({X.shape[1]}) must be > n_components ({n_components})"
 
@@ -70,7 +75,7 @@ def expressiveness(
     X = PCA(n_components=n_components).fit_transform(X)
 
     metric_function = getattr(metrics, metric)
-    return metric_function(X, adata.obs[obs_key])
+    return metric_function(X, labels)
 
 
 def _jensen_shannon_divergence(distributions: np.ndarray) -> float:
