@@ -52,6 +52,7 @@ def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
                 monitor.LogDomainsCallback(),
                 monitor.EvalCallback(),
                 monitor.LogLatent(),
+                monitor.LogProtoCovCallback(),
             ]
         )
 

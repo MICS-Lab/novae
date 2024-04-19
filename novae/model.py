@@ -245,7 +245,11 @@ class Novae(L.LightningModule):
         model._checkpoint = f"wandb: {name}"
         return model
 
-    def batch_effect_correction(self, adatas: list[AnnData], obs_key: str, index_reference: int | None = None):
+    def batch_effect_correction(
+        self, adata: AnnData | list[AnnData] | None, obs_key: str, index_reference: int | None = None
+    ):
+        adatas = self.get_adatas(adata)
+
         if index_reference is None:
             index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
 

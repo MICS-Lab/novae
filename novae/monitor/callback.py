@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import scanpy as sc
+import seaborn as sns
 from anndata import AnnData
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback
 
 import wandb
 
-from .._constants import REPR, SLIDE_KEY, SWAV_CLASSES
+from .._constants import REPR, REPR_CORRECTED, SLIDE_KEY, SWAV_CLASSES
 from ..model import Novae
 from ..utils._plot import plot_latent
 from .eval import expressiveness, jensen_shannon_divergence, mean_pide_score
@@ -22,6 +22,8 @@ class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
         model.swav_classes()
         model.swav_head.hierarchical_clustering()
+
+        model.batch_effect_correction(None, f"{SWAV_CLASSES}_{DEFAULT_N_DOMAINS[0]}")
 
 
 class LogDomainsCallback(Callback):
@@ -38,6 +40,13 @@ class LogDomainsCallback(Callback):
             obs_key = model.assign_domains(adata, k)
             sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
             wandb.log({f"{obs_key}_{adata.obs[SLIDE_KEY].iloc[0]}": wandb.Image(plt)})
+
+
+class LogProtoCovCallback(Callback):
+    def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
+        C = model.swav_head.prototypes.data.T.numpy()
+        sns.clustermap(np.cov(C))
+        wandb.log({"prototypes_covariance": wandb.Image(plt)})
 
 
 class EvalCallback(Callback):
@@ -69,3 +78,6 @@ class LogLatent(Callback):
         colors = [f"{SWAV_CLASSES}_{k}" for k in DEFAULT_N_DOMAINS] + [SLIDE_KEY]
         plot_latent(model.adatas, colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})
+
+        plot_latent(model.adatas, colors, obsm=REPR_CORRECTED, **self.plot_kwargs)
+        wandb.log({"latent_corrected": wandb.Image(plt)})
