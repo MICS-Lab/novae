@@ -11,6 +11,7 @@ from anndata import AnnData
 from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from torch import nn
+from torch_geometric.data import Data
 
 from ..utils import lower_var_names
 
@@ -35,11 +36,12 @@ class GenesEmbedding(L.LightningModule):
             return torch.tensor(indices, dtype=torch.long, device=self.device)
         return np.array(indices, dtype=np.int16)
 
-    def forward(self, x: torch.Tensor, genes_indices: torch.Tensor) -> torch.Tensor:
-        genes_embeddings = self.embedding(genes_indices)
+    def forward(self, data: Data) -> Data:
+        genes_embeddings = self.embedding(data.genes_indices[0])
         genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
-        return x @ genes_embeddings
+        data.x = data.x @ genes_embeddings
+        return data
 
     def pca_init(self, adatas: list[AnnData] | None):
         if adatas is None:

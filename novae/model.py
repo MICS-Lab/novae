@@ -85,15 +85,32 @@ class Novae(L.LightningModule):
         if method == "sample":
             self.swav_head.init_prototypes_sample(X)
 
-    def training_step(self, batch: tuple[Data, Data, Data], batch_idx: int):
+    def _embed_pyg_data(self, data: Data) -> Data:
+        if self.training:
+            data = self.augmentation(data)
+        return self.genes_embedding(data)
+
+    def _shuffle_pyg_data(self, data: Data) -> Data:
+        shuffled_x = data.x[torch.randperm(data.x.size()[0])]
+        return Data(
+            x=shuffled_x, edge_index=data.edge_index, edge_attr=data.edge_attr, genes_indices=data.genes_indices
+        )
+
+    def training_step(self, batch: dict[str, Data], batch_idx: int):
+        data_main = self._embed_pyg_data(batch["main"])
+
         if self.hparams.swav:
-            x_main = self.backbone.node_x(batch[0])
-            x_ngh = self.backbone.node_x(batch[2])
+            data_ngh = self._embed_pyg_data(batch["neighbor"])
+
+            x_main = self.backbone.node_x(data_main)
+            x_ngh = self.backbone.node_x(data_ngh)
 
             loss = self.swav_head(x_main, x_ngh)
         else:
-            x_main = self.backbone.edge_x(batch[0])
-            x_shuffle = self.backbone.edge_x(batch[1])
+            data_shuffle = self._shuffle_pyg_data(data_main)
+
+            x_main = self.backbone.edge_x(data_main)
+            x_shuffle = self.backbone.edge_x(data_shuffle)
 
             loss = self.bce_loss(x_main, torch.ones_like(x_main, device=x_main.device))
             loss += self.bce_loss(x_shuffle, torch.zeros_like(x_shuffle, device=x_shuffle.device))
@@ -142,12 +159,14 @@ class Novae(L.LightningModule):
         for adata in self.get_adatas(adata):
             datamodule = self.init_datamodule(adata)
 
-            out = torch.concatenate(
-                [
-                    self.backbone.edge_x(batch[0]) - self.backbone.edge_x(batch[1])
-                    for batch in utils.tqdm(datamodule.predict_dataloader())
-                ]
-            )
+            out = []
+            for batch in utils.tqdm(datamodule.predict_dataloader()):
+                data_main = self._embed_pyg_data(batch["main"])
+                data_shuffle = self._shuffle_pyg_data(data_main)
+
+                out.append(self.backbone.edge_x(data_main) - self.backbone.edge_x(data_shuffle))
+
+            out = torch.concatenate(out)
 
             adata.obs[INT_CONF] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
 
@@ -158,7 +177,8 @@ class Novae(L.LightningModule):
 
             out_rep = []
             out = []
-            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
+            for batch in utils.tqdm(datamodule.predict_dataloader()):
+                data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
 
@@ -196,7 +216,8 @@ class Novae(L.LightningModule):
             datamodule = self.init_datamodule(adata)
 
             edge_scores = []
-            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
+            for batch in utils.tqdm(datamodule.predict_dataloader()):
+                data_main = self._embed_pyg_data(batch["main"])
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
 
             adata.obsp[SCORES] = utils.fill_edge_scores(
@@ -214,7 +235,8 @@ class Novae(L.LightningModule):
             datamodule = self.init_datamodule(adata)
 
             out = []
-            for data_main, *_ in utils.tqdm(datamodule.predict_dataloader()):
+            for batch in utils.tqdm(datamodule.predict_dataloader()):
+                data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
                 out.append(out_)

@@ -52,7 +52,7 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
 
         self.genes_embedding = genes_embedding
         self.augmentation = augmentation
-        self.transform = False
+        self.shuffle = False
 
         self.batch_size = batch_size
         self.n_hops = n_hops
@@ -127,13 +127,13 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         return shuffled_obs_ilocs[: self.batch_size * 200]
 
     def __len__(self) -> int:
-        if self.transform:
+        if self.shuffle:
             return len(self.shuffled_obs_ilocs)
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
-        if self.transform:
+        if self.shuffle:
             adata_index, obs_index = self.shuffled_obs_ilocs[index]
         else:
             adata_index, obs_index = self.obs_ilocs[index]
@@ -143,51 +143,39 @@ class LocalAugmentationDatamodule(L.LightningDataModule):
         plausible_nghs = adjacency_pair[obs_index].indices
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
 
-        data, data_shuffled = self.to_pyg_data(adata_index, obs_index, shuffle_pair=True)
+        data = self.to_pyg_data(adata_index, obs_index)
         data_ngh = self.to_pyg_data(adata_index, ngh_index)
 
-        return data, data_shuffled, data_ngh
+        return {"main": data, "neighbor": data_ngh}
 
-    def to_pyg_data(self, adata_index: int, obs_index: int, shuffle_pair: bool = False) -> Data | tuple[Data, Data]:
+    def to_pyg_data(self, adata_index: int, obs_index: int) -> Data | tuple[Data, Data]:
         """Create a PyTorch Geometric Data object for the input cell
 
         Args:
             adata_index: The index of the `AnnData` object
             obs_index: The index of the input cell for the corresponding `AnnData` object
-            shuffle_pair: Whether to also return the shuffled view.
 
         Returns:
-            A Data object (if not `shuffle_pair`), or the Data object and its shuffled view.
+            A Data object
         """
         adjacency_local: csr_matrix = self.adatas[adata_index].obsp[ADJ_LOCAL]
         cells_indices = adjacency_local[obs_index].indices
 
         x, var_names = self.anndata_torch[adata_index, cells_indices]
-        genes_indices = self.genes_embedding.genes_to_indices(var_names)
-
-        if self.transform:
-            x, genes_indices = self.augmentation(x, genes_indices)
-        x = self.genes_embedding(x, genes_indices)
+        genes_indices = self.genes_embedding.genes_to_indices(var_names)[None, :]
 
         adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[cells_indices][:, cells_indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
 
-        data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
-
-        if shuffle_pair:
-            shuffled_x = x[torch.randperm(x.size()[0])]
-            shuffled_data = Data(x=shuffled_x, edge_index=edge_index, edge_attr=edge_attr)
-            return data, shuffled_data
-
-        return data
+        return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
 
     def train_dataloader(self) -> np.Any:
-        self.transform = True
+        self.shuffle = True
         return DataLoader(self, batch_size=self.batch_size, shuffle=False, drop_last=True)
 
     def predict_dataloader(self):
-        self.transform = False
+        self.shuffle = False
         return DataLoader(self, batch_size=self.batch_size, shuffle=False, drop_last=False)
 
 
