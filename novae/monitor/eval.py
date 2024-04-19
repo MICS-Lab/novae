@@ -9,9 +9,9 @@ from sklearn.preprocessing import StandardScaler
 from .._constants import ADJ, EPS
 
 
-def mean_pide_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
+def mean_pide_score(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Mean PIDE over all slides. A low score indicates a great domain continuity."""
-    return np.mean([pide_score(adata_slide, obs_key) for adata_slide in _iter_uid(adata, slide_key)])
+    return np.mean([pide_score(adata, obs_key) for adata in _iter_uid(adatas, slide_key)])
 
 
 def pide_score(adata: AnnData, obs_key: str) -> float:
@@ -21,7 +21,7 @@ def pide_score(adata: AnnData, obs_key: str) -> float:
     return (classes_left.values != classes_right.values).mean()
 
 
-def jensen_shannon_divergence(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
+def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Jensen-Shannon divergence (JSD) over all slides
 
     Args:
@@ -33,14 +33,14 @@ def jensen_shannon_divergence(adata: AnnData | list[AnnData], obs_key: str, slid
         A float corresponding to the JSD
     """
     distributions = [
-        adata_slide.obs[obs_key].value_counts(sort=False).values for adata_slide in _iter_uid(adata, slide_key, obs_key)
+        adata.obs[obs_key].value_counts(sort=False).values for adata in _iter_uid(adatas, slide_key, obs_key)
     ]
 
     return _jensen_shannon_divergence(np.array(distributions))
 
 
 def expressiveness(
-    adata: AnnData | list[AnnData],
+    adatas: AnnData | list[AnnData],
     obsm_key: str,
     obs_key: str,
     n_components: int = 30,
@@ -59,15 +59,15 @@ def expressiveness(
     Returns:
         The expressiveness of the latent space
     """
-    if isinstance(adata, AnnData):
-        adata = [adata]
+    if isinstance(adatas, AnnData):
+        adatas = [adatas]
 
-    if len(adata) == 1:
-        X = adata.obsm[obsm_key]
-        labels = adata.obs[obs_key]
+    if len(adatas) == 1:
+        X = adatas[0].obsm[obsm_key]
+        labels = adatas[0].obs[obs_key]
     else:
-        X = np.concatenate([adata_.obsm[obsm_key] for adata_ in adata], axis=0)
-        labels = np.concatenate([adata_.obs[obs_key].values for adata_ in adata])
+        X = np.concatenate([adata.obsm[obsm_key] for adata in adatas], axis=0)
+        labels = np.concatenate([adata.obs[obs_key].values for adata in adatas])
 
     assert X.shape[1] > n_components, f"Latent embedding size ({X.shape[1]}) must be > n_components ({n_components})"
 
