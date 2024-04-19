@@ -138,8 +138,8 @@ class SwavHead(L.LightningModule):
         """Computes the rotation matrices that transforms the centroids to the centroids_reference along the geodesic.
 
         Args:
-            centroids: An array of size (..., out_channels) of centroids of out_channels
-            centroids_reference: An array of size (..., out_channels) of centroids of out_channels
+            centroids: An array of size (..., out_channels) of centroids of size `out_channels`
+            centroids_reference: An array of size (..., out_channels) of centroids of size `out_channels`
 
         Returns:
             An array of shape (..., out_channels, out_channels) of rotations matrices.

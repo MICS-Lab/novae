@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import utils
-from ._constants import CODES, INT_CONF, QC, REPR, SCORES, SWAV_CLASSES
+from ._constants import INT_CONF, REPR, REPR_CORRECTED, SCORES, SWAV_CLASSES
 from .data import LocalAugmentationDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
@@ -154,24 +154,6 @@ class Novae(L.LightningModule):
     @torch.no_grad()
     def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
-            assert CODES in adata.obsm, "Codes are not computed. Run model.codes() first."
-
-            codes = adata.obsm[CODES]
-            adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
-
-    def predict_step(self, batch):
-        data_main, *_ = batch
-        x_main = self.backbone.node_x(data_main)
-        out = F.normalize(x_main, dim=1, p=2)
-        return out @ self.swav_head.prototypes
-
-    @torch.no_grad()
-    def codes(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        sinkhorn: bool = True,
-    ) -> None:
-        for adata in self.get_adatas(adata):
             datamodule = self.init_datamodule(adata)
 
             out_rep = []
@@ -185,12 +167,12 @@ class Novae(L.LightningModule):
 
             out_rep = torch.cat(out_rep)
             out = torch.cat(out)
-
-            if sinkhorn:
-                out = self.swav_head.sinkhorn(out)
+            out = self.swav_head.sinkhorn(out)
 
             adata.obsm[REPR] = utils.fill_invalid_indices(out_rep, adata, datamodule.valid_indices, dtype=np.float32)
-            adata.obsm[CODES] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices, dtype=np.float32)
+
+            codes = utils.fill_invalid_indices(out, adata, datamodule.valid_indices, dtype=np.float32)
+            adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
     @torch.no_grad()
     def edge_scores(self, adata: AnnData | list[AnnData] | None = None) -> None:
@@ -262,3 +244,33 @@ class Novae(L.LightningModule):
         model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", **kwargs)
         model._checkpoint = f"wandb: {name}"
         return model
+
+    def batch_effect_correction(self, adatas: list[AnnData], obs_key: str, index_reference: int | None = None):
+        if index_reference is None:
+            index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
+
+        # TODO: what if not all classes are in the reference?
+        adata_ref = adatas[index_reference]
+        adata_ref.obsm[REPR_CORRECTED] = adata_ref.obsm[REPR_CORRECTED]
+
+        ref_domains = adata_ref.obs[obs_key]
+        domains = list(np.unique(ref_domains))
+        centroids_reference = np.stack([np.mean(adata_ref.obsm[REPR][ref_domains == d], axis=0) for d in domains])
+
+        for i, adata in enumerate(adatas):
+            if i == index_reference:
+                continue
+
+            centroids = np.stack([np.mean(adata.obsm[REPR][adata.obs[obs_key] == d], axis=0) for d in domains])
+            rotations = self.swav_head.rotations_geodesic(centroids, centroids_reference)
+
+            adata.obsm[REPR_CORRECTED] = np.zeros_like(adata.obsm[REPR])
+
+            for i, d in enumerate(domains):
+                where = adata.obs[obs_key] == d
+
+                coords = adata.obsm[REPR][where]
+                coords = (rotations[i] @ coords.T).T
+                coords /= np.sqrt((coords**2).sum(1))[:, None]
+
+                adata.obsm[REPR_CORRECTED][where] = coords

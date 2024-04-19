@@ -10,9 +10,9 @@ from lightning.pytorch.callbacks import Callback
 
 import wandb
 
-from .._constants import CODES, REPR, SLIDE_KEY, SWAV_CLASSES
+from .._constants import REPR, SLIDE_KEY, SWAV_CLASSES
 from ..model import Novae
-from ..utils._plot import partial_umap, plot_partial_umap
+from ..utils._plot import plot_latent
 from .eval import expressiveness, jensen_shannon_divergence, mean_pide_score
 
 DEFAULT_N_DOMAINS = [7, 14]
@@ -20,7 +20,6 @@ DEFAULT_N_DOMAINS = [7, 14]
 
 class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
-        model.codes()
         model.swav_classes()
         model.swav_head.hierarchical_clustering()
 
@@ -68,13 +67,5 @@ class LogLatent(Callback):
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         colors = [f"{SWAV_CLASSES}_{k}" for k in DEFAULT_N_DOMAINS] + [SLIDE_KEY]
-        obs = pd.concat([adata.obs[colors] for adata in model.adatas], axis=0)
-        obs.reset_index()
-        adata = AnnData(obs=obs)
-
-        representation = np.concatenate([adata.obsm[REPR] for adata in model.adatas])
-        adata.obsm[REPR] = representation
-
-        partial_umap(adata)
-        plot_partial_umap(adata, color=colors, **self.plot_kwargs)
+        plot_latent(model.adatas, colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})

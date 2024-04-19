@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 from umap import UMAP
@@ -30,3 +30,15 @@ def partial_umap(
 def plot_partial_umap(adata: AnnData, **kwargs):
     adata_sub = adata[adata.obsm["X_umap"].sum(1) != 0].copy()
     sc.pl.umap(adata_sub, show=False, **kwargs)
+
+
+def plot_latent(adatas: list[AnnData], colors, obsm: str = REPR, **kwargs):
+    obs = pd.concat([adata.obs[colors] for adata in adatas], axis=0)
+    obs.reset_index()
+    adata = AnnData(obs=obs)
+
+    representation = np.concatenate([adata.obsm[obsm] for adata in adatas])
+    adata.obsm[obsm] = representation
+
+    partial_umap(adata, obsm=obsm)
+    plot_partial_umap(adata, color=colors, **kwargs)
