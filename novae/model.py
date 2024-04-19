@@ -260,7 +260,7 @@ class Novae(L.LightningModule):
 
         # TODO: what if not all classes are in the reference?
         adata_ref = adatas[index_reference]
-        adata_ref.obsm[REPR_CORRECTED] = adata_ref.obsm[REPR_CORRECTED]
+        adata_ref.obsm[REPR_CORRECTED] = adata_ref.obsm[REPR]
 
         ref_domains = adata_ref.obs[obs_key]
         domains = list(np.unique(ref_domains))

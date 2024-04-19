@@ -23,7 +23,10 @@ class ComputeSwavOutputsCallback(Callback):
         model.swav_classes()
         model.swav_head.hierarchical_clustering()
 
-        model.batch_effect_correction(None, f"{SWAV_CLASSES}_{DEFAULT_N_DOMAINS[0]}")
+        for adata in model.adatas:
+            obs_key = model.assign_domains(adata, DEFAULT_N_DOMAINS[0])
+
+        model.batch_effect_correction(None, obs_key)
 
 
 class LogDomainsCallback(Callback):
