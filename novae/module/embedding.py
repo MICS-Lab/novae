@@ -42,15 +42,20 @@ class GenesEmbedding(L.LightningModule):
         return x @ genes_embeddings
 
     def pca_init(self, adatas: list[AnnData] | None):
-        # TODO: make it for any number of adatas, with different panel sizes
         if adatas is None:
             return
 
         log.info("Running PCA embedding initialization")
+
+        if len(adatas) > 1:
+            # TODO: make it for any number of adatas, with different panel sizes
+            log.warn("Shared PCA not implemented yet")
 
         adata = adatas[0]
         X = adata.X.toarray() if issparse(adata.X) else adata.X
 
         pca = PCA(n_components=self.embedding_size)
         pca.fit(X.astype(np.float32))
-        self.embedding.weight.data = torch.tensor(pca.components_.T, device=self.device)
+
+        indices = self.genes_to_indices(adata.var_names)
+        self.embedding.weight.data[indices] = torch.tensor(pca.components_.T, device=self.device)

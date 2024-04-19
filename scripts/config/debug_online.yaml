@@ -1,11 +1,12 @@
 data:
-  train_dataset: sdm_bench
-  eval_dataset: sdm_bench
+  train_dataset: dummy2
+  eval_dataset: false
 
 model_kwargs:
   n_hops: 2
   n_intermediate: 4
   heads: 4
+  embedding_size: 30
 
 trainer_kwargs:
   max_epochs: 1
