@@ -245,6 +245,11 @@ class Novae(L.LightningModule):
         model._checkpoint = f"wandb: {name}"
         return model
 
+    def _get_centroids(self, adata: AnnData, domains: list[str], obs_key: str):
+        centroids = np.stack([np.mean(adata.obsm[REPR][adata.obs[obs_key] == d], axis=0) for d in domains])
+        centroids /= np.sqrt((centroids**2).sum(-1, keepdims=True))
+        return centroids
+
     def batch_effect_correction(
         self, adata: AnnData | list[AnnData] | None, obs_key: str, index_reference: int | None = None
     ):
@@ -259,13 +264,13 @@ class Novae(L.LightningModule):
 
         ref_domains = adata_ref.obs[obs_key]
         domains = list(np.unique(ref_domains))
-        centroids_reference = np.stack([np.mean(adata_ref.obsm[REPR][ref_domains == d], axis=0) for d in domains])
+        centroids_reference = self._get_centroids(adata_ref, domains, obs_key)
 
         for i, adata in enumerate(adatas):
             if i == index_reference:
                 continue
 
-            centroids = np.stack([np.mean(adata.obsm[REPR][adata.obs[obs_key] == d], axis=0) for d in domains])
+            centroids = self._get_centroids(adata, domains, obs_key)
             rotations = self.swav_head.rotations_geodesic(centroids, centroids_reference)
 
             adata.obsm[REPR_CORRECTED] = np.zeros_like(adata.obsm[REPR])
