@@ -1,1 +1,1 @@
-from .datamodule import LocalAugmentationDatamodule
+from .datamodule import NovaeDatamodule

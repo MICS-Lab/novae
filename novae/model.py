@@ -12,7 +12,7 @@ from torch_geometric.data import Data
 
 from . import utils
 from ._constants import INT_CONF, REPR, REPR_CORRECTED, SCORES, SWAV_CLASSES
-from .data import LocalAugmentationDatamodule
+from .data import NovaeDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class Novae(L.LightningModule):
         self._checkpoint = None
 
     @property
-    def datamodule(self) -> LocalAugmentationDatamodule:
+    def datamodule(self) -> NovaeDatamodule:
         assert hasattr(self, "_datamodule"), "The datamodule was not initialized. Please provide an `adata` object."
         return self._datamodule
 
@@ -136,10 +136,9 @@ class Novae(L.LightningModule):
         else:
             raise ValueError(f"Invalid type {type(adata)} for argument adata")
 
-        return LocalAugmentationDatamodule(
+        return NovaeDatamodule(
             adatas,
             self.genes_embedding,
-            augmentation=self.augmentation,
             batch_size=self.hparams.batch_size,
             n_hops=self.hparams.n_hops,
             n_intermediate=self.hparams.n_intermediate,
@@ -148,7 +147,7 @@ class Novae(L.LightningModule):
     def on_train_epoch_start(self):
         self.swav_head.prototypes.requires_grad = self.current_epoch >= self.hparams.epoch_unfreeze_prototypes
 
-        self.datamodule.shuffle_obs_ilocs()
+        self.datamodule.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
@@ -168,7 +167,7 @@ class Novae(L.LightningModule):
 
             out = torch.concatenate(out)
 
-            adata.obs[INT_CONF] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
+            adata.obs[INT_CONF] = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices)
 
     @torch.no_grad()
     def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
@@ -189,9 +188,11 @@ class Novae(L.LightningModule):
             out = torch.cat(out)
             out = self.swav_head.sinkhorn(out)
 
-            adata.obsm[REPR] = utils.fill_invalid_indices(out_rep, adata, datamodule.valid_indices, dtype=np.float32)
+            adata.obsm[REPR] = utils.fill_invalid_indices(
+                out_rep, adata, datamodule.dataset.valid_indices, dtype=np.float32
+            )
 
-            codes = utils.fill_invalid_indices(out, adata, datamodule.valid_indices, dtype=np.float32)
+            codes = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices, dtype=np.float32)
             adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
     @torch.no_grad()
@@ -223,7 +224,7 @@ class Novae(L.LightningModule):
             adata.obsp[SCORES] = utils.fill_edge_scores(
                 edge_scores,
                 adata,
-                datamodule.valid_indices,
+                datamodule.dataset.valid_indices,
                 fill_value=np.nan,
                 dtype=np.float32,
             )
@@ -246,7 +247,7 @@ class Novae(L.LightningModule):
             if return_res:
                 return out
 
-            adata.obsm[REPR] = utils.fill_invalid_indices(out, adata, datamodule.valid_indices)
+            adata.obsm[REPR] = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices)
 
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
