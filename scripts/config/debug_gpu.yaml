@@ -1,0 +1,15 @@
+data:
+  train_dataset: sdm_bench
+  eval_dataset: sdm_bench
+
+model_kwargs:
+  n_hops: 2
+  n_intermediate: 4
+  heads: 4
+
+trainer_kwargs:
+  max_epochs: 1
+  accelerator: "gpu"
+
+wandb_init_kwargs:
+  mode: "disabled"
