@@ -47,13 +47,6 @@ class SwavHead(L.LightningModule):
     def use_queue(self) -> bool:
         return self.queue is not None and self.current_epoch >= self.epoch_queue_starts
 
-    def init_prototypes_kmeans(self, X: torch.Tensor):
-        X = X.numpy(force=True)
-        log.info(f"Running Kmeans init on shape {X.shape} for {self.num_prototypes} proto")
-        kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0).fit(X)
-        self.prototypes.data = torch.tensor(kmeans.cluster_centers_.T, device=self.device)
-        log.info("done")
-
     def init_prototypes_sample(self, X: torch.Tensor):
         log.info(f"Running sample init on shape {X.shape} for {self.num_prototypes} proto")
         self.prototypes.data = X[torch.randperm(X.size()[0])[: self.num_prototypes]].detach().clone().T

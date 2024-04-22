@@ -37,6 +37,7 @@ class Novae(L.LightningModule):
         temperature: float = 0.1,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
+        init_prototypes: str | bool = False,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -72,17 +73,9 @@ class Novae(L.LightningModule):
         return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
 
     def on_train_start(self):
-        # self.init_prototypes()
-        ...  # TODO: remove?
-
-    def init_prototypes(self, method="sample"):
-        adata = max(self.adatas, key=lambda adata: adata.n_obs)
-
-        X = self.representation(adata, return_res=True)
-
-        if method == "kmeans":
-            self.swav_head.init_prototypes_kmeans(X)
-        if method == "sample":
+        if self.hparams.init_prototypes:
+            adata = max(self.adatas, key=lambda adata: adata.n_obs)
+            X = self.representation(adata, return_res=True)
             self.swav_head.init_prototypes_sample(X)
 
     def _embed_pyg_data(self, data: Data) -> Data:
@@ -160,7 +153,7 @@ class Novae(L.LightningModule):
 
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, 0)
+                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
                 data_shuffle = self._shuffle_pyg_data(data_main)
 
@@ -178,7 +171,7 @@ class Novae(L.LightningModule):
             out_rep = []
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, 0)
+                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
@@ -220,7 +213,7 @@ class Novae(L.LightningModule):
 
             edge_scores = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, 0)
+                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
 
@@ -240,7 +233,7 @@ class Novae(L.LightningModule):
 
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, 0)
+                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
