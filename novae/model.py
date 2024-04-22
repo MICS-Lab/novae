@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import utils
-from ._constants import INT_CONF, REPR, REPR_CORRECTED, SCORES, SWAV_CLASSES
+from ._constants import EPS, INT_CONF, REPR, REPR_CORRECTED, SCORES, SWAV_CLASSES
 from .data import NovaeDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
@@ -279,7 +279,7 @@ class Novae(L.LightningModule):
 
         centroids = np.stack(centroids)
         is_valid = np.array(is_valid)
-        centroids /= np.linalg.norm(centroids, ord=2, axis=-1, keepdims=True)
+        centroids /= np.linalg.norm(centroids, ord=2, axis=-1, keepdims=True) + EPS
 
         return centroids, is_valid
 
@@ -319,6 +319,6 @@ class Novae(L.LightningModule):
 
                 coords = adata.obsm[REPR][where]
                 coords = (rotations[j] @ coords.T).T
-                coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True)
+                coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + EPS
 
                 adata.obsm[REPR_CORRECTED][where] = coords
