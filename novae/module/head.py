@@ -11,6 +11,8 @@ import torch.nn.functional as F
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from torch import nn
 
+from .._constants import EPS
+
 log = logging.getLogger(__name__)
 
 
@@ -148,7 +150,7 @@ class SwavHead(L.LightningModule):
 
         cos = (centroids * centroids_reference).sum(-1)
         sin = np.sin(np.arccos(cos))
-        gamma = (cos - 1) / sin**2
+        gamma = (cos - 1) / (sin + EPS) ** 2
 
         sum_centroids = centroids_reference + centroids
 
