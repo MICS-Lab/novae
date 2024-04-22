@@ -1,5 +1,5 @@
 data:
-  train_dataset: igr
+  train_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
   eval_dataset: false
 
 model_kwargs:
@@ -8,6 +8,5 @@ model_kwargs:
   heads: 4
 
 trainer_kwargs:
-  max_epochs: 40
-  log_every_n_steps: 10
-  accelerator: "cuda"
+  max_epochs: 30
+  accelerator: "gpu"
