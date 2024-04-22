@@ -291,7 +291,6 @@ class Novae(L.LightningModule):
         if index_reference is None:
             index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
 
-        # TODO: what if not all classes are in the reference?
         adata_ref = adatas[index_reference]
         adata_ref.obsm[REPR_CORRECTED] = adata_ref.obsm[REPR]
 
