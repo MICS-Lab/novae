@@ -47,7 +47,7 @@ class LogDomainsCallback(Callback):
 
 class LogProtoCovCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
-        C = model.swav_head.prototypes.data.T.numpy()
+        C = model.swav_head.prototypes.data.T.numpy(force=True)
         sns.clustermap(np.cov(C))
         wandb.log({"prototypes_covariance": wandb.Image(plt)})
 
