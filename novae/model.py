@@ -160,7 +160,7 @@ class Novae(L.LightningModule):
 
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch)
+                batch = self.transfer_batch_to_device(batch, self.device, 0)
                 data_main = self._embed_pyg_data(batch["main"])
                 data_shuffle = self._shuffle_pyg_data(data_main)
 
@@ -178,7 +178,7 @@ class Novae(L.LightningModule):
             out_rep = []
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch)
+                batch = self.transfer_batch_to_device(batch, self.device, 0)
                 data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
@@ -220,7 +220,7 @@ class Novae(L.LightningModule):
 
             edge_scores = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch)
+                batch = self.transfer_batch_to_device(batch, self.device, 0)
                 data_main = self._embed_pyg_data(batch["main"])
                 edge_scores += self.backbone.edge_x(data_main, return_weights=True)
 
@@ -240,7 +240,7 @@ class Novae(L.LightningModule):
 
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch)
+                batch = self.transfer_batch_to_device(batch, self.device, 0)
                 data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
