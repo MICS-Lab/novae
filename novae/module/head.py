@@ -22,7 +22,7 @@ class SwavHead(L.LightningModule):
         out_channels: int,
         num_prototypes: int,
         temperature: float = 0.1,
-        queue_size: int = 1000,
+        queue_size: int | None = None,
         epoch_queue_starts: int = 20,
     ):
         super().__init__()
