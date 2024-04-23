@@ -46,11 +46,12 @@ def train(
 
     model = novae.Novae(adatas, **config.get("model_kwargs", {}))
 
-    callbacks = [ModelCheckpoint(monitor="train/loss_epoch"), monitor.ValidationCallback(adatas_val)]
+    callbacks = [monitor.ValidationCallback(adatas_val)]
 
     if not sweep:
         callbacks.extend(
             [
+                ModelCheckpoint(monitor="train/loss_epoch"),
                 monitor.ComputeSwavOutputsCallback(),
                 monitor.LogDomainsCallback(),
                 monitor.EvalCallback(),
