@@ -33,7 +33,7 @@ class Novae(L.LightningModule):
         num_layers: int = 10,
         out_channels: int = 64,
         batch_size: int = 512,
-        lr: float = 5e-3,
+        lr: float = 1e-3,
         temperature: float = 0.1,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
