@@ -119,7 +119,7 @@ class NeighborhoodDataset:
         obs_indices = batched_obs_indices[permutation].flatten()
         shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
 
-        return shuffled_obs_ilocs
+        return shuffled_obs_ilocs[: self.batch_size * 200]
 
     def __len__(self) -> int:
         if self.shuffle:

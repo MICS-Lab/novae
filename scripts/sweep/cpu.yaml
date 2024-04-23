@@ -1,0 +1,35 @@
+method: random
+metric:
+  goal: minimize
+  name: metrics/val_mean_pide_score
+parameters:
+  embedding_size:
+    values: [32, 64, 128]
+  heads:
+    values: [1, 4, 8]
+  init_prototypes:
+    values: [true, false]
+  epoch_unfreeze_prototypes:
+    values: [0, 1, 2, 4, 8]
+  num_prototypes:
+    values: [256, 512, 1024, 2048]
+  temperature:
+    values: [0.05, 0.1, 0.2, 0.5]
+  batch_size:
+    values: [128, 512, 2048]
+  out_channels:
+    values: [32, 64, 128]
+  num_layers:
+    values: [4, 8, 12]
+  hidden_channels:
+    values: [32, 64, 128]
+  lr:
+    min: 0.0001
+    max: 0.01
+
+command:
+  - python
+  - train.py
+  - --config
+  - swav_cpu_0.yaml
+  - --sweep
