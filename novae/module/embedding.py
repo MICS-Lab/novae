@@ -56,6 +56,10 @@ class GenesEmbedding(L.LightningModule):
         adata = adatas[0]
         X = adata.X.toarray() if issparse(adata.X) else adata.X
 
+        if X.shape[1] <= self.embedding_size:
+            log.warn(f"PCA with {self.embedding_size} components can not be run on shape {X.shape}")
+            return
+
         pca = PCA(n_components=self.embedding_size)
         pca.fit(X.astype(np.float32))
 
