@@ -69,7 +69,7 @@ class ValidationCallback(Callback):
             wandb.log({f"val_{obs_key}_{adata.obs[SLIDE_KEY].iloc[0]}": wandb.Image(plt)})
 
         pide = mean_pide_score(self.adatas, obs_key=obs_key)
-        model.log(f"metrics/val_mean_pide_score", pide)
+        model.log("metrics/val_mean_pide_score", pide)
 
 
 class EvalCallback(Callback):
