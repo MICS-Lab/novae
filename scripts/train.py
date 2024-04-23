@@ -19,16 +19,19 @@ import wandb
 from novae import log, monitor
 
 
-def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
+def train(
+    adatas: list[AnnData], config: dict, project: str, sweep: bool = False, adatas_val: list[AnnData] | None = None
+):
     """Train Novae on adata. This function can be used inside wandb sweeps.
 
     If `sweep is True`, the sweep parameters will update the `model_kwargs` from the YAML config.
 
     Args:
-        adata: One or multiple AnnData objects
+        adatas: List of AnnData objects
         config: The config dict corresponding to a YAML file inside the `config` directory
         project: Name of the wandb project
         sweep: Whether we are running wandb sweeps or not
+        adatas_val: List of AnnData objects used for validation
     """
     wandb.init(project=project, **config.get("wandb_init_kwargs", {}))
 
@@ -41,7 +44,7 @@ def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
     config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]
     wandb_logger.experiment.config.update(config_flat)
 
-    model = novae.Novae(adata, **config.get("model_kwargs", {}))
+    model = novae.Novae(adatas, **config.get("model_kwargs", {}))
 
     callbacks = [ModelCheckpoint(monitor="train/loss_epoch")]
 
@@ -53,6 +56,7 @@ def train(adata: AnnData, config: dict, project: str, sweep: bool = False):
                 monitor.EvalCallback(),
                 monitor.LogLatent(),
                 monitor.LogProtoCovCallback(),
+                monitor.ValidationCallback(adatas_val),
             ]
         )
 
@@ -79,13 +83,17 @@ def main(args: argparse.Namespace) -> None:
     """
     config = _read_config(args.config)
 
-    adata = novae.utils._load_dataset(config["data"]["train_dataset"])
+    train_dataset_path = config["data"]["train_dataset"]
+    adatas = novae.utils._load_dataset(train_dataset_path)
+
+    val_dataset_path = config["data"]["val_dataset"]
+    adatas_val = novae.utils._load_dataset(val_dataset_path) if val_dataset_path else None
 
     mode = _get_training_mode(config)
     project = f"novae_{mode}"
     log.info(f"Training mode: {mode}")
 
-    train(adata, config, project, sweep=args.sweep)
+    train(adatas, config, project, sweep=args.sweep, adatas_val=adatas_val)
 
 
 if __name__ == "__main__":

@@ -52,6 +52,26 @@ class LogProtoCovCallback(Callback):
         wandb.log({"prototypes_covariance": wandb.Image(plt)})
 
 
+class ValidationCallback(Callback):
+    def __init__(self, adatas: list[AnnData] | None):
+        self.adatas = adatas
+
+    def on_train_epoch_end(self, trainer: Trainer, model: Novae):
+        if self.adatas is None:
+            return
+
+        model.swav_classes(self.adatas)
+        model.swav_head.hierarchical_clustering()
+
+        for adata in self.adatas:
+            obs_key = model.assign_domains(adata, DEFAULT_N_DOMAINS[0])
+            sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
+            wandb.log({f"val_{obs_key}_{adata.obs[SLIDE_KEY].iloc[0]}": wandb.Image(plt)})
+
+        pide = mean_pide_score(self.adatas, obs_key=obs_key)
+        model.log({f"metrics/val_mean_pide_score": pide})
+
+
 class EvalCallback(Callback):
     def __init__(self, n_domains=DEFAULT_N_DOMAINS) -> None:
         super().__init__()

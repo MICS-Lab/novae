@@ -1,6 +1,6 @@
 data:
   train_dataset: dummy2
-  eval_dataset: false
+  val_dataset: false
 
 model_kwargs:
   n_hops: 2

@@ -1,6 +1,6 @@
 data:
   train_dataset: sdm_bench
-  eval_dataset: sdm_bench
+  val_dataset: sdm_bench
 
 model_kwargs:
   n_hops: 2

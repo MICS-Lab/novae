@@ -1,6 +1,6 @@
 data:
   train_dataset: example.h5ad
-  eval_dataset: example.h5ad
+  val_dataset: example.h5ad
 
 model_kwargs:
   swav: false

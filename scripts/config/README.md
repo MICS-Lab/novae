@@ -9,7 +9,7 @@ This is a minimal YAML config used to explain its structure. The dataset names a
 ```yaml
 data:
   train_dataset: merscope # training dataset name
-  eval_dataset: xenium # eval dataset name
+  val_dataset: xenium # eval dataset name
 
 model_kwargs: # Novae model kwargs
   heads: 4
