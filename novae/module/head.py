@@ -17,35 +17,17 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    def __init__(
-        self,
-        out_channels: int,
-        num_prototypes: int,
-        temperature: float = 0.1,
-        queue_size: int | None = None,
-        epoch_queue_starts: int = 20,
-    ):
+    def __init__(self, out_channels: int, num_prototypes: int, temperature: float):
         super().__init__()
         self.out_channels = out_channels
         self.num_prototypes = num_prototypes
         self.temperature = temperature
-        self.queue_size = queue_size
-        self.epoch_queue_starts = epoch_queue_starts
-
-        if self.queue_size is not None:
-            self.register_buffer("queue", torch.zeros((self.queue_size, out_channels), dtype=torch.float32))
-        else:
-            self.queue = None
 
         self.prototypes = nn.Parameter(torch.empty((self.out_channels, self.num_prototypes)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
         self.normalize_prototypes()
 
         self.clusters_levels = None
-
-    @property
-    def use_queue(self) -> bool:
-        return self.queue is not None and self.current_epoch >= self.epoch_queue_starts
 
     def init_prototypes_sample(self, X: torch.Tensor):
         log.info(f"Running sample init on shape {X.shape} for {self.num_prototypes} proto")
@@ -64,20 +46,8 @@ class SwavHead(L.LightningModule):
         scores1 = out1 @ self.prototypes
         scores2 = out2 @ self.prototypes
 
-        if self.use_queue:
-            scores_queued1 = torch.cat([scores1.detach(), self.queue @ self.prototypes])
-            scores_queued2 = torch.cat([scores2.detach(), self.queue @ self.prototypes])
-
-            q1 = self.sinkhorn(scores_queued1)[: len(scores1)]
-            q2 = self.sinkhorn(scores_queued2)[: len(scores2)]
-        else:
-            q1 = self.sinkhorn(scores1)
-            q2 = self.sinkhorn(scores2)
-
-        if self.queue is not None:
-            n = len(out1)
-            self.queue[n:] = self.queue[:-n].clone()
-            self.queue[:n] = out1.detach()
+        q1 = self.sinkhorn(scores1)
+        q2 = self.sinkhorn(scores2)
 
         return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
