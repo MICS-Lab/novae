@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from anndata import AnnData
 from scipy.sparse import issparse
 from sklearn.decomposition import PCA
+from sklearn.neighbors import KDTree
 from torch import nn
 from torch_geometric.data import Data
 
@@ -53,7 +54,7 @@ class GenesEmbedding(L.LightningModule):
             # TODO: make it for any number of adatas, with different panel sizes
             log.warn("Shared PCA not implemented yet")
 
-        adata = adatas[0]
+        adata = max(adatas, key=lambda adata: adata.n_vars)
         X = adata.X.toarray() if issparse(adata.X) else adata.X
 
         if X.shape[1] <= self.embedding_size:
@@ -64,4 +65,23 @@ class GenesEmbedding(L.LightningModule):
         pca.fit(X.astype(np.float32))
 
         indices = self.genes_to_indices(adata.var_names)
-        self.embedding.weight.data[indices] = torch.tensor(pca.components_.T, device=self.device)
+        self.embedding.weight.data[indices] = torch.tensor(pca.components_.T)
+
+        known_var_names = lower_var_names(adata.var_names)
+
+        for other_adata in adatas:
+            other_var_names = lower_var_names(other_adata.var_names)
+            where_in = np.isin(other_var_names, known_var_names)
+
+            if where_in.all():
+                continue
+
+            X = other_adata[:, where_in].X.toarray().T
+            Y = other_adata[:, ~where_in].X.toarray().T
+
+            tree = KDTree(X)
+            _, ind = tree.query(Y, k=1)
+            neighbor_indices = self.genes_to_indices(other_adata[:, where_in].var_names[ind])
+
+            indices = self.genes_to_indices(other_adata[:, ~where_in].var_names)
+            self.embedding.weight.data[indices] = self.embedding.weight.data[neighbor_indices].clone()

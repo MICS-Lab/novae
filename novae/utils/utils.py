@@ -103,7 +103,7 @@ def sanity_check(adatas: list[AnnData], slide_key: str = None):
 
 
 def lower_var_names(var_names: pd.Index) -> pd.Index:
-    return var_names.map(lambda s: s.lower())
+    return var_names.str.lower()
 
 
 def lookup_valid_genes(adata: AnnData, vocabulary: set | list[str]):
