@@ -28,7 +28,7 @@ class Novae(L.LightningModule):
         embedding_size: int = 100,
         heads: int = 4,
         n_hops: int = 2,
-        n_intermediate: int = 4,
+        n_intermediate: int = 2,
         hidden_channels: int = 64,
         num_layers: int = 10,
         out_channels: int = 64,
@@ -261,7 +261,7 @@ class Novae(L.LightningModule):
     @classmethod
     def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
         artifact_dir = utils._load_wandb_artifact(name)
-        model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", **kwargs)
+        model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", strict=False, **kwargs)
         model._checkpoint = f"wandb: {name}"
         return model
 
@@ -321,3 +321,10 @@ class Novae(L.LightningModule):
                 coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + EPS
 
                 adata.obsm[REPR_CORRECTED][where] = coords
+
+    def fit(self, adata: AnnData | list[AnnData], **kwargs):
+        self.adatas, _ = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)
+        self._datamodule = self.init_datamodule()
+
+        trainer = L.Trainer(**kwargs)
+        trainer.fit(self, datamodule=self.datamodule)
