@@ -37,7 +37,6 @@ class Novae(L.LightningModule):
         temperature: float = 0.1,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
-        init_prototypes: str | bool = False,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -71,12 +70,6 @@ class Novae(L.LightningModule):
 
     def __repr__(self) -> str:
         return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
-
-    def on_train_start(self):
-        if self.hparams.init_prototypes:
-            adata = max(self.adatas, key=lambda adata: adata.n_obs)
-            X = self.representation(adata, return_res=True)
-            self.swav_head.init_prototypes_sample(X)
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:

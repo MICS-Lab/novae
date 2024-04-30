@@ -29,11 +29,6 @@ class SwavHead(L.LightningModule):
 
         self.clusters_levels = None
 
-    def init_prototypes_sample(self, X: torch.Tensor):
-        log.info(f"Running sample init on shape {X.shape} for {self.num_prototypes} proto")
-        self.prototypes.data = X[torch.randperm(X.size()[0])[: self.num_prototypes]].detach().clone().T
-        log.info("done")
-
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=0, p=2)
 
