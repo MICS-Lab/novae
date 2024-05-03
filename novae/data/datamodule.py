@@ -19,11 +19,11 @@ class NovaeDatamodule(L.LightningDataModule):
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
         batch_size: int,
-        n_hops: int = 2,
-        n_intermediate: int = 4,
+        n_hops_local: int,
+        n_hops_ngh: int,
     ) -> None:
         super().__init__()
-        self.dataset = NeighborhoodDataset(adatas, genes_embedding, batch_size, n_hops, n_intermediate)
+        self.dataset = NeighborhoodDataset(adatas, genes_embedding, batch_size, n_hops_local, n_hops_ngh)
         self.batch_size = batch_size
 
     def train_dataloader(self) -> np.Any:

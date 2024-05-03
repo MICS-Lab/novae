@@ -7,10 +7,10 @@ from torch_geometric.data import Data
 class GraphAugmentation(L.LightningModule):
     def __init__(
         self,
-        panel_dropout: float = 0.2,
-        gene_expression_dropout: float = 0.1,
-        background_noise_lambda: float = 5.0,
-        sensitivity_noise_std: float = 0.05,
+        panel_dropout: float,
+        gene_expression_dropout: float,
+        background_noise_lambda: float,
+        sensitivity_noise_std: float,
     ):
         super().__init__()
         self.save_hyperparameters()

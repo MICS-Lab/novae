@@ -27,8 +27,8 @@ class Novae(L.LightningModule):
         var_names: list[str] = None,
         embedding_size: int = 100,
         heads: int = 4,
-        n_hops: int = 2,
-        n_intermediate: int = 2,
+        n_hops_local: int = 2,
+        n_hops_ngh: int = 3,
         hidden_channels: int = 64,
         num_layers: int = 10,
         out_channels: int = 64,
@@ -37,6 +37,10 @@ class Novae(L.LightningModule):
         temperature: float = 0.1,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
+        panel_dropout: float = 0.2,
+        gene_expression_dropout: float = 0.1,
+        background_noise_lambda: float = 5.0,
+        sensitivity_noise_std: float = 0.05,
     ) -> None:
         super().__init__()
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -51,7 +55,9 @@ class Novae(L.LightningModule):
         ### Modules
         self.backbone = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
-        self.augmentation = GraphAugmentation()
+        self.augmentation = GraphAugmentation(
+            panel_dropout, gene_expression_dropout, background_noise_lambda, sensitivity_noise_std
+        )
 
         ### Losses
         self.bce_loss = nn.BCELoss()
@@ -124,10 +130,10 @@ class Novae(L.LightningModule):
 
         return NovaeDatamodule(
             adatas,
-            self.genes_embedding,
+            genes_embedding=self.genes_embedding,
             batch_size=self.hparams.batch_size,
-            n_hops=self.hparams.n_hops,
-            n_intermediate=self.hparams.n_intermediate,
+            n_hops_local=self.hparams.n_hops_local,
+            n_hops_ngh=self.hparams.n_hops_ngh,
         )
 
     def on_train_epoch_start(self):
@@ -170,7 +176,7 @@ class Novae(L.LightningModule):
                 out_ = F.normalize(x_main, dim=1, p=2)
 
                 out_rep.append(out_)
-                out.append(out_ @ self.swav_head.prototypes)
+                out.append(out_ @ self.swav_head.prototypes.T)
 
             out_rep = torch.cat(out_rep)
             out = torch.cat(out)

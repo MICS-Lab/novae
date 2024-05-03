@@ -23,14 +23,14 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
 
-        self.prototypes = nn.Parameter(torch.empty((self.out_channels, self.num_prototypes)))
+        self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.out_channels)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
         self.normalize_prototypes()
 
         self.clusters_levels = None
 
     def normalize_prototypes(self):
-        self.prototypes.data = F.normalize(self.prototypes.data, dim=0, p=2)
+        self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
     def forward(self, out1, out2):
         self.normalize_prototypes()
@@ -38,8 +38,8 @@ class SwavHead(L.LightningModule):
         out1 = F.normalize(out1, dim=1, p=2)
         out2 = F.normalize(out2, dim=1, p=2)
 
-        scores1 = out1 @ self.prototypes
-        scores2 = out2 @ self.prototypes
+        scores1 = out1 @ self.prototypes.T
+        scores2 = out2 @ self.prototypes.T
 
         q1 = self.sinkhorn(scores1)
         q2 = self.sinkhorn(scores2)
@@ -69,7 +69,7 @@ class SwavHead(L.LightningModule):
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
     def hierarchical_clustering(self):
-        X = self.prototypes.data.T.numpy(force=True)  # shape (n_proto, out_channels)
+        X = self.prototypes.data.numpy(force=True)  # shape (n_proto, out_channels)
 
         clustering = AgglomerativeClustering(
             n_clusters=None,

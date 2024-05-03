@@ -4,8 +4,8 @@ data:
 
 model_kwargs:
   swav: false
-  n_hops: 2
-  n_intermediate: 4
+  n_hops_local: 2
+  n_hops_ngh: 3
   heads: 4
 
 trainer_kwargs:

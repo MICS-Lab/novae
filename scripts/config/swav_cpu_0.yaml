@@ -3,8 +3,8 @@ data:
   val_dataset: igr/202305031337_hBreast-slide-B-4h-photobleach_VMSC09302
 
 model_kwargs:
-  n_hops: 2
-  n_intermediate: 4
+  n_hops_local: 2
+  n_hops_ngh: 3
   heads: 4
 
 trainer_kwargs:

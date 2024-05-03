@@ -3,8 +3,8 @@ data:
   val_dataset: false
 
 model_kwargs:
-  n_hops: 2
-  n_intermediate: 4
+  n_hops_local: 2
+  n_hops_ngh: 3
   heads: 4
   embedding_size: 30
 

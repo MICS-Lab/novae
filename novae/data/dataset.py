@@ -41,8 +41,8 @@ class NeighborhoodDataset(Dataset):
         adatas: list[AnnData],
         genes_embedding: GenesEmbedding,
         batch_size: int,
-        n_hops: int = 2,
-        n_intermediate: int = 4,
+        n_hops_local: int,
+        n_hops_ngh: int,
     ) -> None:
         super().__init__()
         self.adatas = adatas
@@ -52,8 +52,8 @@ class NeighborhoodDataset(Dataset):
         self.shuffle = False
 
         self.batch_size = batch_size
-        self.n_hops = n_hops
-        self.n_intermediate = n_intermediate
+        self.n_hops_local = n_hops_local
+        self.n_hops_ngh = n_hops_ngh
 
         self._init_dataset()
 
@@ -67,8 +67,8 @@ class NeighborhoodDataset(Dataset):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[ADJ]
 
-            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops)
-            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_intermediate)
+            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
+            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_ngh)
             adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
@@ -179,15 +179,15 @@ def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
     return adjacency_local.tocsr()
 
 
-def _to_adjacency_pair(adjacency: csr_matrix, n_intermediate: int) -> csr_matrix:
+def _to_adjacency_pair(adjacency: csr_matrix, n_hops_ngh: int) -> csr_matrix:
     """
     Creates an adjacancy matrix for which all nodes separated by
-    precisely `n_intermediate` nodes are linked.
+    precisely `n_hops_ngh` nodes are linked.
     """
     adjacency_pair: lil_matrix = adjacency.copy().tolil()
     adjacency_pair.setdiag(1)
-    for i in range(n_intermediate):
-        if i == n_intermediate - 1:
+    for i in range(n_hops_ngh - 1):
+        if i == n_hops_ngh - 2:
             adjacency_previous: lil_matrix = adjacency_pair.copy()
         adjacency_pair = adjacency_pair @ adjacency
     adjacency_pair[adjacency_previous.nonzero()] = 0
