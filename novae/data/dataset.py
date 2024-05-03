@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix, lil_matrix
+from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
@@ -21,7 +22,7 @@ from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
 
-class NeighborhoodDataset:
+class NeighborhoodDataset(Dataset):
     """
     Dataset used for training and inference.
 
