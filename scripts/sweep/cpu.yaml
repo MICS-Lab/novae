@@ -6,21 +6,33 @@ parameters:
   embedding_size:
     values: [32, 64, 128]
   heads:
-    values: [1, 4, 8]
+    values: [4, 8, 12]
   epoch_unfreeze_prototypes:
     values: [0, 1, 2, 4, 8]
   num_prototypes:
-    values: [256, 512, 1024, 2048]
+    values: [512, 1024, 2048]
   temperature:
-    values: [0.05, 0.1, 0.2, 0.5]
+    values: [0.05, 0.1, 0.2]
   batch_size:
     values: [128, 512, 2048]
   out_channels:
     values: [32, 64, 128]
   num_layers:
-    values: [4, 8, 12]
+    values: [8, 12, 16]
   hidden_channels:
-    values: [32, 64, 128]
+    values: [64, 128, 256]
+  panel_dropout:
+    min: 0.1
+    max: 0.4
+  gene_expression_dropout:
+    min: 0.1
+    max: 0.3
+  background_noise_lambda:
+    min: 2
+    max: 8
+  sensitivity_noise_std:
+    min: 0.01
+    max: 0.1
   lr:
     min: 0.0001
     max: 0.01
