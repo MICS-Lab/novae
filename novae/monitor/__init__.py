@@ -6,4 +6,4 @@ from .callback import (
     LogProtoCovCallback,
     ValidationCallback,
 )
-from .eval import jensen_shannon_divergence, mean_pide_score, pide_score
+from .eval import jensen_shannon_divergence, mean_fide_score, fide_score

@@ -9,16 +9,31 @@ from sklearn.preprocessing import StandardScaler
 from .._constants import ADJ, EPS
 
 
-def mean_pide_score(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
-    """Mean PIDE over all slides. A low score indicates a great domain continuity."""
-    return np.mean([pide_score(adata, obs_key) for adata in _iter_uid(adatas, slide_key)])
+def mean_fide_score(
+    adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_classes: int | None = None
+) -> float:
+    """Mean FIDE score over all slides. A low score indicates a great domain continuity."""
+    return np.mean([fide_score(adata, obs_key, n_classes=n_classes) for adata in _iter_uid(adatas, slide_key)])
 
 
-def pide_score(adata: AnnData, obs_key: str) -> float:
-    """Percentage of inter-domain edges (PIDE). A low score indicates a great domain continuity."""
+def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> float:
+    """
+    F1-score of intra-domain edges (FIDE). A high score indicates a great domain continuity.
+
+    The F1-score is computed for every class, then all F1-scores are averaged. If some classes
+    are not predicted, the `n_classes` argument allows to pad with zeros before averaging the F1-scores.
+    """
     i_left, i_right = adata.obsp[ADJ].nonzero()
     classes_left, classes_right = adata.obs.iloc[i_left][obs_key], adata.obs.iloc[i_right][obs_key]
-    return (classes_left.values != classes_right.values).mean()
+
+    f1_scores = metrics.f1_score(classes_left, classes_right, average=None)
+
+    if n_classes is None:
+        return f1_scores.mean()
+
+    assert n_classes >= len(f1_scores), f"Expected {n_classes:=}, but found {len(f1_scores)}, which is greater"
+
+    return np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean()
 
 
 def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:

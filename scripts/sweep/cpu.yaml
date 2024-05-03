@@ -1,7 +1,7 @@
 method: random
 metric:
-  goal: minimize
-  name: metrics/val_mean_pide_score
+  goal: maximize
+  name: metrics/val_mean_fide_score
 parameters:
   embedding_size:
     values: [32, 64, 128]
