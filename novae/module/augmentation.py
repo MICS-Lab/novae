@@ -15,7 +15,7 @@ class GraphAugmentation(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.background_noise_distribution = Exponential(torch.tensor(background_noise_lambda))
+        self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda)))
 
     def noise(self, data: Data):
         sample_shape = (data.batch_size, data.x.shape[1])
