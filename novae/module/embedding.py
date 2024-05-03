@@ -50,10 +50,6 @@ class GenesEmbedding(L.LightningModule):
 
         log.info("Running PCA embedding initialization")
 
-        if len(adatas) > 1:
-            # TODO: make it for any number of adatas, with different panel sizes
-            log.warn("Shared PCA not implemented yet")
-
         adata = max(adatas, key=lambda adata: adata.n_vars)
         X = adata.X.toarray() if issparse(adata.X) else adata.X
 

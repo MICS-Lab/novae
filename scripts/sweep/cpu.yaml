@@ -6,7 +6,7 @@ parameters:
   embedding_size:
     values: [32, 64, 128]
   heads:
-    values: [4, 8, 12]
+    values: [4, 8, 16]
   epoch_unfreeze_prototypes:
     values: [0, 1, 2, 4, 8]
   num_prototypes:
@@ -16,7 +16,7 @@ parameters:
   batch_size:
     values: [128, 512, 2048]
   out_channels:
-    values: [32, 64, 128]
+    values: [64, 128, 256]
   num_layers:
     values: [8, 12, 16]
   hidden_channels:
