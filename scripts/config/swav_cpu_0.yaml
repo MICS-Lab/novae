@@ -8,4 +8,4 @@ model_kwargs:
   heads: 4
 
 trainer_kwargs:
-  max_epochs: 20
+  max_epochs: 30
