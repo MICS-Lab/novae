@@ -47,7 +47,7 @@ class Novae(L.LightningModule):
         self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
         self.slide_key = slide_key
 
-        self.save_hyperparameters(ignore=["adata", "slide_key"])
+        self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
         ### Embeddings
         if scgpt_model_dir is None:
@@ -55,6 +55,7 @@ class Novae(L.LightningModule):
             self.genes_embedding.pca_init(self.adatas)
         else:
             self.genes_embedding = GenesEmbedding.from_scgpt_embedding(scgpt_model_dir)
+            self.hparams["embedding_size"] = self.genes_embedding.embedding_size
 
         ### Modules
         self.backbone = GraphEncoder(
