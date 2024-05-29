@@ -8,12 +8,11 @@ import numpy as np
 import pandas as pd
 import scanpy as sc
 from anndata import AnnData
-from scipy.sparse import csr_matrix, lil_matrix
+from scipy.sparse import csr_matrix
 from torch import Tensor
 
 from .._constants import (
     ADJ,
-    ADJ_LOCAL,
     COUNTS_LAYER,
     DELAUNAY_RADIUS_TH,
     IS_KNOWN_GENE_KEY,
@@ -171,38 +170,3 @@ def fill_invalid_indices(
     res = np.full((adata.n_obs, *out.shape[1:]), fill_value, dtype=dtype)
     res[valid_indices] = out
     return res
-
-
-def fill_edge_scores(out: np.ndarray | Tensor, adata: AnnData, valid_indices: list[int]) -> np.ndarray:
-    """
-    Populates the adjacency matrix with edge scores for specified indices.
-
-    This function updates the adjacency matrix stored in an AnnData object with new edge scores.
-    The edge scores are sourced from the 'out' parameter, which is a collection of score matrices
-    corresponding to each index in 'valid_indices'. The function iterates over 'valid_indices',
-    retrieves the relevant score matrix for each index, and updates the adjacency matrix at the
-    specified locations.
-
-    Parameters:
-    - out (np.ndarray | Tensor): A collection of score matrices corresponding to valid indices.
-      Each score matrix 'out[i]' is associated with the 'i'-th index in 'valid_indices'.
-      The type can be either a numpy array or a PyTorch Tensor.
-    - adata (AnnData): An AnnData object containing the original adjacency matrix and additional
-      data structures for analyzing and visualizing high-dimensional data.
-      The adjacency matrix is expected to be stored in `adata.obsp[ADJ]`.
-    - valid_indices (List[int]): A list of indices for which the edge scores in the adjacency
-      matrix will be updated. These indices refer to specific nodes/elements in the dataset
-      represented by the AnnData object.
-
-    Returns:
-    - np.ndarray: The updated adjacency matrix as a CSR (Compressed Sparse Row) matrix.
-      The update is performed in-place, but the function returns the matrix for convenience.
-    """
-    adjacency_scores: lil_matrix = adata.obsp[ADJ].copy().tolil()
-    for i, index in tqdm(enumerate(valid_indices[0]), desc="Evaluation Scores"):
-        indices = adata.obsp[ADJ_LOCAL][index].indices
-        csr_out = out[i].tolil()
-        indices_array = np.array(indices)
-        rows, cols = np.meshgrid(indices_array, indices_array, indexing="ij")
-        adjacency_scores[rows, cols] = csr_out
-    return adjacency_scores.tocsr()

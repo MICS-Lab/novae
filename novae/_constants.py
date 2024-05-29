@@ -21,8 +21,6 @@ N_BATCHES = "n_batches"
 ADATA_INDEX_KEY = "adata_index"
 
 # output keys
-SCORES = "adjacency_scores"
 SWAV_CLASSES = "swav_classes"
 REPR = "representation"
 REPR_CORRECTED = "repr_corrected"
-INT_CONF = "interaction_confidence"

@@ -29,7 +29,7 @@ Choose a sweep config inside the `sweep` directory.
 
 Inside the `scripts` directory, initialize the sweep with:
 ```sh
-wandb sweep --project novae_swav sweep/<NAME>.yaml
+wandb sweep --project novae sweep/<NAME>.yaml
 ```
 
 Run the sweep with:
@@ -42,4 +42,4 @@ wandb agent <SWEEP_ID> --count 1
 In the `slurm` directory:
 - `train.sh` / `train_cpu.sh` for training
 - `download.sh` to download public data
-- `agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae_swav sweep/<NAME>.yaml`)
+- `agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae sweep/<NAME>.yaml`)

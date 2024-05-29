@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import utils
-from ._constants import EPS, INT_CONF, REPR, REPR_CORRECTED, SCORES, SWAV_CLASSES
+from ._constants import EPS, REPR, REPR_CORRECTED, SWAV_CLASSES
 from .data import NovaeDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
@@ -22,7 +22,6 @@ class Novae(L.LightningModule):
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        swav: bool = True,
         slide_key: str = None,
         var_names: list[str] = None,
         embedding_size: int = 100,
@@ -82,7 +81,7 @@ class Novae(L.LightningModule):
         return self._datamodule
 
     def __repr__(self) -> str:
-        return f"Novae model with {self.genes_embedding.voc_size} known genes\n   ├── [swav mode] {self.hparams.swav}\n   └── [checkpoint] {self._checkpoint}"
+        return f"Novae model with {self.genes_embedding.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:
@@ -97,22 +96,12 @@ class Novae(L.LightningModule):
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         data_main = self._embed_pyg_data(batch["main"])
+        data_ngh = self._embed_pyg_data(batch["neighbor"])
 
-        if self.hparams.swav:
-            data_ngh = self._embed_pyg_data(batch["neighbor"])
+        x_main = self.backbone.node_x(data_main)
+        x_ngh = self.backbone.node_x(data_ngh)
 
-            x_main = self.backbone.node_x(data_main)
-            x_ngh = self.backbone.node_x(data_ngh)
-
-            loss = self.swav_head(x_main, x_ngh)
-        else:
-            data_shuffle = self._shuffle_pyg_data(data_main)
-
-            x_main = self.backbone.edge_x(data_main)
-            x_shuffle = self.backbone.edge_x(data_shuffle)
-
-            loss = self.bce_loss(x_main, torch.ones_like(x_main, device=x_main.device))
-            loss += self.bce_loss(x_shuffle, torch.zeros_like(x_shuffle, device=x_shuffle.device))
+        loss = self.swav_head(x_main, x_ngh)
 
         self.log(
             "train/loss",
@@ -153,23 +142,6 @@ class Novae(L.LightningModule):
         return optimizer
 
     @torch.no_grad()
-    def interaction_confidence(self, adata: AnnData | list[AnnData] | None = None) -> None:
-        for adata in self.get_adatas(adata):
-            datamodule = self.init_datamodule(adata)
-
-            out = []
-            for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-                data_main = self._embed_pyg_data(batch["main"])
-                data_shuffle = self._shuffle_pyg_data(data_main)
-
-                out.append(self.backbone.edge_x(data_main) - self.backbone.edge_x(data_shuffle))
-
-            out = torch.concatenate(out)
-
-            adata.obs[INT_CONF] = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices)
-
-    @torch.no_grad()
     def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
         for adata in self.get_adatas(adata):
             datamodule = self.init_datamodule(adata)
@@ -195,42 +167,6 @@ class Novae(L.LightningModule):
 
             codes = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices, dtype=np.float32)
             adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
-
-    @torch.no_grad()
-    def edge_scores(self, adata: AnnData | list[AnnData] | None = None) -> None:
-        """
-        Computes and assigns edge scores to the given AnnData object(s).
-
-        This method processes either a single AnnData object, a list of AnnData objects, or all available
-        AnnData objects, to compute edge scores for each based on the model's backbone predictions.
-        The computed edge scores are then stored within the `obsp` attribute of each respective AnnData
-        object under a predefined key. After computation, the updated AnnData object(s) are saved to disk.
-
-        Parameters:
-        - adata (Union[AnnData, List[AnnData], None], optional): The AnnData object(s) to process. If None,
-          the method retrieves available AnnData objects using the `get_adatas` method. Default is None.
-
-        Returns:
-        - None: The AnnData object(s) are updated in-place and saved to disk. The computed edge scores
-          are stored within the `obsp` attribute of each AnnData object.
-        """
-        for adata in self.get_adatas(adata):
-            datamodule = self.init_datamodule(adata)
-
-            edge_scores = []
-            for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-                data_main = self._embed_pyg_data(batch["main"])
-                edge_scores += self.backbone.edge_x(data_main, return_weights=True)
-
-            adata.obsp[SCORES] = utils.fill_edge_scores(
-                edge_scores,
-                adata,
-                datamodule.dataset.valid_indices,
-                fill_value=np.nan,
-                dtype=np.float32,
-            )
-            adata.write_h5ad("results/interactions/results_adata.h5ad")
 
     @torch.no_grad()
     def representation(self, adata: AnnData | list[AnnData] | None = None, return_res: bool = False) -> None:
