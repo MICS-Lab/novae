@@ -26,6 +26,7 @@ class Novae(L.LightningModule):
         slide_key: str = None,
         var_names: list[str] = None,
         embedding_size: int = 100,
+        scgpt_model_dir: str | None = None,
         heads: int = 4,
         n_hops_local: int = 2,
         n_hops_ngh: int = 3,
@@ -49,11 +50,16 @@ class Novae(L.LightningModule):
         self.save_hyperparameters(ignore=["adata", "slide_key"])
 
         ### Embeddings
-        self.genes_embedding = GenesEmbedding(var_names, embedding_size)
-        self.genes_embedding.pca_init(self.adatas)
+        if scgpt_model_dir is None:
+            self.genes_embedding = GenesEmbedding(var_names, embedding_size)
+            self.genes_embedding.pca_init(self.adatas)
+        else:
+            self.genes_embedding = GenesEmbedding.from_scgpt_embedding(scgpt_model_dir)
 
         ### Modules
-        self.backbone = GraphEncoder(embedding_size, hidden_channels, num_layers, out_channels, heads)
+        self.backbone = GraphEncoder(
+            self.genes_embedding.embedding_size, hidden_channels, num_layers, out_channels, heads
+        )
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
         self.augmentation = GraphAugmentation(
             panel_dropout, gene_expression_dropout, background_noise_lambda, sensitivity_noise_std

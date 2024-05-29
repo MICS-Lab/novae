@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 
 import lightning as L
 import numpy as np
@@ -20,15 +22,52 @@ log = logging.getLogger(__name__)
 
 
 class GenesEmbedding(L.LightningModule):
-    def __init__(self, gene_names: list[str], embedding_size: int) -> None:
+    def __init__(
+        self,
+        gene_names: list[str] | dict[str, int],
+        embedding_size: int | None,
+        embedding: torch.Tensor | None = None,
+    ) -> None:
         super().__init__()
-        self.embedding_size = embedding_size
+        assert (embedding_size is None) ^ (embedding is None), "Either embedding_size or embedding must be provided"
 
-        self.vocabulary = gene_names
+        if isinstance(gene_names, dict):
+            self.gene_to_index = gene_names
+            self.vocabulary = list(gene_names.keys())
+        else:
+            self.vocabulary = gene_names
+            self.gene_to_index = {gene: i for i, gene in enumerate(gene_names)}
+
         self.voc_size = len(self.vocabulary)
-        self.gene_to_index = {gene: i for i, gene in enumerate(self.vocabulary)}
 
-        self.embedding = nn.Embedding(self.voc_size, embedding_size)
+        if embedding is None:
+            self.embedding_size = embedding_size
+            self.embedding = nn.Embedding(self.voc_size, embedding_size)
+        else:
+            self.embedding_size = embedding.size(1)
+            self.embedding = nn.Embedding.from_pretrained(embedding)
+
+    @classmethod
+    def from_scgpt_embedding(cls, scgpt_model_dir: str) -> GenesEmbedding:
+        """Initialize the GenesEmbedding from a scGPT pretrained model directory.
+
+        Args:
+            scgpt_model_dir: Path to a directory containing a `vocab.json` and a `best_model.pt` file.
+
+        Returns:
+            A GenesEmbedding instance.
+        """
+        scgpt_model_dir = Path(scgpt_model_dir)
+
+        vocab_file = scgpt_model_dir / "vocab.json"
+
+        with open(vocab_file, "r") as file:
+            gene_to_index = json.load(file)
+
+        checkpoint = torch.load(scgpt_model_dir / "best_model.pt", map_location=torch.device("cpu"))
+        embedding = checkpoint["encoder.embedding.weight"]
+
+        return cls(gene_to_index, None, embedding=embedding)
 
     def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor:
         indices = [self.gene_to_index[gene] for gene in lower_var_names(gene_names)]
