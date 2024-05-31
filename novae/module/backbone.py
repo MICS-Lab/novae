@@ -4,7 +4,7 @@ import lightning as L
 from torch_geometric.data import Data
 from torch_geometric.nn.models import GAT
 
-from .aggregation import EdgeAttentionAggregation, NodeAttentionAggregation
+from .aggregation import NodeAttentionAggregation
 
 
 class GraphEncoder(L.LightningModule):
@@ -29,7 +29,6 @@ class GraphEncoder(L.LightningModule):
         )
 
         self.node_aggregation = NodeAttentionAggregation(out_channels)
-        self.edge_aggregation = EdgeAttentionAggregation(out_channels, out_channels, heads=heads)
 
     def forward(self, data: Data):
         return self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
@@ -37,7 +36,3 @@ class GraphEncoder(L.LightningModule):
     def node_x(self, data: Data):
         out = self(data)
         return self.node_aggregation(out, index=data.batch)
-
-    def edge_x(self, data: Data, return_weights: bool = False):
-        out = self(data)
-        return self.edge_aggregation(x=out, edge_index=data.edge_index, batch=data.batch, return_weights=return_weights)

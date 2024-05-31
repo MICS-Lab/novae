@@ -62,18 +62,20 @@ class GenesEmbedding(L.LightningModule):
         vocab_file = scgpt_model_dir / "vocab.json"
 
         with open(vocab_file, "r") as file:
-            gene_to_index = json.load(file)
+            gene_to_index: dict[str, int] = json.load(file)
+            gene_to_index = {gene.lower(): index for gene, index in gene_to_index.items()}
 
         checkpoint = torch.load(scgpt_model_dir / "best_model.pt", map_location=torch.device("cpu"))
         embedding = checkpoint["encoder.embedding.weight"]
 
         return cls(gene_to_index, None, embedding=embedding)
 
-    def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor:
+    def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor | np.ndarray:
         indices = [self.gene_to_index[gene] for gene in lower_var_names(gene_names)]
 
         if as_torch:
             return torch.tensor(indices, dtype=torch.long, device=self.device)
+
         return np.array(indices, dtype=np.int16)
 
     def forward(self, data: Data) -> Data:
