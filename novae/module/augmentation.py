@@ -8,7 +8,6 @@ class GraphAugmentation(L.LightningModule):
     def __init__(
         self,
         panel_dropout: float,
-        gene_expression_dropout: float,
         background_noise_lambda: float,
         sensitivity_noise_std: float,
     ):

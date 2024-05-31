@@ -38,7 +38,6 @@ class Novae(L.LightningModule):
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
         panel_dropout: float = 0.2,
-        gene_expression_dropout: float = 0.1,
         background_noise_lambda: float = 5.0,
         sensitivity_noise_std: float = 0.05,
     ) -> None:
@@ -62,9 +61,7 @@ class Novae(L.LightningModule):
             self.genes_embedding.embedding_size, hidden_channels, num_layers, out_channels, heads
         )
         self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
-        self.augmentation = GraphAugmentation(
-            panel_dropout, gene_expression_dropout, background_noise_lambda, sensitivity_noise_std
-        )
+        self.augmentation = GraphAugmentation(panel_dropout, background_noise_lambda, sensitivity_noise_std)
 
         ### Losses
         self.bce_loss = nn.BCELoss()
