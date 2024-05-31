@@ -42,11 +42,8 @@ class Novae(L.LightningModule):
         sensitivity_noise_std: float = 0.05,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
-
         self.slide_key = slide_key
 
-        ### Embedding and adatas
         if scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
             self.genes_embedding = GenesEmbedding(var_names, embedding_size)
@@ -54,7 +51,9 @@ class Novae(L.LightningModule):
         else:
             self.genes_embedding = GenesEmbedding.from_scgpt_embedding(scgpt_model_dir)
             self.hparams["embedding_size"] = self.genes_embedding.embedding_size
-            self.adatas, _ = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)
+            self.adatas, var_names = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)
+
+        self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
         ### Modules
         self.backbone = GraphEncoder(
