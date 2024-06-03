@@ -167,14 +167,14 @@ class NeighborhoodDataset(Dataset):
         return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
 
 
-def _to_adjacency_local(adjacency: csr_matrix, n_hops: int) -> csr_matrix:
+def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:
     """
     Creates an adjancency matrix for which all nodes
-    at a distance inferior to `n_hops` are linked.
+    at a distance inferior to `n_hops_local` are linked.
     """
     adjacency_local: lil_matrix = adjacency.copy().tolil()
     adjacency_local.setdiag(1)
-    for _ in range(n_hops - 1):
+    for _ in range(n_hops_local - 1):
         adjacency_local = adjacency_local @ adjacency
     return adjacency_local.tocsr()
 
@@ -184,6 +184,8 @@ def _to_adjacency_pair(adjacency: csr_matrix, n_hops_ngh: int) -> csr_matrix:
     Creates an adjacancy matrix for which all nodes separated by
     precisely `n_hops_ngh` nodes are linked.
     """
+    assert n_hops_ngh >= 2, f"n_hops_ngh must be greater than 1. Found {n_hops_ngh}."
+
     adjacency_pair: lil_matrix = adjacency.copy().tolil()
     adjacency_pair.setdiag(1)
     for i in range(n_hops_ngh - 1):

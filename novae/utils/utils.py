@@ -16,6 +16,7 @@ from .._constants import (
     COUNTS_LAYER,
     DELAUNAY_RADIUS_TH,
     IS_KNOWN_GENE_KEY,
+    MAX_GENES,
     SLIDE_KEY,
     VAR_MEAN,
     VAR_STD,
@@ -55,6 +56,14 @@ def prepare_adatas(
         var_names = list(genes_union(adatas))
 
     return adatas, var_names
+
+
+def keep_highly_variable_genes(adatas: list[AnnData]):
+    if max(adata.n_obs for adata in adatas) < MAX_GENES:
+        return
+
+    # TODO: if too many genes, keep only HVGs
+    ...
 
 
 def sanity_check(adatas: list[AnnData], slide_key: str = None):
