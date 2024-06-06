@@ -159,31 +159,11 @@ class Novae(L.LightningModule):
             out = self.swav_head.sinkhorn(out)
 
             adata.obsm[REPR] = utils.fill_invalid_indices(
-                out_rep, adata, datamodule.dataset.valid_indices, dtype=np.float32
+                out_rep, adata.n_obs, datamodule.dataset.valid_indices[0], fill_value=0
             )
 
-            codes = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices, dtype=np.float32)
+            codes = utils.fill_invalid_indices(out, adata.n_obs, datamodule.dataset.valid_indices[0])
             adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
-
-    @torch.no_grad()
-    def representation(self, adata: AnnData | list[AnnData] | None = None, return_res: bool = False) -> None:
-        for adata in self.get_adatas(adata):
-            datamodule = self.init_datamodule(adata)
-
-            out = []
-            for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-                data_main = self._embed_pyg_data(batch["main"])
-                x_main = self.backbone.node_x(data_main)
-                out_ = F.normalize(x_main, dim=1, p=2)
-                out.append(out_)
-
-            out = torch.concat(out, dim=0)
-
-            if return_res:
-                return out
-
-            adata.obsm[REPR] = utils.fill_invalid_indices(out, adata, datamodule.dataset.valid_indices)
 
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
