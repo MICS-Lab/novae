@@ -34,7 +34,7 @@ class Novae(L.LightningModule):
         out_channels: int = 64,
         batch_size: int = 512,
         lr: float = 1e-3,
-        temperature: float = 0.1,
+        temperature: float = 0.5,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
         panel_dropout: float = 0.2,
@@ -149,9 +149,9 @@ class Novae(L.LightningModule):
                 batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
                 x_main = self.backbone.node_x(data_main)
+                out_rep.append(x_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
 
-                out_rep.append(out_)
                 out.append(out_ @ self.swav_head.prototypes.T)
 
             out_rep = torch.cat(out_rep)

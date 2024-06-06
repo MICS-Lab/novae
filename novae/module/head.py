@@ -25,7 +25,7 @@ class SwavHead(L.LightningModule):
 
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.out_channels)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
-        # self.normalize_prototypes()
+        self.normalize_prototypes()
 
         self.clusters_levels = None
 
@@ -37,7 +37,7 @@ class SwavHead(L.LightningModule):
         """
         out1, out2: (B x out_channels)
         """
-        # self.normalize_prototypes()
+        self.normalize_prototypes()
 
         out1 = F.normalize(out1, dim=1, p=2)
         out2 = F.normalize(out2, dim=1, p=2)
