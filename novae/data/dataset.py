@@ -172,6 +172,8 @@ def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:
     Creates an adjancency matrix for which all nodes
     at a distance inferior to `n_hops_local` are linked.
     """
+    assert n_hops_local >= 1, f"n_hops_local must be greater than 0. Found {n_hops_local}."
+
     adjacency_local: lil_matrix = adjacency.copy().tolil()
     adjacency_local.setdiag(1)
     for _ in range(n_hops_local - 1):
@@ -184,7 +186,13 @@ def _to_adjacency_pair(adjacency: csr_matrix, n_hops_ngh: int) -> csr_matrix:
     Creates an adjacancy matrix for which all nodes separated by
     precisely `n_hops_ngh` nodes are linked.
     """
-    assert n_hops_ngh >= 2, f"n_hops_ngh must be greater than 1. Found {n_hops_ngh}."
+    assert n_hops_ngh >= 1, f"n_hops_ngh must be greater than 0. Found {n_hops_ngh}."
+
+    if n_hops_ngh == 1:
+        adjacency_pair = adjacency.copy()
+        adjacency_pair.setdiag(0)
+        adjacency_pair.eliminate_zeros()
+        return adjacency_pair
 
     adjacency_pair: lil_matrix = adjacency.copy().tolil()
     adjacency_pair.setdiag(1)
