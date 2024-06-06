@@ -24,11 +24,12 @@ class SwavHead(L.LightningModule):
         self.temperature = temperature
 
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.out_channels)))
-        self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5))
-        self.normalize_prototypes()
+        self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
+        # self.normalize_prototypes()
 
         self.clusters_levels = None
 
+    @torch.no_grad()
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
@@ -36,7 +37,7 @@ class SwavHead(L.LightningModule):
         """
         out1, out2: (B x out_channels)
         """
-        self.normalize_prototypes()
+        # self.normalize_prototypes()
 
         out1 = F.normalize(out1, dim=1, p=2)
         out2 = F.normalize(out2, dim=1, p=2)
@@ -54,12 +55,10 @@ class SwavHead(L.LightningModule):
         """
         out: (B x num_prototypes)
         """
-        Q = out  # - out.max() # remove comment to make it numerically more stable
-        Q = torch.exp(Q / epsilon).t()  # (B x K) for consistency with notations from the paper
+        Q = torch.exp(out / epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
-        B = Q.shape[1]
-        K = Q.shape[0]
+        K, B = Q.shape
 
         for _ in range(sinkhorn_iterations):
             sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
