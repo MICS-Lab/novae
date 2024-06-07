@@ -63,7 +63,7 @@ def _var_or_true(adata: AnnData, key: str) -> pd.Series | bool:
 
 
 def _lookup_highly_variable_genes(adatas: list[AnnData]):
-    if max(adata.n_vars for adata in adatas) < Nums.MAX_GENES:
+    if max(adata.n_vars for adata in adatas) <= Nums.MAX_GENES:
         return
 
     if len(adatas) == 0 or _is_multi_panel(adatas):
