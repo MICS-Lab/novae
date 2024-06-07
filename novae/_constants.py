@@ -29,7 +29,13 @@ class Keys:
 
 
 class Nums:
+    # training constants
     EPS: float = 1e-8
+
+    # default thresholds
+    DELAUNAY_RADIUS_TH: int = 100  # microns
     N_OBS_THRESHOLD: int = 100_000_000  # TODO: improve this using total RAM
-    DELAUNAY_RADIUS_TH: int = 100
+
+    # genes constants
     MAX_GENES: int = 3_000
+    MIN_GENES: int = 20

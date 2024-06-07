@@ -22,16 +22,10 @@ class AnnDataTorch:
         if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
             self.tensors = [torch.tensor(self.array(adata)) for adata in self.adatas]
 
-        self.var_names_list = [self.get_var_names(adata) for adata in self.adatas]
-
-    def get_var_names(self, adata: AnnData) -> pd.Index:
-        if Keys.IS_KNOWN_GENE in adata.var:
-            return adata.var_names[adata.var[Keys.IS_KNOWN_GENE]]
-        return adata.var_names
+        self.var_names_list = [adata.var_names[adata.var[Keys.USE_GENE]] for adata in self.adatas]
 
     def array(self, adata: AnnData) -> np.ndarray:
-        if Keys.IS_KNOWN_GENE in adata.var:
-            adata = adata[:, adata.var[Keys.IS_KNOWN_GENE]]
+        adata = adata[:, adata.var[Keys.USE_GENE]]
 
         X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
         X = X.astype(np.float32)
