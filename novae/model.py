@@ -37,7 +37,7 @@ class Novae(L.LightningModule):
         temperature: float = 0.5,
         num_prototypes: int = 1024,
         epoch_unfreeze_prototypes: int = 3,
-        panel_dropout: float = 0.2,
+        panel_dropout: float = 0.4,
         background_noise_lambda: float = 5.0,
         sensitivity_noise_std: float = 0.05,
     ) -> None:
