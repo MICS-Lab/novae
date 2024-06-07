@@ -10,7 +10,7 @@ from lightning.pytorch.callbacks import Callback
 
 import wandb
 
-from .._constants import REPR, REPR_CORRECTED, SLIDE_KEY, SWAV_CLASSES
+from .._constants import Keys
 from ..model import Novae
 from ..utils._plot import plot_latent
 from .eval import expressiveness, jensen_shannon_divergence, mean_fide_score
@@ -42,7 +42,7 @@ class LogDomainsCallback(Callback):
         for k in n_domains:
             obs_key = model.assign_domains(adata, k)
             sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            wandb.log({f"{obs_key}_{adata.obs[SLIDE_KEY].iloc[0]}": wandb.Image(plt)})
+            wandb.log({f"{obs_key}_{adata.obs[Keys.SLIDE_ID].iloc[0]}": wandb.Image(plt)})
 
 
 class LogProtoCovCallback(Callback):
@@ -68,7 +68,7 @@ class ValidationCallback(Callback):
         for adata in self.adatas:
             obs_key = model.assign_domains(adata, n_classes)
             sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            wandb.log({f"val_{obs_key}_{adata.obs[SLIDE_KEY].iloc[0]}": wandb.Image(plt)})
+            wandb.log({f"val_{obs_key}_{adata.obs[Keys.SLIDE_ID].iloc[0]}": wandb.Image(plt)})
 
         fide = mean_fide_score(self.adatas, obs_key=obs_key, n_classes=n_classes)
         model.log("metrics/val_mean_fide_score", fide)
@@ -81,12 +81,12 @@ class EvalCallback(Callback):
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         for k in self.n_domains:
-            obs_key = f"{SWAV_CLASSES}_{k}"
+            obs_key = f"{Keys.SWAV_CLASSES}_{k}"
 
             fide = mean_fide_score(model.adatas, obs_key=obs_key, n_classes=k)
             jsd = jensen_shannon_divergence(model.adatas, obs_key, model.slide_key)
-            expr_calinski = expressiveness(model.adatas, obsm_key=REPR, obs_key=obs_key)
-            expr_dbs = expressiveness(model.adatas, obsm_key=REPR, obs_key=obs_key, metric="davies_bouldin_score")
+            expr_calinski = expressiveness(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key)
+            expr_dbs = expressiveness(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key, metric="davies_bouldin_score")
 
             wandb.log({f"metrics/mean_fide_score_{k}": fide})
             wandb.log({f"metrics/jensen_shannon_divergence_{k}": jsd})
@@ -100,9 +100,9 @@ class LogLatent(Callback):
         self.plot_kwargs = plot_kwargs
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
-        colors = [f"{SWAV_CLASSES}_{k}" for k in DEFAULT_N_DOMAINS] + [SLIDE_KEY]
+        colors = [f"{Keys.SWAV_CLASSES}_{k}" for k in DEFAULT_N_DOMAINS] + [Keys.SLIDE_ID]
         plot_latent(model.adatas, colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})
 
-        plot_latent(model.adatas, colors, obsm=REPR_CORRECTED, **self.plot_kwargs)
+        plot_latent(model.adatas, colors, obsm=Keys.REPR_CORRECTED, **self.plot_kwargs)
         wandb.log({"latent_corrected": wandb.Image(plt)})

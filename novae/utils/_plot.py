@@ -4,11 +4,11 @@ import scanpy as sc
 from anndata import AnnData
 from umap import UMAP
 
-from .._constants import REPR
+from .._constants import Keys
 
 
 def partial_umap(
-    adata: AnnData, obsm: str = REPR, n_obs: int = 100_000, min_dist: float = 0.5, n_neighbors: int = 30
+    adata: AnnData, obsm: str = Keys.REPR, n_obs: int = 100_000, min_dist: float = 0.5, n_neighbors: int = 30
 ) -> UMAP:
     adata.obsm["X_umap"] = np.zeros((adata.n_obs, 2))
 
@@ -32,7 +32,7 @@ def plot_partial_umap(adata: AnnData, **kwargs):
     sc.pl.umap(adata_sub, show=False, **kwargs)
 
 
-def plot_latent(adatas: list[AnnData], colors, obsm: str = REPR, **kwargs):
+def plot_latent(adatas: list[AnnData], colors, obsm: str = Keys.REPR, **kwargs):
     obs = pd.concat([adata.obs[colors] for adata in adatas], axis=0)
     obs.reset_index()
     adata = AnnData(obs=obs)

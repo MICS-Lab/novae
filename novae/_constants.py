@@ -1,27 +1,35 @@
-# general
-EPS = 1e-8
-N_OBS_THRESHOLD = 100_000_000  # TODO: improve this using total RAM
-DELAUNAY_RADIUS_TH = 100
-MAX_GENES = 2_000
+class Keys:
+    # obs keys
+    SWAV_CLASSES: str = "swav_classes"
+    IS_VALID_OBS: str = "neighborhood_valid"
+    SLIDE_ID: str = "slide_id"
 
-# anndata general keys
-COUNTS_LAYER = "counts"
-VAR_MEAN = "mean"
-VAR_STD = "std"
-IS_KNOWN_GENE_KEY = "in_vocabulary"
+    # obsm keys
+    REPR: str = "representation"
+    REPR_CORRECTED: str = "repr_corrected"
 
-# anndata neighborhood keys
-IS_VALID_KEY = "neighborhood_valid"
-ADJ = "spatial_distances"
-ADJ_LOCAL = "spatial_distances_local"
-ADJ_PAIR = "spatial_distances_pair"
+    # obsp keys
+    ADJ: str = "spatial_distances"
+    ADJ_LOCAL: str = "spatial_distances_local"
+    ADJ_PAIR: str = "spatial_distances_pair"
 
-# torch dataset keys
-SLIDE_KEY = "slide_id"
-N_BATCHES = "n_batches"
-ADATA_INDEX_KEY = "adata_index"
+    # var keys
+    VAR_MEAN: str = "mean"
+    VAR_STD: str = "std"
+    IS_KNOWN_GENE: str = "in_vocabulary"
+    HIGHLY_VARIABLE: str = "highly_variable"
+    USE_GENE: str = "novae_use_gene"
 
-# output keys
-SWAV_CLASSES = "swav_classes"
-REPR = "representation"
-REPR_CORRECTED = "repr_corrected"
+    # layer keys
+    COUNTS_LAYER: str = "counts"
+
+    # misc keys
+    ADATA_INDEX: str = "adata_index"
+    N_BATCHES: str = "n_batches"
+
+
+class Nums:
+    EPS: float = 1e-8
+    N_OBS_THRESHOLD: int = 100_000_000  # TODO: improve this using total RAM
+    DELAUNAY_RADIUS_TH: int = 100
+    MAX_GENES: int = 3_000

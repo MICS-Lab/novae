@@ -6,7 +6,7 @@ from sklearn import metrics
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from .._constants import ADJ, EPS
+from .._constants import Keys, Nums
 
 
 def mean_fide_score(
@@ -23,7 +23,7 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     The F1-score is computed for every class, then all F1-scores are averaged. If some classes
     are not predicted, the `n_classes` argument allows to pad with zeros before averaging the F1-scores.
     """
-    i_left, i_right = adata.obsp[ADJ].nonzero()
+    i_left, i_right = adata.obsp[Keys.ADJ].nonzero()
     classes_left, classes_right = adata.obs.iloc[i_left][obs_key], adata.obs.iloc[i_right][obs_key]
 
     f1_scores = metrics.f1_score(classes_left, classes_right, average=None)
@@ -119,7 +119,7 @@ def _entropy(distribution: np.ndarray) -> float:
     Returns:
         The Shannon entropy
     """
-    return -(distribution * np.log(distribution + EPS)).sum()
+    return -(distribution * np.log(distribution + Nums.EPS)).sum()
 
 
 def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None, obs_key: str | None = None):

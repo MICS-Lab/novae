@@ -9,15 +9,7 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
-from .._constants import (
-    ADATA_INDEX_KEY,
-    ADJ,
-    ADJ_LOCAL,
-    ADJ_PAIR,
-    IS_VALID_KEY,
-    N_BATCHES,
-    SLIDE_KEY,
-)
+from .._constants import Keys
 from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
@@ -65,13 +57,13 @@ class NeighborhoodDataset(Dataset):
 
     def _init_dataset(self):
         for adata in self.adatas:
-            adjacency: csr_matrix = adata.obsp[ADJ]
+            adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
-            adata.obsp[ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
-            adata.obsp[ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_ngh)
-            adata.obs[IS_VALID_KEY] = adata.obsp[ADJ_PAIR].sum(1).A1 > 0
+            adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
+            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_ngh)
+            adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
-        self.valid_indices = [np.where(adata.obs[IS_VALID_KEY])[0] for adata in self.adatas]
+        self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
 
         if len(self.adatas) == 1:
             self.obs_ilocs = np.array([(0, obs_index) for obs_index in self.valid_indices[0]])
@@ -88,10 +80,10 @@ class NeighborhoodDataset(Dataset):
         self.shuffle_obs_ilocs()
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
-        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][SLIDE_KEY].value_counts()
+        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
         slides_metadata = obs_counts.to_frame()
-        slides_metadata[ADATA_INDEX_KEY] = adata_index
-        slides_metadata[N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
+        slides_metadata[Keys.ADATA_INDEX] = adata_index
+        slides_metadata[Keys.N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
         return slides_metadata
 
     def _shuffle_grouped_indices(self):
@@ -99,12 +91,12 @@ class NeighborhoodDataset(Dataset):
         batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
 
         for uid in self.slides_metadata.index:
-            adata_index = self.slides_metadata.loc[uid, ADATA_INDEX_KEY]
+            adata_index = self.slides_metadata.loc[uid, Keys.ADATA_INDEX]
             adata = self.adatas[adata_index]
-            _obs_indices = np.where((adata.obs[SLIDE_KEY] == uid) & adata.obs[IS_VALID_KEY])[0]
+            _obs_indices = np.where((adata.obs[Keys.SLIDE_ID] == uid) & adata.obs[Keys.IS_VALID_OBS])[0]
             _obs_indices = np.random.permutation(_obs_indices)
 
-            n_elements = self.slides_metadata.loc[uid, N_BATCHES] * self.batch_size
+            n_elements = self.slides_metadata.loc[uid, Keys.N_BATCHES] * self.batch_size
             if len(_obs_indices) >= n_elements:
                 _obs_indices = _obs_indices[:n_elements]
             else:
@@ -134,7 +126,7 @@ class NeighborhoodDataset(Dataset):
         else:
             adata_index, obs_index = self.obs_ilocs[index]
 
-        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[ADJ_PAIR]
+        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_PAIR]
 
         plausible_nghs = adjacency_pair[obs_index].indices
         ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
@@ -154,13 +146,13 @@ class NeighborhoodDataset(Dataset):
         Returns:
             A Data object
         """
-        adjacency_local: csr_matrix = self.adatas[adata_index].obsp[ADJ_LOCAL]
+        adjacency_local: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_LOCAL]
         cells_indices = adjacency_local[obs_index].indices
 
         x, var_names = self.anndata_torch[adata_index, cells_indices]
         genes_indices = self.genes_embedding.genes_to_indices(var_names)[None, :]
 
-        adjacency: csr_matrix = self.adatas[adata_index].obsp[ADJ]
+        adjacency: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ]
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[cells_indices][:, cells_indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
 

@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from sklearn.cluster import AgglomerativeClustering
 from torch import Tensor, nn
 
-from .._constants import EPS
+from .._constants import Nums
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class SwavHead(L.LightningModule):
 
         cos = (centroids * centroids_reference).sum(-1)
         sin = np.sin(np.arccos(cos))
-        gamma = (cos - 1) / (sin + EPS) ** 2
+        gamma = (cos - 1) / (sin + Nums.EPS) ** 2
 
         sum_centroids = centroids_reference + centroids
 

@@ -11,7 +11,7 @@ from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import utils
-from ._constants import EPS, REPR, REPR_CORRECTED, SWAV_CLASSES
+from ._constants import Keys, Nums
 from .data import NovaeDatamodule
 from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
 
@@ -158,12 +158,12 @@ class Novae(L.LightningModule):
             out = torch.cat(out)
             out = self.swav_head.sinkhorn(out)
 
-            adata.obsm[REPR] = utils.fill_invalid_indices(
+            adata.obsm[Keys.REPR] = utils.fill_invalid_indices(
                 out_rep, adata.n_obs, datamodule.dataset.valid_indices[0], fill_value=0
             )
 
             codes = utils.fill_invalid_indices(out, adata.n_obs, datamodule.dataset.valid_indices[0])
-            adata.obs[SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
+            adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
     def get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
@@ -172,8 +172,8 @@ class Novae(L.LightningModule):
 
     def assign_domains(self, adata: AnnData, k: int, key_added: str | None = None) -> str:
         if key_added is None:
-            key_added = f"{SWAV_CLASSES}_{k}"
-        adata.obs[key_added] = self.swav_head.assign_classes_level(adata.obs[SWAV_CLASSES], k)
+            key_added = f"{Keys.SWAV_CLASSES}_{k}"
+        adata.obs[key_added] = self.swav_head.assign_classes_level(adata.obs[Keys.SWAV_CLASSES], k)
         log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
         return key_added
 
@@ -190,15 +190,15 @@ class Novae(L.LightningModule):
         for d in domains:
             where = adata.obs[obs_key] == d
             if where.any():
-                centroids.append(np.mean(adata.obsm[REPR][where], axis=0))
+                centroids.append(np.mean(adata.obsm[Keys.REPR][where], axis=0))
                 is_valid.append(True)
             else:
-                centroids.append(np.ones(adata.obsm[REPR].shape[1]))
+                centroids.append(np.ones(adata.obsm[Keys.REPR].shape[1]))
                 is_valid.append(False)
 
         centroids = np.stack(centroids)
         is_valid = np.array(is_valid)
-        centroids /= np.linalg.norm(centroids, ord=2, axis=-1, keepdims=True) + EPS
+        centroids /= np.linalg.norm(centroids, ord=2, axis=-1, keepdims=True) + Nums.EPS
 
         return centroids, is_valid
 
@@ -211,7 +211,7 @@ class Novae(L.LightningModule):
             index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
 
         adata_ref = adatas[index_reference]
-        adata_ref.obsm[REPR_CORRECTED] = adata_ref.obsm[REPR]
+        adata_ref.obsm[Keys.REPR_CORRECTED] = adata_ref.obsm[Keys.REPR]
 
         ref_domains = adata_ref.obs[obs_key]
         domains = list(np.unique(ref_domains))
@@ -227,7 +227,7 @@ class Novae(L.LightningModule):
             centroids, is_valid = self._get_centroids(adata, domains, obs_key)
             rotations = self.swav_head.rotations_geodesic(centroids, centroids_reference)
 
-            adata.obsm[REPR_CORRECTED] = np.zeros_like(adata.obsm[REPR])
+            adata.obsm[Keys.REPR_CORRECTED] = np.zeros_like(adata.obsm[Keys.REPR])
 
             for j, d in enumerate(domains):
                 if not (is_valid[j] and is_valid_ref[j]):
@@ -235,11 +235,11 @@ class Novae(L.LightningModule):
 
                 where = adata.obs[obs_key] == d
 
-                coords = adata.obsm[REPR][where]
+                coords = adata.obsm[Keys.REPR][where]
                 coords = (rotations[j] @ coords.T).T
-                coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + EPS
+                coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + Nums.EPS
 
-                adata.obsm[REPR_CORRECTED][where] = coords
+                adata.obsm[Keys.REPR_CORRECTED][where] = coords
 
     def fit(self, adata: AnnData | list[AnnData], **kwargs):
         self.adatas, _ = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)

@@ -6,7 +6,7 @@ import torch
 from anndata import AnnData
 from torch import Tensor
 
-from .._constants import EPS, IS_KNOWN_GENE_KEY, N_OBS_THRESHOLD
+from .._constants import Keys, Nums
 
 
 class AnnDataTorch:
@@ -19,24 +19,24 @@ class AnnDataTorch:
 
         self.tensors = None
         # Tensors are loaded in-memory for low numbers of cells
-        if sum(adata.n_obs for adata in self.adatas) < N_OBS_THRESHOLD:
+        if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
             self.tensors = [torch.tensor(self.array(adata)) for adata in self.adatas]
 
         self.var_names_list = [self.get_var_names(adata) for adata in self.adatas]
 
     def get_var_names(self, adata: AnnData) -> pd.Index:
-        if IS_KNOWN_GENE_KEY in adata.var:
-            return adata.var_names[adata.var[IS_KNOWN_GENE_KEY]]
+        if Keys.IS_KNOWN_GENE in adata.var:
+            return adata.var_names[adata.var[Keys.IS_KNOWN_GENE]]
         return adata.var_names
 
     def array(self, adata: AnnData) -> np.ndarray:
-        if IS_KNOWN_GENE_KEY in adata.var:
-            adata = adata[:, adata.var[IS_KNOWN_GENE_KEY]]
+        if Keys.IS_KNOWN_GENE in adata.var:
+            adata = adata[:, adata.var[Keys.IS_KNOWN_GENE]]
 
         X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
         X = X.astype(np.float32)
 
-        X = (X - adata.var["mean"].values) / (adata.var["std"].values + EPS)
+        X = (X - adata.var["mean"].values) / (adata.var["std"].values + Nums.EPS)
 
         return X
 
