@@ -4,7 +4,21 @@ OUTPUT_DIR="./xenium"
 
 mkdir -p $OUTPUT_DIR
 
+# Last dataset release date: 2024-05-28
 ZIP_REMOTE_PATHS=(\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Colon_Cancer_P5_CRC_Add_on_FFPE/Xenium_V1_Human_Colon_Cancer_P5_CRC_Add_on_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Colon_Cancer_P2_CRC_Add_on_FFPE/Xenium_V1_Human_Colon_Cancer_P2_CRC_Add_on_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Colon_Cancer_P1_CRC_Add_on_FFPE/Xenium_V1_Human_Colon_Cancer_P1_CRC_Add_on_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_human_Pancreas_FFPE/Xenium_V1_human_Pancreas_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_mouse_Colon_FF/Xenium_V1_mouse_Colon_FF_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hBoneMarrow_acute_lymphoid_leukemia_section/Xenium_V1_hBoneMarrow_acute_lymphoid_leukemia_section_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_mFemur_formic_acid_24hrdecal_section/Xenium_V1_mFemur_formic_acid_24hrdecal_section_outs.zip"\
+    "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/2.0.0/Xenium_V1_Human_Brain_GBM_FFPE/Xenium_V1_Human_Brain_GBM_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Ductal_Adenocarcinoma_FFPE/Xenium_V1_Human_Ductal_Adenocarcinoma_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Colorectal_Cancer_Addon_FFPE/Xenium_V1_Human_Colorectal_Cancer_Addon_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Lung_Cancer_Addon_FFPE/Xenium_V1_Human_Lung_Cancer_Addon_FFPE_outs.zip"\
+    "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/3.0.0/Xenium_Prime_Human_Lymph_Node_Reactive_FFPE/Xenium_Prime_Human_Lymph_Node_Reactive_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/2.0.0/Xenium_V1_Human_Ovarian_Cancer_Addon_FFPE/Xenium_V1_Human_Ovarian_Cancer_Addon_FFPE_outs.zip"\
     "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.9.0/Xenium_V1_hTonsil_reactive_follicular_hyperplasia_section_FFPE/Xenium_V1_hTonsil_reactive_follicular_hyperplasia_section_FFPE_outs.zip"\
     "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hSkin_nondiseased_section_1_FFPE/Xenium_V1_hSkin_nondiseased_section_1_FFPE_outs.zip"\
     "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hLiver_nondiseased_section_FFPE/Xenium_V1_hLiver_nondiseased_section_FFPE_outs.zip"\

@@ -18,7 +18,7 @@ sh scripts/merscope_download.sh
 python scripts/merscope_convert.py
 ```
 
-### Xenium (17 samples)
+### Xenium (20+ samples)
 
 Requirements: a Python environment with `spatialdata-io` installed.
 
@@ -37,3 +37,5 @@ These datasets can be used during training (see the `scripts` directory).
 ## Notes
 - Missing technologies: CosMX, Curio Seeker, Resolve
 - Public institute datasets with [STOmics DB](https://db.cngb.org/stomics/)
+- Some Xenium datasets are available outside of the main "Dataset" page:
+  - https://www.10xgenomics.com/products/visium-hd-spatial-gene-expression/dataset-human-crc
