@@ -27,9 +27,9 @@ class NovaeDatamodule(L.LightningDataModule):
         self.batch_size = batch_size
 
     def train_dataloader(self) -> np.Any:
-        self.dataset.shuffle = True
+        self.dataset.training = True
         return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, drop_last=True)
 
     def predict_dataloader(self):
-        self.dataset.shuffle = False
+        self.dataset.training = False
         return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, drop_last=False)

@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
-from .._constants import Keys
+from .._constants import Keys, Nums
 from ..module import GenesEmbedding
 from .convert import AnnDataTorch
 
@@ -41,7 +41,7 @@ class NeighborhoodDataset(Dataset):
         self.anndata_torch = AnnDataTorch(self.adatas)
         self.genes_embedding = genes_embedding
 
-        self.shuffle = False
+        self.training = False
 
         self.batch_size = batch_size
         self.n_hops_local = n_hops_local
@@ -112,16 +112,16 @@ class NeighborhoodDataset(Dataset):
         obs_indices = batched_obs_indices[permutation].flatten()
         shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
 
-        return shuffled_obs_ilocs[: self.batch_size * 200]
+        return shuffled_obs_ilocs
 
     def __len__(self) -> int:
-        if self.shuffle:
-            return len(self.shuffled_obs_ilocs)
+        if self.training:
+            return min(len(self.shuffled_obs_ilocs), Nums.MAX_DATASET_LENGTH)
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
-        if self.shuffle:
+        if self.training:
             adata_index, obs_index = self.shuffled_obs_ilocs[index]
         else:
             adata_index, obs_index = self.obs_ilocs[index]

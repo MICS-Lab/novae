@@ -31,6 +31,7 @@ class Keys:
 class Nums:
     # training constants
     EPS: float = 1e-8
+    MAX_DATASET_LENGTH = 50_000
 
     # default thresholds
     DELAUNAY_RADIUS_TH: int = 100  # microns
