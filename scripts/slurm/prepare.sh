@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=download
+#SBATCH --job-name=prepare
 #SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
 #SBATCH --mem=40G
 #SBATCH --cpus-per-task=8
@@ -11,4 +11,4 @@ source activate sopa
 
 cd /mnt/beegfs/userdata/q_blampey/novae/data
 
-sh 1_download_all.sh
+python 2_prepare.py
