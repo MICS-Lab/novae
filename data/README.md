@@ -8,7 +8,7 @@ For consistency, all the scripts below need to be executed at the root of this d
 
 ### MERSCOPE (18 samples)
 
-Requirements: the `gsutil` command line should be installed. See [here](https://cloud.google.com/storage/docs/gsutil_install).
+Requirements: the `gsutil` command line should be installed (see [here](https://cloud.google.com/storage/docs/gsutil_install)) and a Python environment with `scanpy`.
 
 ```sh
 # download all MERSCOPE datasets
@@ -30,9 +30,17 @@ sh xenium_download.sh
 python xenium_convert.py
 ```
 
+### All datasets
+
+All above datasets can be downloaded using a single command line. Make sure you have all the requirements listed above.
+
+```sh
+sh 1_download_all.sh
+```
+
 ## Preprocess and prepare for training
 
-Copy all `adata.h5ad` files into a single directory, compute UMAPs, and minor preprocessing.
+The script bellow will copy all `adata.h5ad` files into a single directory, compute UMAPs, and minor preprocessing. See the `argparse` helper of this script for more details.
 
 ```sh
 python 2_prepare.py
@@ -45,5 +53,5 @@ These datasets can be used during training (see the `scripts` directory at the r
 ## Notes
 - Missing technologies: CosMX, Curio Seeker, Resolve
 - Public institute datasets with [STOmics DB](https://db.cngb.org/stomics/)
-- Some Xenium datasets are available outside of the main "Dataset" page:
+- Some Xenium datasets are available outside of the main "10X Datasets" page:
   - https://www.10xgenomics.com/products/visium-hd-spatial-gene-expression/dataset-human-crc
