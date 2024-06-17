@@ -7,7 +7,7 @@
 
 module purge
 module load anaconda3/2020-11
-source activate sopa
+source activate novae
 
 cd /mnt/beegfs/userdata/q_blampey/novae/data
 
