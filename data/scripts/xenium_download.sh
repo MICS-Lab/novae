@@ -44,17 +44,16 @@ do
     OUTPUT_DATASET_ZIP=$OUTPUT_DIR/${DATASET_NAME}
     OUTPUT_DATASET_DIR="${OUTPUT_DATASET_ZIP%.zip}"
 
-    if [ -f $OUTPUT_DATASET_ZIP ]; then
-        echo "File $OUTPUT_DATASET_ZIP already exists"
-    else
-        echo "Donwloading $ZIP_REMOTE_PATH to $OUTPUT_DATASET_ZIP"
-        curl $ZIP_REMOTE_PATH -o $OUTPUT_DATASET_ZIP
-        echo "Successfully donwloaded"
-    fi
-
     if [ -d $OUTPUT_DATASET_DIR ]; then
         echo "Directory $OUTPUT_DATASET_DIR already exists"
     else
+        if [ -f $OUTPUT_DATASET_ZIP ]; then
+            echo "File $OUTPUT_DATASET_ZIP already exists"
+        else
+            echo "Donwloading $ZIP_REMOTE_PATH to $OUTPUT_DATASET_ZIP"
+            curl $ZIP_REMOTE_PATH -o $OUTPUT_DATASET_ZIP
+            echo "Successfully donwloaded"
+        fi
         echo "Unzipping in $OUTPUT_DATASET_DIR"
         mkdir -p $OUTPUT_DATASET_DIR
         unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
