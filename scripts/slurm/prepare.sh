@@ -11,4 +11,4 @@ source activate novae
 
 cd /mnt/beegfs/userdata/q_blampey/novae/data
 
-python 2_prepare.py
+python 2_prepare.py --umap
