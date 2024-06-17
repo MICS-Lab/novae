@@ -12,10 +12,10 @@ Requirements: the `gsutil` command line should be installed. See [here](https://
 
 ```sh
 # download all MERSCOPE datasets
-sh scripts/merscope_download.sh
+sh merscope_download.sh
 
 # convert all datasets to h5ad files
-python scripts/merscope_convert.py
+python merscope_convert.py
 ```
 
 ### Xenium (20+ samples)
@@ -24,15 +24,23 @@ Requirements: a Python environment with `spatialdata-io` installed.
 
 ```sh
 # download all Xenium datasets
-sh scripts/xenium_download.sh
+sh xenium_download.sh
 
 # convert all datasets to h5ad files
-python scripts/xenium_convert.py
+python xenium_convert.py
+```
+
+## Preprocess and prepare for training
+
+Copy all `adata.h5ad` files into a single directory, compute UMAPs, and minor preprocessing.
+
+```sh
+python 2_prepare.py
 ```
 
 ## Usage
 
-These datasets can be used during training (see the `scripts` directory).
+These datasets can be used during training (see the `scripts` directory at the root of the repository).
 
 ## Notes
 - Missing technologies: CosMX, Curio Seeker, Resolve

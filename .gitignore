@@ -26,6 +26,8 @@ novae_*
 data/*
 !data/scripts
 !data/README.md
+!data/*.py
+!data/*.sh
 
 # Results files
 results/*

@@ -40,7 +40,7 @@ def spatial_neighbors(
     """
     assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"
 
-    log.info("Computing delaunay graph (function from squidpy)")
+    log.info("Computing delaunay graph")
 
     if library_key is not None:
         assert adata.obs[library_key].dtype == "category"
