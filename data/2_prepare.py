@@ -13,6 +13,7 @@ DELAUNAY_RADIUS = 100
 
 def preprocess(adata: AnnData, compute_umap: bool = False):
     sc.pp.filter_genes(adata, min_cells=MIN_CELLS)
+    adata.layers["counts"] = adata.X.copy()
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
 
