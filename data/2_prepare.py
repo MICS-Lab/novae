@@ -33,6 +33,7 @@ def main(args):
             print("Reading file", file)
 
             adata = anndata.read_h5ad(file)
+            adata.obs["technology"] = dataset
 
             if "slide_id" not in adata.obs:
                 print("    (no slide_id in obs, skipping)")
