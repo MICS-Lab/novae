@@ -142,8 +142,10 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
         )
 
 
-def lower_var_names(var_names: pd.Index) -> pd.Index:
-    return var_names.str.lower()
+def lower_var_names(var_names: pd.Index | list[str]) -> pd.Index | list[str]:
+    if isinstance(var_names, pd.Index):
+        return var_names.str.lower()
+    return [name.lower() for name in var_names]
 
 
 def _lookup_valid_genes(adata: AnnData, vocabulary: set | list[str] | None):

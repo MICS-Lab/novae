@@ -7,17 +7,20 @@ from anndata import AnnData
 
 import novae
 
+MIN_CELLS = 50
+DELAUNAY_RADIUS = 100
+
 
 def preprocess(adata: AnnData, compute_umap: bool = False):
-    sc.pp.filter_genes(adata, min_cells=50)
+    sc.pp.filter_genes(adata, min_cells=MIN_CELLS)
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
 
     if compute_umap:
-        sc.pp.neighbors(adata, n_pcs=50)
+        sc.pp.neighbors(adata)
         sc.tl.umap(adata)
 
-    novae.utils.spatial_neighbors(adata, radius=[0, 100])
+    novae.utils.spatial_neighbors(adata, radius=[0, DELAUNAY_RADIUS])
 
 
 def main(args):
