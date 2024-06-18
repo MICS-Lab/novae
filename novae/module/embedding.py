@@ -47,6 +47,8 @@ class GenesEmbedding(L.LightningModule):
             self.embedding_size = embedding.size(1)
             self.embedding = nn.Embedding.from_pretrained(embedding)
 
+        self.linear = nn.Linear(self.embedding_size, self.embedding_size)
+
     @classmethod
     def from_scgpt_embedding(cls, scgpt_model_dir: str) -> GenesEmbedding:
         """Initialize the GenesEmbedding from a scGPT pretrained model directory.
@@ -80,6 +82,7 @@ class GenesEmbedding(L.LightningModule):
 
     def forward(self, data: Data) -> Data:
         genes_embeddings = self.embedding(data.genes_indices[0])
+        genes_embeddings = self.linear(genes_embeddings)
         genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
         data.x = data.x @ genes_embeddings
