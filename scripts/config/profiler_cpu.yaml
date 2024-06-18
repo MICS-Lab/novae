@@ -1,0 +1,17 @@
+data:
+  train_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
+  val_dataset: false
+
+model_kwargs:
+  n_hops_local: 2
+  n_hops_ngh: 3
+  hidden_channels: 256
+
+trainer_kwargs:
+  max_epochs: 2
+  log_every_n_steps: 10
+  accelerator: "cpu"
+  profiler: "simple"
+
+wandb_init_kwargs:
+  mode: "disabled"
