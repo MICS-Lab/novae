@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=prepare
 #SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
-#SBATCH --mem=40G
+#SBATCH --mem=160G
 #SBATCH --cpus-per-task=8
 #SBATCH --partition=longq
 
