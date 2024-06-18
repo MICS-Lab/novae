@@ -73,7 +73,7 @@ if __name__ == "__main__":
         "-d",
         "--datasets",
         nargs="+",
-        default=["xenium", "merscope"],
+        default=["xenium", "merscope", "cosmx"],
         help="List of dataset names to concatenate",
     )
     parser.add_argument(
