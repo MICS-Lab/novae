@@ -48,6 +48,10 @@ class GenesEmbedding(L.LightningModule):
             self.embedding = nn.Embedding.from_pretrained(embedding)
 
         self.linear = nn.Linear(self.embedding_size, self.embedding_size)
+        self._init_linear()
+
+    @torch.no_grad()
+    def _init_linear(self):
         self.linear.weight.data.copy_(torch.eye(self.embedding_size))
         self.linear.bias.data.zero_()
 
