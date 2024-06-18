@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import numpy as np
+import scanpy as sc
 from anndata import AnnData
 from sklearn import metrics
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 
 from .._constants import Keys, Nums
 
@@ -54,43 +53,17 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
     return _jensen_shannon_divergence(np.array(distributions))
 
 
-def expressiveness(
-    adatas: AnnData | list[AnnData],
-    obsm_key: str,
-    obs_key: str,
-    n_components: int = 30,
-    metric: str = "calinski_harabasz_score",
-) -> float:
-    """Spatial domains separation in the latent space. It computes a cluster-separation metric
-    on the latent space (after performing a PCA).
-
-    Args:
-        adata: _description_
-        obsm_key: Key containing the latent embeddings
-        obs_key: Key containing the cluster assignments
-        n_components: Number of components for the PCA
-        metric: Name of the sklearn metric used to evaluate the separation of clusters
-
-    Returns:
-        The expressiveness of the latent space
+def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_top_genes: int = 3) -> float:
     """
-    if isinstance(adatas, AnnData):
-        adatas = [adatas]
+    Mean SVG score over all slides. A high score indicates better niche-specific genes, or spatial variable genes.
+    """
+    return np.mean([svg_score(adata, obs_key, n_top_genes=n_top_genes) for adata in _iter_uid(adata, slide_key)])
 
-    if len(adatas) == 1:
-        X = adatas[0].obsm[obsm_key]
-        labels = adatas[0].obs[obs_key]
-    else:
-        X = np.concatenate([adata.obsm[obsm_key] for adata in adatas], axis=0)
-        labels = np.concatenate([adata.obs[obs_key].values for adata in adatas])
 
-    assert X.shape[1] > n_components, f"Latent embedding size ({X.shape[1]}) must be > n_components ({n_components})"
-
-    X = StandardScaler().fit_transform(X)
-    X = PCA(n_components=n_components).fit_transform(X)
-
-    metric_function = getattr(metrics, metric)
-    return metric_function(X, labels)
+def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
+    sc.tl.rank_genes_groups(adata, groupby=obs_key)
+    sub_recarray: np.recarray = adata.uns["rank_genes_groups"]["scores"][:n_top_genes]
+    return np.mean([sub_recarray[field].mean() for field in sub_recarray.dtype.names])
 
 
 def _jensen_shannon_divergence(distributions: np.ndarray) -> float:

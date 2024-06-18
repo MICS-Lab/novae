@@ -13,7 +13,7 @@ import wandb
 from .._constants import Keys
 from ..model import Novae
 from ..utils._plot import plot_latent
-from .eval import expressiveness, jensen_shannon_divergence, mean_fide_score
+from .eval import jensen_shannon_divergence, mean_fide_score, mean_svg_score
 
 DEFAULT_N_DOMAINS = [7, 14]
 
@@ -85,13 +85,11 @@ class EvalCallback(Callback):
 
             fide = mean_fide_score(model.adatas, obs_key=obs_key, n_classes=k)
             jsd = jensen_shannon_divergence(model.adatas, obs_key, model.slide_key)
-            expr_calinski = expressiveness(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key)
-            expr_dbs = expressiveness(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key, metric="davies_bouldin_score")
+            svg = mean_svg_score(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key)
 
             wandb.log({f"metrics/mean_fide_score_{k}": fide})
             wandb.log({f"metrics/jensen_shannon_divergence_{k}": jsd})
-            wandb.log({f"metrics/expressiveness_calinski_{k}": expr_calinski})
-            wandb.log({f"metrics/expressiveness_dbs_{k}": expr_dbs})
+            wandb.log({f"metrics/mean_svg_score_{k}": svg})
 
 
 class LogLatent(Callback):
