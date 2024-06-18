@@ -172,7 +172,7 @@ class InferenceHeadZIE(L.LightningModule):
             The mean negative log-likelihood
         """
         var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.genes_embedding(self.genes_embedding.genes_to_indices(var_names))
+        genes_embeddings = self.genes_embedding.embedding(self.genes_embedding.genes_to_indices(var_names))
 
         pi_logits, lambda_logits = self(z, genes_embeddings)
 
@@ -198,7 +198,7 @@ class InferenceHeadBaseline(L.LightningModule):
 
     def loss(self, x: Tensor, z: Tensor, var_names: str | list[str]) -> Tensor:
         var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.genes_embedding(self.genes_embedding.genes_to_indices(var_names))
+        genes_embeddings = self.genes_embedding.embedding(self.genes_embedding.genes_to_indices(var_names))
 
         predictions = self(z, genes_embeddings)
 
