@@ -30,6 +30,18 @@ sh xenium_download.sh
 python xenium_convert.py
 ```
 
+### CosMX (3 samples)
+
+Requirements: a Python environment with `scanpy` installed.
+
+```sh
+# download all CosMX datasets
+sh cosmx_download.sh
+
+# convert all datasets to h5ad files
+python cosmx_convert.py
+```
+
 ### All datasets
 
 All above datasets can be downloaded using a single command line. Make sure you have all the requirements listed above.
