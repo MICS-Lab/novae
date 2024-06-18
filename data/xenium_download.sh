@@ -50,9 +50,9 @@ do
         if [ -f $OUTPUT_DATASET_ZIP ]; then
             echo "File $OUTPUT_DATASET_ZIP already exists"
         else
-            echo "Donwloading $ZIP_REMOTE_PATH to $OUTPUT_DATASET_ZIP"
+            echo "Downloading $ZIP_REMOTE_PATH to $OUTPUT_DATASET_ZIP"
             curl $ZIP_REMOTE_PATH -o $OUTPUT_DATASET_ZIP
-            echo "Successfully donwloaded"
+            echo "Successfully downloaded"
         fi
         echo "Unzipping in $OUTPUT_DATASET_DIR"
         mkdir -p $OUTPUT_DATASET_DIR
