@@ -48,6 +48,8 @@ class GenesEmbedding(L.LightningModule):
             self.embedding = nn.Embedding.from_pretrained(embedding)
 
         self.linear = nn.Linear(self.embedding_size, self.embedding_size)
+        self.linear.weight.data.copy_(torch.eye(self.embedding_size))
+        self.linear.bias.data.zero_()
 
     @classmethod
     def from_scgpt_embedding(cls, scgpt_model_dir: str) -> GenesEmbedding:
