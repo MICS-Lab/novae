@@ -20,7 +20,7 @@ if [ -f $METADATA_OUTPUT ]; then
     echo "File $METADATA_OUTPUT already exists."
 else
     echo "Downloading $METADATA_FILE to $METADATA_OUTPUT"
-    curl $METADATA_FILE -o $METADATA_OUTPUT
+    curl -L $METADATA_FILE -o $METADATA_OUTPUT
 fi
 COUNT_FILE="https://nanostring.app.box.com/index.php?rm=box_download_shared_file&shared_name=id16si2dckxqqpilexl2zg90leo57grn&file_id=f_1392318918584"
 COUNT_OUTPUT="cosmx/normal_liver/exprMat_file.csv"
@@ -28,7 +28,7 @@ if [ -f $COUNT_OUTPUT ]; then
     echo "File $COUNT_OUTPUT already exists."
 else
     echo "Downloading $COUNT_FILE to $COUNT_OUTPUT"
-    curl $COUNT_FILE -o $COUNT_OUTPUT
+    curl -L $COUNT_FILE -o $COUNT_OUTPUT
 fi
 
 # Cancer Liver
@@ -39,7 +39,7 @@ if [ -f $METADATA_OUTPUT ]; then
     echo "File $METADATA_OUTPUT already exists."
 else
     echo "Downloading $METADATA_FILE to $METADATA_OUTPUT"
-    curl $METADATA_FILE -o $METADATA_OUTPUT
+    curl -L $METADATA_FILE -o $METADATA_OUTPUT
 fi
 COUNT_FILE="https://nanostring.app.box.com/index.php?rm=box_download_shared_file&shared_name=id16si2dckxqqpilexl2zg90leo57grn&file_id=f_1392441469377"
 COUNT_OUTPUT="cosmx/cancer_liver/exprMat_file.csv"
@@ -47,5 +47,5 @@ if [ -f $COUNT_OUTPUT ]; then
     echo "File $COUNT_OUTPUT already exists."
 else
     echo "Downloading $COUNT_FILE to $COUNT_OUTPUT"
-    curl $COUNT_FILE -o $COUNT_OUTPUT
+    curl -L $COUNT_FILE -o $COUNT_OUTPUT
 fi
