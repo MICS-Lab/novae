@@ -7,19 +7,17 @@ parameters:
     values: [32, 64, 128]
   heads:
     values: [8, 16]
-  epoch_unfreeze_prototypes:
-    values: [1, 4, 8]
   num_prototypes:
     values: [1024, 2048]
   batch_size:
     values: [512, 1024, 2048]
-  out_channels:
+  output_size:
     values: [64, 128, 256]
   num_layers:
     values: [8, 12, 16]
-  hidden_channels:
+  hidden_size:
     values: [64, 128, 256]
-  panel_dropout:
+  panel_subset_size:
     min: 0.1
     max: 0.4
   gene_expression_dropout:

@@ -12,19 +12,19 @@ from sklearn.cluster import AgglomerativeClustering
 from torch import Tensor, nn
 
 from .._constants import Nums
-from .embedding import GenesEmbedding
+from .embedding import CellEmbedder
 
 log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    def __init__(self, out_channels: int, num_prototypes: int, temperature: float):
+    def __init__(self, output_size: int, num_prototypes: int, temperature: float):
         super().__init__()
-        self.out_channels = out_channels
+        self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
 
-        self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.out_channels)))
+        self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
 
@@ -36,7 +36,7 @@ class SwavHead(L.LightningModule):
 
     def forward(self, out1: Tensor, out2: Tensor) -> Tensor:
         """
-        out1, out2: (B x out_channels)
+        out1, out2: (B x output_size)
         """
         self.normalize_prototypes()
 
@@ -74,7 +74,7 @@ class SwavHead(L.LightningModule):
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
     def hierarchical_clustering(self) -> None:
-        X = self.prototypes.data.numpy(force=True)  # (num_prototypes, out_channels)
+        X = self.prototypes.data.numpy(force=True)  # (num_prototypes, output_size)
 
         clustering = AgglomerativeClustering(
             n_clusters=None,
@@ -93,23 +93,23 @@ class SwavHead(L.LightningModule):
             self.clusters_levels[i + 1] = clusters
             self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
 
-    def assign_classes_level(self, series: pd.Series, n_classes: int) -> pd.Series:
+    def map_leaves_domains(self, series: pd.Series, n_classes: int) -> pd.Series:
         if self.clusters_levels is None:
             self.hierarchical_clustering()
 
-        return series.map(lambda x: x if np.isnan(float(x)) else str(self.clusters_levels[-n_classes, int(x)]))
+        return series.map(lambda x: x if np.isnan(float(x)) else f"N{self.clusters_levels[-n_classes, int(x)]}")
 
     def rotations_geodesic(self, centroids: np.ndarray, centroids_reference: np.ndarray) -> np.ndarray:
         """Computes the rotation matrices that transforms the centroids to the centroids_reference along the geodesic.
 
         Args:
-            centroids: An array of size (..., out_channels) of centroids of size `out_channels`
-            centroids_reference: An array of size (..., out_channels) of centroids of size `out_channels`
+            centroids: An array of size (..., output_size) of centroids of size `output_size`
+            centroids_reference: An array of size (..., output_size) of centroids of size `output_size`
 
         Returns:
-            An array of shape (..., out_channels, out_channels) of rotations matrices.
+            An array of shape (..., output_size, output_size) of rotations matrices.
         """
-        *left_shape, out_channels = centroids.shape
+        *left_shape, output_size = centroids.shape
 
         cos = (centroids * centroids_reference).sum(-1)
         sin = np.sin(np.arccos(cos))
@@ -117,8 +117,8 @@ class SwavHead(L.LightningModule):
 
         sum_centroids = centroids_reference + centroids
 
-        identities = np.zeros((*left_shape, out_channels, out_channels))
-        identities[..., np.arange(out_channels), np.arange(out_channels)] = 1
+        identities = np.zeros((*left_shape, output_size, output_size))
+        identities[..., np.arange(output_size), np.arange(output_size)] = 1
 
         return (
             identities
@@ -145,9 +145,9 @@ def _combine_embeddings(z: Tensor, genes_embeddings: Tensor) -> Tensor:
 
 
 class InferenceHeadZIE(L.LightningModule):
-    def __init__(self, genes_embedding: GenesEmbedding, input_size: int, hidden_size: int = 32, n_layers: int = 5):
+    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
         super().__init__()
-        self.genes_embedding = genes_embedding
+        self.cell_embedder = cell_embedder
         self.mlp = _mlp(input_size, hidden_size, n_layers, 2)
 
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
@@ -172,7 +172,7 @@ class InferenceHeadZIE(L.LightningModule):
             The mean negative log-likelihood
         """
         var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.genes_embedding.embedding(self.genes_embedding.genes_to_indices(var_names))
+        genes_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(var_names))
 
         pi_logits, lambda_logits = self(z, genes_embeddings)
 
@@ -182,9 +182,9 @@ class InferenceHeadZIE(L.LightningModule):
 
 
 class InferenceHeadBaseline(L.LightningModule):
-    def __init__(self, genes_embedding: GenesEmbedding, input_size: int, hidden_size: int = 32, n_layers: int = 5):
+    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
         super().__init__()
-        self.genes_embedding = genes_embedding
+        self.cell_embedder = cell_embedder
         self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
 
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
@@ -198,7 +198,7 @@ class InferenceHeadBaseline(L.LightningModule):
 
     def loss(self, x: Tensor, z: Tensor, var_names: str | list[str]) -> Tensor:
         var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.genes_embedding.embedding(self.genes_embedding.genes_to_indices(var_names))
+        genes_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(var_names))
 
         predictions = self(z, genes_embeddings)
 

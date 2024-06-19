@@ -5,7 +5,6 @@ data:
 model_kwargs:
   n_hops_local: 2
   n_hops_ngh: 3
-  epoch_unfreeze_prototypes: 1
   heads: 4
 
 trainer_kwargs:

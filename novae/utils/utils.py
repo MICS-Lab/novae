@@ -148,11 +148,11 @@ def lower_var_names(var_names: pd.Index | list[str]) -> pd.Index | list[str]:
     return [name.lower() for name in var_names]
 
 
-def _lookup_valid_genes(adata: AnnData, vocabulary: set | list[str] | None):
-    if vocabulary is None or Keys.IS_KNOWN_GENE in adata.var:
+def _lookup_valid_genes(adata: AnnData, var_names: set | list[str] | None):
+    if var_names is None or Keys.IS_KNOWN_GENE in adata.var:
         return
 
-    adata.var[Keys.IS_KNOWN_GENE] = np.isin(lower_var_names(adata.var_names), list(vocabulary))
+    adata.var[Keys.IS_KNOWN_GENE] = np.isin(lower_var_names(adata.var_names), list(var_names))
 
     n_known = sum(adata.var[Keys.IS_KNOWN_GENE])
     assert n_known >= Nums.MIN_GENES, f"Too few genes ({n_known}) are known by the model."

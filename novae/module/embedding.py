@@ -21,7 +21,7 @@ from ..utils import lower_var_names
 log = logging.getLogger(__name__)
 
 
-class GenesEmbedding(L.LightningModule):
+class CellEmbedder(L.LightningModule):
     def __init__(
         self,
         gene_names: list[str] | dict[str, int],
@@ -33,12 +33,12 @@ class GenesEmbedding(L.LightningModule):
 
         if isinstance(gene_names, dict):
             self.gene_to_index = gene_names
-            self.vocabulary = list(gene_names.keys())
+            self.gene_names = list(gene_names.keys())
         else:
-            self.vocabulary = gene_names
+            self.gene_names = gene_names
             self.gene_to_index = {gene: i for i, gene in enumerate(gene_names)}
 
-        self.voc_size = len(self.vocabulary)
+        self.voc_size = len(self.gene_names)
 
         if embedding is None:
             self.embedding_size = embedding_size
@@ -56,14 +56,14 @@ class GenesEmbedding(L.LightningModule):
         self.linear.bias.data.zero_()
 
     @classmethod
-    def from_scgpt_embedding(cls, scgpt_model_dir: str) -> GenesEmbedding:
-        """Initialize the GenesEmbedding from a scGPT pretrained model directory.
+    def from_scgpt_embedding(cls, scgpt_model_dir: str) -> CellEmbedder:
+        """Initialize the CellEmbedder from a scGPT pretrained model directory.
 
         Args:
             scgpt_model_dir: Path to a directory containing a `vocab.json` and a `best_model.pt` file.
 
         Returns:
-            A GenesEmbedding instance.
+            A CellEmbedder instance.
         """
         scgpt_model_dir = Path(scgpt_model_dir)
 

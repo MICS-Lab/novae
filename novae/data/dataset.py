@@ -10,7 +10,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .._constants import Keys, Nums
-from ..module import GenesEmbedding
+from ..module import CellEmbedder
 from .convert import AnnDataTorch
 
 
@@ -31,7 +31,7 @@ class NeighborhoodDataset(Dataset):
     def __init__(
         self,
         adatas: list[AnnData],
-        genes_embedding: GenesEmbedding,
+        cell_embedder: CellEmbedder,
         batch_size: int,
         n_hops_local: int,
         n_hops_ngh: int,
@@ -39,7 +39,7 @@ class NeighborhoodDataset(Dataset):
         super().__init__()
         self.adatas = adatas
         self.anndata_torch = AnnDataTorch(self.adatas)
-        self.genes_embedding = genes_embedding
+        self.cell_embedder = cell_embedder
 
         self.training = False
 
@@ -150,7 +150,7 @@ class NeighborhoodDataset(Dataset):
         cells_indices = adjacency_local[obs_index].indices
 
         x, var_names = self.anndata_torch[adata_index, cells_indices]
-        genes_indices = self.genes_embedding.genes_to_indices(var_names)[None, :]
+        genes_indices = self.cell_embedder.genes_to_indices(var_names)[None, :]
 
         adjacency: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ]
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[cells_indices][:, cells_indices])

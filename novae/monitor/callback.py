@@ -20,7 +20,7 @@ DEFAULT_N_DOMAINS = [7, 14]
 
 class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
-        model.swav_classes()
+        model.latent_representation()
         model.swav_head.hierarchical_clustering()
 
         for adata in model.adatas:
@@ -60,7 +60,7 @@ class ValidationCallback(Callback):
         if self.adatas is None:
             return
 
-        model.swav_classes(self.adatas)
+        model.latent_representation(self.adatas)
         model.swav_head.hierarchical_clustering()
 
         n_classes = DEFAULT_N_DOMAINS[0]
@@ -81,7 +81,7 @@ class EvalCallback(Callback):
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         for k in self.n_domains:
-            obs_key = f"{Keys.SWAV_CLASSES}_{k}"
+            obs_key = f"{Keys.NICHE_PREFIX}{k}"
 
             fide = mean_fide_score(model.adatas, obs_key=obs_key, n_classes=k)
             jsd = jensen_shannon_divergence(model.adatas, obs_key, model.slide_key)
@@ -98,7 +98,7 @@ class LogLatent(Callback):
         self.plot_kwargs = plot_kwargs
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
-        colors = [f"{Keys.SWAV_CLASSES}_{k}" for k in DEFAULT_N_DOMAINS] + [Keys.SLIDE_ID]
+        colors = [f"{Keys.NICHE_PREFIX}{k}" for k in DEFAULT_N_DOMAINS] + [Keys.SLIDE_ID]
         plot_latent(model.adatas, colors, **self.plot_kwargs)
         wandb.log({"latent": wandb.Image(plt)})
 

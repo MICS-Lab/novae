@@ -6,10 +6,10 @@ from torch_geometric.nn.aggr import AttentionalAggregation
 
 
 class NodeAttentionAggregation(L.LightningModule):
-    def __init__(self, out_channels: int):
+    def __init__(self, output_size: int):
         super().__init__()
-        self.gate_nn = nn.Linear(out_channels, 1)
-        self.nn = nn.Linear(out_channels, out_channels)
+        self.gate_nn = nn.Linear(output_size, 1)
+        self.nn = nn.Linear(output_size, output_size)
 
         self.attention_aggregation = AttentionalAggregation(gate_nn=self.gate_nn, nn=self.nn)
 

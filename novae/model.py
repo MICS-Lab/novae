@@ -13,7 +13,7 @@ from torch_geometric.data import Data
 from . import utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule
-from .module import GenesEmbedding, GraphAugmentation, GraphEncoder, SwavHead
+from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
 
@@ -24,20 +24,19 @@ class Novae(L.LightningModule):
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str = None,
         var_names: list[str] = None,
-        embedding_size: int = 100,
         scgpt_model_dir: str | None = None,
-        heads: int = 4,
+        embedding_size: int = 100,
         n_hops_local: int = 2,
         n_hops_ngh: int = 2,
-        hidden_channels: int = 64,
+        heads: int = 4,
+        hidden_size: int = 64,
         num_layers: int = 10,
-        out_channels: int = 64,
+        output_size: int = 64,
         batch_size: int = 512,
         lr: float = 1e-3,
         temperature: float = 0.5,
         num_prototypes: int = 256,
-        epoch_unfreeze_prototypes: int = 1,
-        panel_dropout: float = 0.4,
+        panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
     ) -> None:
@@ -46,28 +45,26 @@ class Novae(L.LightningModule):
 
         if scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
-            self.genes_embedding = GenesEmbedding(var_names, embedding_size)
-            self.genes_embedding.pca_init(self.adatas)
+            self.cell_embedder = CellEmbedder(var_names, embedding_size)
+            self.cell_embedder.pca_init(self.adatas)
         else:
-            self.genes_embedding = GenesEmbedding.from_scgpt_embedding(scgpt_model_dir)
-            self.hparams["embedding_size"] = self.genes_embedding.embedding_size
-            self.adatas, var_names = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)
+            self.cell_embedder = CellEmbedder.from_scgpt_embedding(scgpt_model_dir)
+            self.hparams["embedding_size"] = self.cell_embedder.embedding_size
+            self.adatas, var_names = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
 
         self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
         ### Modules
-        self.backbone = GraphEncoder(
-            self.genes_embedding.embedding_size, hidden_channels, num_layers, out_channels, heads
-        )
-        self.swav_head = SwavHead(out_channels, num_prototypes, temperature)
-        self.augmentation = GraphAugmentation(panel_dropout, background_noise_lambda, sensitivity_noise_std)
+        self.backbone = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
+        self.swav_head = SwavHead(output_size, num_prototypes, temperature)
+        self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
 
         ### Losses
         self.bce_loss = nn.BCELoss()
 
         ### Datamodule
         if self.adatas is not None:
-            self._datamodule = self.init_datamodule()
+            self._datamodule = self._init_datamodule()
 
         ### Checkpoint
         self._checkpoint = None
@@ -78,27 +75,20 @@ class Novae(L.LightningModule):
         return self._datamodule
 
     def __repr__(self) -> str:
-        return f"Novae model with {self.genes_embedding.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
+        return f"Novae model with {self.cell_embedder.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:
             data = self.augmentation(data)
-        return self.genes_embedding(data)
+        return self.cell_embedder(data)
 
-    def _shuffle_pyg_data(self, data: Data) -> Data:
-        shuffled_x = data.x[torch.randperm(data.x.size()[0])]
-        return Data(
-            x=shuffled_x, edge_index=data.edge_index, edge_attr=data.edge_attr, genes_indices=data.genes_indices
-        )
+    def forward(self, batch: dict[str, Data]) -> torch.Tensor:
+        return {key: self.backbone(self._embed_pyg_data(data)) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
-        data_main = self._embed_pyg_data(batch["main"])
-        data_ngh = self._embed_pyg_data(batch["neighbor"])
+        out: dict[str, Data] = self(batch)
 
-        x_main = self.backbone.node_x(data_main)
-        x_ngh = self.backbone.node_x(data_ngh)
-
-        loss = self.swav_head(x_main, x_ngh)
+        loss = self.swav_head(out["main"], out["neighbor"])
 
         self.log(
             "train/loss",
@@ -111,7 +101,7 @@ class Novae(L.LightningModule):
 
         return loss
 
-    def init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
+    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
         if adata is None:
             adatas = self.adatas
         elif isinstance(adata, AnnData):
@@ -123,15 +113,13 @@ class Novae(L.LightningModule):
 
         return NovaeDatamodule(
             adatas,
-            genes_embedding=self.genes_embedding,
+            cell_embedder=self.cell_embedder,
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
             n_hops_ngh=self.hparams.n_hops_ngh,
         )
 
     def on_train_epoch_start(self):
-        self.swav_head.prototypes.requires_grad = self.current_epoch >= self.hparams.epoch_unfreeze_prototypes
-
         self.datamodule.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):
@@ -139,16 +127,16 @@ class Novae(L.LightningModule):
         return optimizer
 
     @torch.no_grad()
-    def swav_classes(self, adata: AnnData | list[AnnData] | None = None) -> None:
-        for adata in self.get_adatas(adata):
-            datamodule = self.init_datamodule(adata)
+    def latent_representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
+        for adata in self._get_adatas(adata):
+            datamodule = self._init_datamodule(adata)
 
             out_rep = []
             out = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
                 batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
-                x_main = self.backbone.node_x(data_main)
+                x_main = self.backbone(data_main)
                 out_rep.append(x_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
 
@@ -165,15 +153,15 @@ class Novae(L.LightningModule):
             codes = utils.fill_invalid_indices(out, adata.n_obs, datamodule.dataset.valid_indices[0])
             adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
-    def get_adatas(self, adata: AnnData | list[AnnData] | None):
+    def _get_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)[0]
+        return utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)[0]
 
     def assign_domains(self, adata: AnnData, k: int, key_added: str | None = None) -> str:
         if key_added is None:
-            key_added = f"{Keys.SWAV_CLASSES}_{k}"
-        adata.obs[key_added] = self.swav_head.assign_classes_level(adata.obs[Keys.SWAV_CLASSES], k)
+            key_added = f"{Keys.NICHE_PREFIX}{k}"
+        adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
         log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
         return key_added
 
@@ -205,7 +193,7 @@ class Novae(L.LightningModule):
     def batch_effect_correction(
         self, adata: AnnData | list[AnnData] | None, obs_key: str, index_reference: int | None = None
     ):
-        adatas = self.get_adatas(adata)
+        adatas = self._get_adatas(adata)
 
         if index_reference is None:
             index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
@@ -241,9 +229,10 @@ class Novae(L.LightningModule):
 
                 adata.obsm[Keys.REPR_CORRECTED][where] = coords
 
-    def fit(self, adata: AnnData | list[AnnData], **kwargs):
-        self.adatas, _ = utils.prepare_adatas(adata, var_names=self.genes_embedding.vocabulary)
-        self._datamodule = self.init_datamodule()
+    def train(self, adata: AnnData | list[AnnData] | None, **kwargs):
+        if adata is not None:
+            self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
+            self._datamodule = self._init_datamodule()
 
         trainer = L.Trainer(**kwargs)
         trainer.fit(self, datamodule=self.datamodule)

@@ -5,7 +5,7 @@ data:
 model_kwargs:
   n_hops_local: 2
   n_hops_ngh: 3
-  hidden_channels: 256
+  hidden_size: 256
 
 trainer_kwargs:
   max_epochs: 2

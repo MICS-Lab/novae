@@ -1,12 +1,13 @@
 class Keys:
     # obs keys
-    SWAV_CLASSES: str = "swav_classes"
+    SWAV_CLASSES: str = "novae_leaves"
+    NICHE_PREFIX: str = "novae_niche_"
     IS_VALID_OBS: str = "neighborhood_valid"
     SLIDE_ID: str = "slide_id"
 
     # obsm keys
-    REPR: str = "representation"
-    REPR_CORRECTED: str = "repr_corrected"
+    REPR: str = "novae_latent"
+    REPR_CORRECTED: str = "novae_latent_corrected"
 
     # obsp keys
     ADJ: str = "spatial_distances"
