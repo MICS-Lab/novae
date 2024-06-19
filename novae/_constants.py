@@ -27,6 +27,7 @@ class Keys:
     # misc keys
     ADATA_INDEX: str = "adata_index"
     N_BATCHES: str = "n_batches"
+    NOVAE_VERSION: str = "novae_version"
 
 
 class Nums:

@@ -10,7 +10,7 @@ from torch import nn, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 
-from . import utils
+from . import __version__, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -228,6 +228,9 @@ class Novae(L.LightningModule):
                 coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + Nums.EPS
 
                 adata.obsm[Keys.REPR_CORRECTED][where] = coords
+
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint[Keys.NOVAE_VERSION] = __version__
 
     def train(self, adata: AnnData | list[AnnData] | None, **kwargs):
         if adata is not None:
