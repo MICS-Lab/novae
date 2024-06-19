@@ -168,7 +168,13 @@ class Novae(L.LightningModule):
     @classmethod
     def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
         artifact_dir = utils._load_wandb_artifact(name)
-        model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", strict=False, **kwargs)
+
+        try:
+            model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", strict=False, **kwargs)
+        except:
+            ckpt_version = torch.load(artifact_dir / "model.ckpt").get(Keys.NOVAE_VERSION, "unknown")
+            raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
+
         model._checkpoint = f"wandb: {name}"
         return model
 
