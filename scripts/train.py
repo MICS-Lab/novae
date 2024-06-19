@@ -1,5 +1,5 @@
 """
-Novae model training with Weight&Biases monitoring
+Novae model training with Weight & Biases monitoring
 This is **not** the actual Novae source code. Instead, see the `novae` directory
 """
 
@@ -40,25 +40,35 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
 
     config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]
     wandb_logger.experiment.config.update(config_flat)
+    callbacks = _get_callbacks(config, sweep, adatas_val)
 
     model = novae.Novae(adatas, **config.get("model_kwargs", {}))
 
-    callbacks = [monitor.ValidationCallback(adatas_val)]
-
-    if not sweep:
-        callbacks.extend(
-            [
-                ModelCheckpoint(monitor="train/loss_epoch"),
-                monitor.ComputeSwavOutputsCallback(),
-                monitor.LogDomainsCallback(),
-                monitor.EvalCallback(),
-                monitor.LogLatent(),
-                monitor.LogProtoCovCallback(),
-            ]
-        )
-
     trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
     trainer.fit(model, datamodule=model.datamodule)
+
+
+def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) -> list[L.Callback] | None:
+    if config.get("wandb_init_kwargs", {}).get("mode") == "disabled":
+        return None
+
+    callbacks = [monitor.ValidationCallback(adatas_val)]
+
+    if sweep:
+        return callbacks
+
+    callbacks.extend(
+        [
+            ModelCheckpoint(monitor="train/loss_epoch"),
+            monitor.ComputeSwavOutputsCallback(),
+            monitor.LogDomainsCallback(),
+            monitor.EvalCallback(),
+            monitor.LogLatent(),
+            monitor.LogProtoCovCallback(),
+        ]
+    )
+
+    return callbacks
 
 
 def _read_config(name: str) -> dict:
