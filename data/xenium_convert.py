@@ -33,7 +33,11 @@ def main(args):
 
     for dataset_dir in path.iterdir():
         if dataset_dir.is_dir():
-            convert_to_h5ad(dataset_dir)
+            print(f"In {dataset_dir}")
+            try:
+                convert_to_h5ad(dataset_dir)
+            except:
+                print(f"Failed to convert {dataset_dir}")
 
 
 if __name__ == "__main__":
