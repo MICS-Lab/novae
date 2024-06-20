@@ -25,7 +25,7 @@ __all__ = ["spatial_neighbors"]
 def spatial_neighbors(
     adata: AnnData,
     radius: tuple[float, float] | None,
-    library_key: str | None = None,
+    slide_key: str | None = None,
     percentile: float | None = None,
     set_diag: bool = False,
 ):
@@ -34,7 +34,7 @@ def spatial_neighbors(
     Args:
         adata: AnnData object
         radius: tuple that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]`. If `None`, all edges are kept.
-        library_key: Optional batch key in adata.obs
+        slide_key: Optional batch key in adata.obs
         percentile: Percentile of the distances to use as threshold.
         set_diag: Whether to set the diagonal of the spatial connectivities to `1.0`.
     """
@@ -42,12 +42,12 @@ def spatial_neighbors(
 
     log.info("Computing delaunay graph")
 
-    if library_key is not None:
-        assert adata.obs[library_key].dtype == "category"
-        libs = adata.obs[library_key].cat.categories
+    if slide_key is not None:
+        assert adata.obs[slide_key].dtype == "category"
+        slides = adata.obs[slide_key].cat.categories
         make_index_unique(adata.obs_names)
     else:
-        libs = [None]
+        slides = [None]
 
     _build_fun = partial(
         _spatial_neighbor,
@@ -56,12 +56,12 @@ def spatial_neighbors(
         percentile=percentile,
     )
 
-    if library_key is not None:
+    if slide_key is not None:
         mats: list[tuple[spmatrix, spmatrix]] = []
         ixs = []  # type: ignore[var-annotated]
-        for lib in libs:
-            ixs.extend(np.where(adata.obs[library_key] == lib)[0])
-            mats.append(_build_fun(adata[adata.obs[library_key] == lib]))
+        for slide in slides:
+            ixs.extend(np.where(adata.obs[slide_key] == slide)[0])
+            mats.append(_build_fun(adata[adata.obs[slide_key] == slide]))
         ixs = np.argsort(ixs)  # type: ignore[assignment] # invert
         Adj = block_diag([m[0] for m in mats], format="csr")[ixs, :][:, ixs]
         Dst = block_diag([m[1] for m in mats], format="csr")[ixs, :][:, ixs]
