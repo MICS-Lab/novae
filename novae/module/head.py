@@ -52,11 +52,11 @@ class SwavHead(L.LightningModule):
         return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
     @torch.no_grad()
-    def sinkhorn(self, out: Tensor, epsilon: float = 0.05, sinkhorn_iterations: int = 3) -> Tensor:
+    def sinkhorn(self, scores: Tensor, epsilon: float = 0.05, sinkhorn_iterations: int = 3) -> Tensor:
         """
-        out: (B x num_prototypes)
+        scores: (B x num_prototypes)
         """
-        Q = torch.exp(out / epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
+        Q = torch.exp(scores / epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
         K, B = Q.shape
