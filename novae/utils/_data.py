@@ -3,6 +3,7 @@ from pathlib import Path
 
 import anndata
 import numpy as np
+import pandas as pd
 from anndata import AnnData
 
 from . import repository_root, spatial_neighbors, wandb_log_dir
@@ -40,26 +41,41 @@ def dummy_dataset(
     n_vars: int = 100,
     n_drop: int = 20,
     n_domains: int = 4,
-    n_batches: int = 3,
-    batch_shift_factor: float = 0.5,
+    n_panels: int = 3,
+    n_slides_per_panel: int = 1,
+    panel_shift_factor: float = 0.5,
+    batch_shift_factor: float = 0.2,
     class_shift_factor: float = 2,
+    slide_ids_unique: bool = True,
+    compute_spatial_neighbors: bool = True,
 ) -> list[AnnData]:
 
-    batches_shift = [batch_shift_factor * np.random.randn(n_vars) for _ in range(n_batches)]
+    panels_shift = [panel_shift_factor * np.random.randn(n_vars) for _ in range(n_panels)]
     domains_shift = [class_shift_factor * np.random.randn(n_vars) for _ in range(n_domains)]
     loc_shift = [np.array([0, 10 * i]) for i in range(n_domains)]
 
     adatas = []
 
-    for batch_index in range(n_batches):
-        X_, spatial_, domains_ = [], [], []
+    for panel_index in range(n_panels):
+        X_, spatial_, domains_, slide_ids_ = [], [], [], []
         var_names = np.array([f"g{i}" for i in range(n_vars)])
+
+        slide_key = f"slide_{panel_index}_" if slide_ids_unique else "slide_"
+        if n_slides_per_panel > 1:
+            slides_shift = np.array([batch_shift_factor * np.random.randn(n_vars) for _ in range(n_slides_per_panel)])
 
         for domain_index in range(n_domains):
             cell_shift = np.random.randn(n_obs_per_domain, n_vars)
-            X_.append(cell_shift + domains_shift[domain_index] + batches_shift[batch_index])
+            slide_ids_domain_ = np.random.randint(0, n_slides_per_panel, n_obs_per_domain)
+            X_domain_ = cell_shift + domains_shift[domain_index] + panels_shift[panel_index]
+
+            if n_slides_per_panel > 1:
+                X_domain_ += slides_shift[slide_ids_domain_]
+
+            X_.append(X_domain_)
             spatial_.append(np.random.randn(n_obs_per_domain, 2) + loc_shift[domain_index])
             domains_.append(np.array([f"domain_{domain_index}"] * n_obs_per_domain))
+            slide_ids_.append(slide_ids_domain_)
 
         X = np.concatenate(X_, axis=0).clip(0)
 
@@ -70,12 +86,14 @@ def dummy_dataset(
 
         adata = AnnData(X=X)
 
-        adata.obs_names = [f"c_{batch_index}_{i}" for i in range(adata.n_obs)]
+        adata.obs_names = [f"c_{panel_index}_{i}" for i in range(adata.n_obs)]
         adata.var_names = var_names
         adata.obs["domain"] = np.concatenate(domains_)
-        adata.obs["slide_key"] = f"slide_{batch_index}"
+        adata.obs["slide_key"] = (slide_key + pd.Series(np.concatenate(slide_ids_)).astype(str)).values
         adata.obsm["spatial"] = np.concatenate(spatial_, axis=0)
-        spatial_neighbors(adata, radius=[0, 3])
+
+        if compute_spatial_neighbors:
+            spatial_neighbors(adata, radius=[0, 3])
 
         adatas.append(adata)
 

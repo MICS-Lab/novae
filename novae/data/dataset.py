@@ -23,10 +23,12 @@ class NeighborhoodDataset(Dataset):
     Attributes:
         valid_indices (list[np.ndarray]): List containing, for each `adata`, an array that denotes the indices of the cells whose neighborhood is valid.
         obs_ilocs (np.ndarray): An array of shape `(total_valid_indices, 2)`. The first column corresponds to the adata index, and the second column is the cell index for the corresponding adata.
+        shuffled_obs_ilocs (np.ndarray): same as obs_ilocs, but shuffled. Each batch will contain cells from the same slide.
     """
 
     valid_indices: list[np.ndarray]
     obs_ilocs: np.ndarray
+    shuffled_obs_ilocs: np.ndarray
 
     def __init__(
         self,
@@ -47,13 +49,9 @@ class NeighborhoodDataset(Dataset):
         self.n_hops_local = n_hops_local
         self.n_hops_ngh = n_hops_ngh
 
-        self._init_dataset()
+        self.single_slide_mode = len(self.adatas) == 1 and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
 
-    def shuffle_obs_ilocs(self):
-        if len(self.adatas) == 1:
-            self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
-        else:
-            self.shuffled_obs_ilocs = self._shuffle_grouped_indices()
+        self._init_dataset()
 
     def _init_dataset(self):
         for adata in self.adatas:
@@ -65,58 +63,24 @@ class NeighborhoodDataset(Dataset):
 
         self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
 
-        if len(self.adatas) == 1:
+        self.obs_ilocs = None
+        if self.single_slide_mode:
             self.obs_ilocs = np.array([(0, obs_index) for obs_index in self.valid_indices[0]])
-        else:
-            self.obs_ilocs = None
-            self.slides_metadata: pd.DataFrame = pd.concat(
-                [
-                    self._adata_slides_metadata(adata_index, obs_indices)
-                    for adata_index, obs_indices in enumerate(self.valid_indices)
-                ],
-                axis=0,
-            )
+
+        self.slides_metadata: pd.DataFrame = pd.concat(
+            [
+                self._adata_slides_metadata(adata_index, obs_indices)
+                for adata_index, obs_indices in enumerate(self.valid_indices)
+            ],
+            axis=0,
+        )
 
         self.shuffle_obs_ilocs()
-
-    def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
-        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
-        slides_metadata = obs_counts.to_frame()
-        slides_metadata[Keys.ADATA_INDEX] = adata_index
-        slides_metadata[Keys.N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
-        return slides_metadata
-
-    def _shuffle_grouped_indices(self):
-        adata_indices = np.empty((0, self.batch_size), dtype=int)
-        batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
-
-        for uid in self.slides_metadata.index:
-            adata_index = self.slides_metadata.loc[uid, Keys.ADATA_INDEX]
-            adata = self.adatas[adata_index]
-            _obs_indices = np.where((adata.obs[Keys.SLIDE_ID] == uid) & adata.obs[Keys.IS_VALID_OBS])[0]
-            _obs_indices = np.random.permutation(_obs_indices)
-
-            n_elements = self.slides_metadata.loc[uid, Keys.N_BATCHES] * self.batch_size
-            if len(_obs_indices) >= n_elements:
-                _obs_indices = _obs_indices[:n_elements]
-            else:
-                _obs_indices = np.random.choice(_obs_indices, size=n_elements)
-
-            _obs_indices = _obs_indices.reshape((-1, self.batch_size))
-
-            adata_indices = np.concatenate([adata_indices, np.full_like(_obs_indices, adata_index)], axis=0)
-            batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
-
-        permutation = np.random.permutation(len(batched_obs_indices))
-        adata_indices = adata_indices[permutation].flatten()
-        obs_indices = batched_obs_indices[permutation].flatten()
-        shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
-
-        return shuffled_obs_ilocs
 
     def __len__(self) -> int:
         if self.training:
             return min(len(self.shuffled_obs_ilocs), Nums.MAX_DATASET_LENGTH)
+
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
@@ -157,6 +121,44 @@ class NeighborhoodDataset(Dataset):
         edge_attr = edge_weight[:, None].to(torch.float32)
 
         return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
+
+    def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
+        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
+        slides_metadata = obs_counts.to_frame()
+        slides_metadata[Keys.ADATA_INDEX] = adata_index
+        slides_metadata[Keys.N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
+        return slides_metadata
+
+    def shuffle_obs_ilocs(self):
+        if self.single_slide_mode:
+            self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
+            return
+
+        adata_indices = np.empty((0, self.batch_size), dtype=int)
+        batched_obs_indices = np.empty((0, self.batch_size), dtype=int)
+
+        for uid in self.slides_metadata.index:
+            adata_index = self.slides_metadata.loc[uid, Keys.ADATA_INDEX]
+            adata = self.adatas[adata_index]
+            _obs_indices = np.where((adata.obs[Keys.SLIDE_ID] == uid) & adata.obs[Keys.IS_VALID_OBS])[0]
+            _obs_indices = np.random.permutation(_obs_indices)
+
+            n_elements = self.slides_metadata.loc[uid, Keys.N_BATCHES] * self.batch_size
+            if len(_obs_indices) >= n_elements:
+                _obs_indices = _obs_indices[:n_elements]
+            else:
+                _obs_indices = np.random.choice(_obs_indices, size=n_elements)
+
+            _obs_indices = _obs_indices.reshape((-1, self.batch_size))
+
+            adata_indices = np.concatenate([adata_indices, np.full_like(_obs_indices, adata_index)], axis=0)
+            batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
+
+        permutation = np.random.permutation(len(batched_obs_indices))
+        adata_indices = adata_indices[permutation].flatten()
+        obs_indices = batched_obs_indices[permutation].flatten()
+
+        self.shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
 
 
 def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:

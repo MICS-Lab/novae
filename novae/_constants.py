@@ -3,7 +3,7 @@ class Keys:
     SWAV_CLASSES: str = "novae_leaves"
     NICHE_PREFIX: str = "novae_niche_"
     IS_VALID_OBS: str = "neighborhood_valid"
-    SLIDE_ID: str = "slide_id"
+    SLIDE_ID: str = "novae_sid"
 
     # obsm keys
     REPR: str = "novae_latent"

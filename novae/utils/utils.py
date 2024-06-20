@@ -101,21 +101,16 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
     count_raw = 0
     count_no_adj = 0
 
-    check_slide_key = True
-    if all(Keys.SLIDE_ID in adata.obs for adata in adatas):
-        sets = [set(adata.obs[Keys.SLIDE_ID].unique()) for adata in adatas]
-        if len(set.union(*sets)) == sum(len(s) for s in sets):
-            check_slide_key = False
-
     for adata in adatas:
-        if check_slide_key and slide_key is not None:
+        if Keys.SLIDE_ID in adata.obs:
+            del adata.obs[Keys.SLIDE_ID]
+
+        if slide_key is None:
+            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+        else:
             assert slide_key in adata.obs, f"{slide_key=} must be in all adata.obs"
             values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
             adata.obs[Keys.SLIDE_ID] = values.astype("category")
-        elif check_slide_key:
-            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
-        else:
-            adata.obs[Keys.SLIDE_ID] = adata.obs[Keys.SLIDE_ID].astype("category")
 
         if adata.X.min() < 0:
             log.warn("Found some negative values in adata.X. It is recommended to have unscaled data (raw or log1p).")
@@ -128,7 +123,7 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
             sc.pp.log1p(adata)
 
         if Keys.ADJ not in adata.obsp:
-            spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], library_key=slide_key)
+            spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
             count_no_adj += 1
 
     if count_no_adj:

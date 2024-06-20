@@ -7,4 +7,4 @@ from .utils import (
     wandb_log_dir,
 )
 from ._build import spatial_neighbors
-from ._data import _load_dataset, _load_wandb_artifact
+from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset

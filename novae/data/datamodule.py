@@ -6,7 +6,7 @@ from anndata import AnnData
 from torch_geometric.loader import DataLoader
 
 from ..module import CellEmbedder
-from .dataset import NeighborhoodDataset
+from . import NeighborhoodDataset
 
 
 class NovaeDatamodule(L.LightningDataModule):

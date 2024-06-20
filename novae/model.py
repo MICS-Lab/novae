@@ -12,7 +12,7 @@ from torch_geometric.data import Data
 
 from . import __version__, utils
 from ._constants import Keys, Nums
-from .data import NovaeDatamodule
+from .data import NeighborhoodDataset, NovaeDatamodule
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
@@ -44,13 +44,14 @@ class Novae(L.LightningModule):
         self.slide_key = slide_key
 
         if scgpt_model_dir is None:
-            self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
+            self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=var_names)
             self.cell_embedder = CellEmbedder(var_names, embedding_size)
             self.cell_embedder.pca_init(self.adatas)
         else:
             self.cell_embedder = CellEmbedder.from_scgpt_embedding(scgpt_model_dir)
             self.hparams["embedding_size"] = self.cell_embedder.embedding_size
-            self.adatas, var_names = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
+            _scgpt_var_names = self.cell_embedder.gene_names
+            self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=_scgpt_var_names)
 
         self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
@@ -73,6 +74,10 @@ class Novae(L.LightningModule):
     def datamodule(self) -> NovaeDatamodule:
         assert hasattr(self, "_datamodule"), "The datamodule was not initialized. Please provide an `adata` object."
         return self._datamodule
+
+    @property
+    def dataset(self) -> NeighborhoodDataset:
+        return self.datamodule.dataset
 
     def __repr__(self) -> str:
         return f"Novae model with {self.cell_embedder.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
@@ -127,8 +132,8 @@ class Novae(L.LightningModule):
         return optimizer
 
     @torch.no_grad()
-    def latent_representation(self, adata: AnnData | list[AnnData] | None = None) -> None:
-        for adata in self._get_adatas(adata):
+    def latent_representation(self, adata: AnnData | list[AnnData] | None = None, slide_key: str | None = None) -> None:
+        for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
 
             out_rep = []
@@ -144,7 +149,7 @@ class Novae(L.LightningModule):
 
             out_rep = torch.cat(out_rep)
             out = torch.cat(out)
-            out = self.swav_head.sinkhorn(out)
+            out = self.swav_head.sinkhorn(out)  # TODO: sinkhorn per slide_id
 
             adata.obsm[Keys.REPR] = utils.fill_invalid_indices(
                 out_rep, adata.n_obs, datamodule.dataset.valid_indices[0], fill_value=0
@@ -153,15 +158,19 @@ class Novae(L.LightningModule):
             codes = utils.fill_invalid_indices(out, adata.n_obs, datamodule.dataset.valid_indices[0])
             adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
-    def _get_adatas(self, adata: AnnData | list[AnnData] | None):
+    def _get_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
         if adata is None:
             return self.adatas
-        return utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)[0]
+        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
-    def assign_domains(self, adata: AnnData, k: int, key_added: str | None = None) -> str:
+    def assign_domains(self, adata: AnnData | list[AnnData], k: int, key_added: str | None = None) -> str:
         if key_added is None:
             key_added = f"{Keys.NICHE_PREFIX}{k}"
-        adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
+
+        adatas = [adata] if isinstance(adata, AnnData) else adata
+        for adata in adatas:
+            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
+
         log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
         return key_added
 
@@ -197,9 +206,13 @@ class Novae(L.LightningModule):
         return centroids, is_valid
 
     def batch_effect_correction(
-        self, adata: AnnData | list[AnnData] | None, obs_key: str, index_reference: int | None = None
+        self,
+        adata: AnnData | list[AnnData] | None,
+        obs_key: str,
+        slide_key: str | None = None,
+        index_reference: int | None = None,
     ):
-        adatas = self._get_adatas(adata)
+        adatas = self._get_adatas(adata, slide_key=slide_key)
 
         if index_reference is None:
             index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
@@ -238,9 +251,9 @@ class Novae(L.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
-    def train(self, adata: AnnData | list[AnnData] | None, **kwargs):
+    def train(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None, **kwargs):
         if adata is not None:
-            self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
+            self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
             self._datamodule = self._init_datamodule()
 
         trainer = L.Trainer(**kwargs)
