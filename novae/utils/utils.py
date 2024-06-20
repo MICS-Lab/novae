@@ -97,7 +97,14 @@ def _is_multi_panel(adatas: list[AnnData]) -> bool:
 
 
 def _sanity_check(adatas: list[AnnData], slide_key: str = None):
-    """Check that the AnnData objects are preprocessed correctly"""
+    """
+    Check that the AnnData objects are preprocessed correctly
+    """
+    assert hasattr(
+        adatas, "__iter__"
+    ), f"The input `adata` must be an AnnData object, or an iterable of AnnData objects. Found {type(adatas)}"
+    assert all(isinstance(adata, AnnData) for adata in adatas), "All `adata` elements must be AnnData objects"
+
     count_raw = 0
     count_no_adj = 0
 
@@ -113,7 +120,7 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
             adata.obs[Keys.SLIDE_ID] = values.astype("category")
 
         if adata.X.min() < 0:
-            log.warn("Found some negative values in adata.X. It is recommended to have unscaled data (raw or log1p).")
+            log.warn("Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)")
 
         if adata.X.max() >= 10:
             count_raw += 1
@@ -125,6 +132,20 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
         if Keys.ADJ not in adata.obsp:
             spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
             count_no_adj += 1
+
+        mean_distance = adata.obsp[Keys.ADJ].data.mean()
+
+        if mean_distance >= Nums.MEAN_DISTANCE_TH_WARNING:
+            log.warn(
+                f"The mean distance between cells is {mean_distance}. Your coordinate system may not be in microns, which would lead to unexpected behaviors."
+            )
+        else:
+            mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
+
+            if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
+                log.warn(
+                    f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different threshold."
+                )
 
     if count_no_adj:
         log.warn(
