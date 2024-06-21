@@ -16,7 +16,7 @@ from sklearn.neighbors import KDTree
 from torch import nn
 from torch_geometric.data import Data
 
-from ..utils import lower_var_names
+from .. import utils
 
 log = logging.getLogger(__name__)
 
@@ -55,12 +55,13 @@ class CellEmbedder(L.LightningModule):
         self.linear.weight.data.copy_(torch.eye(self.embedding_size))
         self.linear.bias.data.zero_()
 
+    @utils.doc_params
     @classmethod
     def from_scgpt_embedding(cls, scgpt_model_dir: str) -> CellEmbedder:
         """Initialize the CellEmbedder from a scGPT pretrained model directory.
 
         Args:
-            scgpt_model_dir: Path to a directory containing a `vocab.json` and a `best_model.pt` file.
+            {scgpt_model_dir}
 
         Returns:
             A CellEmbedder instance.
@@ -79,7 +80,7 @@ class CellEmbedder(L.LightningModule):
         return cls(gene_to_index, None, embedding=embedding)
 
     def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor | np.ndarray:
-        indices = [self.gene_to_index[gene] for gene in lower_var_names(gene_names)]
+        indices = [self.gene_to_index[gene] for gene in utils.lower_var_names(gene_names)]
 
         if as_torch:
             return torch.tensor(indices, dtype=torch.long, device=self.device)
@@ -113,10 +114,10 @@ class CellEmbedder(L.LightningModule):
         indices = self.genes_to_indices(adata.var_names)
         self.embedding.weight.data[indices] = torch.tensor(pca.components_.T)
 
-        known_var_names = lower_var_names(adata.var_names)
+        known_var_names = utils.lower_var_names(adata.var_names)
 
         for other_adata in adatas:
-            other_var_names = lower_var_names(other_adata.var_names)
+            other_var_names = utils.lower_var_names(other_adata.var_names)
             where_in = np.isin(other_var_names, known_var_names)
 
             if where_in.all():

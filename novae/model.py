@@ -19,19 +19,31 @@ log = logging.getLogger(__name__)
 
 
 class Novae(L.LightningModule):
+    """Novae model class. It can be used to load a pretrained model or train a new one.
+
+    Note:
+        ```python
+        import novae
+
+        model = novae.Novae(adata, slide_key="slide_id")
+        model.train()
+        ```
+    """
+
+    @utils.doc_params
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str = None,
-        var_names: list[str] = None,
         scgpt_model_dir: str | None = None,
+        var_names: list[str] = None,
         embedding_size: int = 100,
+        output_size: int = 64,
         n_hops_local: int = 2,
         n_hops_ngh: int = 2,
         heads: int = 4,
         hidden_size: int = 64,
         num_layers: int = 10,
-        output_size: int = 64,
         batch_size: int = 512,
         lr: float = 1e-3,
         temperature: float = 0.5,
@@ -40,6 +52,28 @@ class Novae(L.LightningModule):
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
     ) -> None:
+        """
+
+        Args:
+            {adata}
+            {slide_key}
+            {scgpt_model_dir}
+            var_names: Only used when loading a pretrained model. To not use it yourself.
+            embedding_size: Size of the gene embedding. Do not use it when loading embeddings from scGPT.
+            output_size: Size of the latent space.
+            n_hops_local: Number of hops between a cell and its neighborhood cells.
+            n_hops_ngh: Number of hops between a cell and the origin of a neighborhood subgraph.
+            heads: Number of heads for the graph encoder.
+            hidden_size: Hidden size for the graph encoder.
+            num_layers: Number of layers for the graph encoder.
+            batch_size: Mini-batch size.
+            lr: Model learning rate.
+            temperature: Swav temperature.
+            num_prototypes: Number of prototypes, or "leaves" niches.
+            panel_subset_size: Ratio of genes kept from the panel during augmentation.
+            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
+            sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
+        """
         super().__init__()
         self.slide_key = slide_key
 
@@ -131,8 +165,18 @@ class Novae(L.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
         return optimizer
 
+    @utils.doc_params
     @torch.no_grad()
     def latent_representation(self, adata: AnnData | list[AnnData] | None = None, slide_key: str | None = None) -> None:
+        """Compute the latent representation of Novae for all cells neighborhoods.
+
+        !!! info
+            Representations are saved in `adata.obsm["novae_latent"]`
+
+        Args:
+            {adata}
+            {slide_key}
+        """
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
 

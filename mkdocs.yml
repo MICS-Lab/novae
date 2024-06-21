@@ -1,13 +1,22 @@
 site_name: novae
 repo_name: novae
-copyright: Copyright &copy; 2021 - 2022 Quentin Blampey
+copyright: Copyright &copy; 2024 Quentin Blampey
 theme:
   name: material
 nav:
   - Home: index.md
+  - API:
+    - novae.Novae: api/novae.Novae.md
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            heading_level: 2
+            extensions:
+            - docs/format_docstrings.py
   - mkdocs-jupyter:
       include_source: True
 markdown_extensions:
