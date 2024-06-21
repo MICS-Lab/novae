@@ -4,7 +4,7 @@ on:
     tags:
       - v*
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   deploy:

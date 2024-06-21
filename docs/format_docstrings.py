@@ -5,7 +5,7 @@ import ast
 from griffe.dataclasses import Function
 from griffe.extensions import VisitorExtension
 
-from novae.utils.utils import format_docstring
+from novae.utils._docs import format_docstring
 
 
 class DocParamsExtension(VisitorExtension):
