@@ -207,12 +207,34 @@ class Novae(L.LightningModule):
             return self.adatas
         return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
-    def assign_domains(self, adata: AnnData | list[AnnData], k: int, key_added: str | None = None) -> str:
+    @utils.format_docs
+    def assign_domains(
+        self, adata: AnnData | list[AnnData] | None = None, k: int = 10, key_added: str | None = None
+    ) -> str:
+        """Assign a domain (or niche) to each cell based on the "leaves" classes.
+
+        Note:
+            You'll need to run `model.latent_representation(...)` first.
+
+            The domains are saved in `adata.obs["novae_niche_k"]` by default, where `k=10`.
+
+        Args:
+            {adata}
+            k: Number of domains (or niches) to assign.
+            key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `"novae_niche_k"`.
+
+        Returns:
+            The name of the key added to `adata.obs`.
+        """
         if key_added is None:
             key_added = f"{Keys.NICHE_PREFIX}{k}"
 
-        adatas = [adata] if isinstance(adata, AnnData) else adata
+        adatas = [adata] if isinstance(adata, AnnData) else (adata if isinstance(adata, list) else self.adatas)
+
         for adata in adatas:
+            assert (
+                Keys.SWAV_CLASSES in adata.obs
+            ), f"Did not found `adata.obs['{Keys.SWAV_CLASSES}']`. Please run `model.latent_representation(...)` first"
             adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
 
         log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
@@ -220,6 +242,14 @@ class Novae(L.LightningModule):
 
     @classmethod
     def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
+        """Initialize a model from a Weights & Biases artifact.
+
+        Args:
+            name: Name of the artifact.
+
+        Returns:
+            A Novae model.
+        """
         artifact_dir = utils._load_wandb_artifact(name)
 
         try:
@@ -295,7 +325,14 @@ class Novae(L.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
+    @utils.format_docs
     def train(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None, **kwargs):
+        """Train a Novae model.
+
+        Args:
+            {adata}
+            {slide_key}
+        """
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
             self._datamodule = self._init_datamodule()
