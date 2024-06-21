@@ -41,7 +41,7 @@ def convert_to_h5ad(dataset_dir: Path):
 
     adata = anndata.AnnData(data.loc[:, is_gene], obs=obs)
 
-    adata.obsm["spatial"] = adata.obs[["CenterX_local_px", "CenterY_local_px"]].values * 0.120280945
+    adata.obsm["spatial"] = adata.obs[["CenterX_global_px", "CenterY_global_px"]].values * 0.120280945
     adata.obs["slide_id"] = pd.Series(slide_id, index=adata.obs_names, dtype="category")
 
     adata.X = csr_matrix(adata.X)
