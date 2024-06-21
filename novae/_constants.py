@@ -37,7 +37,8 @@ class Nums:
 
     # default thresholds
     DELAUNAY_RADIUS_TH: int = 100  # microns
-    MEAN_DISTANCE_TH_WARNING: float = 30  # microns
+    MEAN_DISTANCE_UPPER_TH_WARNING: float = 30  # microns
+    MEAN_DISTANCE_LOWER_TH_WARNING: float = 4  # microns
     MEAN_NGH_TH_WARNING: float = 3.5
     N_OBS_THRESHOLD: int = 100_000_000  # TODO: improve this using total RAM
 
