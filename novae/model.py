@@ -127,7 +127,7 @@ class Novae(L.LightningModule):
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
 
-        loss = self.swav_head(out["main"], out["neighbor"])
+        loss = self.swav_head(out["main"], out["view"])
 
         self.log(
             "train/loss",

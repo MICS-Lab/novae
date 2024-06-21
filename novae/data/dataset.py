@@ -98,7 +98,7 @@ class NeighborhoodDataset(Dataset):
         data = self.to_pyg_data(adata_index, obs_index)
         data_ngh = self.to_pyg_data(adata_index, ngh_index)
 
-        return {"main": data, "neighbor": data_ngh}
+        return {"main": data, "view": data_ngh}
 
     def to_pyg_data(self, adata_index: int, obs_index: int) -> Data | tuple[Data, Data]:
         """Create a PyTorch Geometric Data object for the input cell
