@@ -30,7 +30,7 @@ class Novae(L.LightningModule):
         ```
     """
 
-    @utils.doc_params
+    @utils.format_docs
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -40,7 +40,7 @@ class Novae(L.LightningModule):
         embedding_size: int = 100,
         output_size: int = 64,
         n_hops_local: int = 2,
-        n_hops_ngh: int = 2,
+        n_hops_view: int = 2,
         heads: int = 4,
         hidden_size: int = 64,
         num_layers: int = 10,
@@ -62,7 +62,7 @@ class Novae(L.LightningModule):
             embedding_size: Size of the gene embedding. Do not use it when loading embeddings from scGPT.
             output_size: Size of the latent space.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
-            n_hops_ngh: Number of hops between a cell and the origin of a neighborhood subgraph.
+            n_hops_view: Number of hops between a cell and the origin of a second graph (or "view").
             heads: Number of heads for the graph encoder.
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.
@@ -155,7 +155,7 @@ class Novae(L.LightningModule):
             cell_embedder=self.cell_embedder,
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
-            n_hops_ngh=self.hparams.n_hops_ngh,
+            n_hops_view=self.hparams.n_hops_view,
         )
 
     def on_train_epoch_start(self):
@@ -165,7 +165,7 @@ class Novae(L.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
         return optimizer
 
-    @utils.doc_params
+    @utils.format_docs
     @torch.no_grad()
     def latent_representation(self, adata: AnnData | list[AnnData] | None = None, slide_key: str | None = None) -> None:
         """Compute the latent representation of Novae for all cells neighborhoods.

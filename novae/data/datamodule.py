@@ -20,11 +20,11 @@ class NovaeDatamodule(L.LightningDataModule):
         cell_embedder: CellEmbedder,
         batch_size: int,
         n_hops_local: int,
-        n_hops_ngh: int,
+        n_hops_view: int,
         num_workers: int = 0,
     ) -> None:
         super().__init__()
-        self.dataset = NeighborhoodDataset(adatas, cell_embedder, batch_size, n_hops_local, n_hops_ngh)
+        self.dataset = NeighborhoodDataset(adatas, cell_embedder, batch_size, n_hops_local, n_hops_view)
         self.batch_size = batch_size
         self.num_workers = num_workers
 

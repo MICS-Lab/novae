@@ -4,7 +4,7 @@ data:
 
 model_kwargs:
   n_hops_local: 2
-  n_hops_ngh: 3
+  n_hops_view: 3
   heads: 4
   embedding_size: 30
 

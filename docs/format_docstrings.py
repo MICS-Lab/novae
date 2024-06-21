@@ -13,7 +13,7 @@ class DocParamsExtension(VisitorExtension):
         function: Function = self.visitor.current.members[node.name]  # type: ignore[assignment]
         if hasattr(function, "decorators"):
             for decorator in function.decorators:
-                if str(decorator.value).endswith("doc_params"):
+                if str(decorator.value).endswith("format_docs"):
                     function.docstring.value = format_docstring(
                         function.docstring.value,
                     )

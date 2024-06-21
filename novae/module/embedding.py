@@ -55,7 +55,7 @@ class CellEmbedder(L.LightningModule):
         self.linear.weight.data.copy_(torch.eye(self.embedding_size))
         self.linear.bias.data.zero_()
 
-    @utils.doc_params
+    @utils.format_docs
     @classmethod
     def from_scgpt_embedding(cls, scgpt_model_dir: str) -> CellEmbedder:
         """Initialize the CellEmbedder from a scGPT pretrained model directory.

@@ -36,7 +36,7 @@ class NeighborhoodDataset(Dataset):
         cell_embedder: CellEmbedder,
         batch_size: int,
         n_hops_local: int,
-        n_hops_ngh: int,
+        n_hops_view: int,
     ) -> None:
         super().__init__()
         self.adatas = adatas
@@ -47,7 +47,7 @@ class NeighborhoodDataset(Dataset):
 
         self.batch_size = batch_size
         self.n_hops_local = n_hops_local
-        self.n_hops_ngh = n_hops_ngh
+        self.n_hops_view = n_hops_view
 
         self.single_slide_mode = len(self.adatas) == 1 and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
 
@@ -58,7 +58,7 @@ class NeighborhoodDataset(Dataset):
             adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
             adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
-            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_ngh)
+            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_view)
             adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
@@ -175,14 +175,14 @@ def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:
     return adjacency_local.tocsr()
 
 
-def _to_adjacency_pair(adjacency: csr_matrix, n_hops_ngh: int) -> csr_matrix:
+def _to_adjacency_pair(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
     """
     Creates an adjacancy matrix for which all nodes separated by
-    precisely `n_hops_ngh` nodes are linked.
+    precisely `n_hops_view` nodes are linked.
     """
-    assert n_hops_ngh >= 1, f"n_hops_ngh must be greater than 0. Found {n_hops_ngh}."
+    assert n_hops_view >= 1, f"n_hops_view must be greater than 0. Found {n_hops_view}."
 
-    if n_hops_ngh == 1:
+    if n_hops_view == 1:
         adjacency_pair = adjacency.copy()
         adjacency_pair.setdiag(0)
         adjacency_pair.eliminate_zeros()
@@ -190,8 +190,8 @@ def _to_adjacency_pair(adjacency: csr_matrix, n_hops_ngh: int) -> csr_matrix:
 
     adjacency_pair: lil_matrix = adjacency.copy().tolil()
     adjacency_pair.setdiag(1)
-    for i in range(n_hops_ngh - 1):
-        if i == n_hops_ngh - 2:
+    for i in range(n_hops_view - 1):
+        if i == n_hops_view - 2:
             adjacency_previous: lil_matrix = adjacency_pair.copy()
         adjacency_pair = adjacency_pair @ adjacency
     adjacency_pair[adjacency_previous.nonzero()] = 0
