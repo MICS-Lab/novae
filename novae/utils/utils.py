@@ -135,16 +135,17 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
 
         mean_distance = adata.obsp[Keys.ADJ].data.mean()
 
-        if mean_distance >= Nums.MEAN_DISTANCE_TH_WARNING:
-            log.warn(
-                f"The mean distance between cells is {mean_distance}. Your coordinate system may not be in microns, which would lead to unexpected behaviors."
-            )
+        warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors."
+        if mean_distance >= Nums.MEAN_DISTANCE_UPPER_TH_WARNING:
+            log.warn(f"The mean distance between neighborhood cells is {mean_distance}, which is high. {warning_cs}")
+        elif mean_distance <= Nums.MEAN_DISTANCE_LOWER_TH_WARNING:
+            log.warn(f"The mean distance between neighborhood cells is {mean_distance}, which is low. {warning_cs}")
         else:
             mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
 
             if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
                 log.warn(
-                    f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different threshold."
+                    f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different `radius` threshold."
                 )
 
     if count_no_adj:
