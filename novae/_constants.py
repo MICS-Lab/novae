@@ -33,15 +33,18 @@ class Keys:
 class Nums:
     # training constants
     EPS: float = 1e-8
-    MAX_DATASET_LENGTH = 50_000
+    MAX_DATASET_LENGTH: int = 50_000
 
-    # default thresholds
-    DELAUNAY_RADIUS_TH: int = 100  # microns
-    MEAN_DISTANCE_UPPER_TH_WARNING: float = 30  # microns
-    MEAN_DISTANCE_LOWER_TH_WARNING: float = 4  # microns
-    MEAN_NGH_TH_WARNING: float = 3.5
-    N_OBS_THRESHOLD: int = 100_000_000  # TODO: improve this using total RAM
+    # distances constants and thresholds (in microns)
+    CELLS_CHARACTERISTIC_DISTANCE: int = 20  # characteristic distance between two cells, in microns
+    DELAUNAY_RADIUS_TH: int = 100
+    MEAN_DISTANCE_UPPER_TH_WARNING: float = 30
+    MEAN_DISTANCE_LOWER_TH_WARNING: float = 4
 
     # genes constants
     MAX_GENES: int = 3_000
     MIN_GENES: int = 20
+
+    # misc nums
+    MEAN_NGH_TH_WARNING: float = 3.5
+    N_OBS_THRESHOLD: int = 100_000_000  # TODO: improve this using total RAM

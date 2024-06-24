@@ -118,7 +118,7 @@ class NeighborhoodDataset(Dataset):
         adjacency: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ]
 
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
-        edge_attr = edge_weight[:, None].to(torch.float32)
+        edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
         return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
 
