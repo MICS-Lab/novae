@@ -58,7 +58,7 @@ class Novae(L.LightningModule):
             {adata}
             {slide_key}
             {scgpt_model_dir}
-            var_names: Only used when loading a pretrained model. To not use it yourself.
+            {var_names}
             embedding_size: Size of the gene embedding. Do not use it when loading embeddings from scGPT.
             output_size: Size of the latent space.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
@@ -70,9 +70,9 @@ class Novae(L.LightningModule):
             lr: Model learning rate.
             temperature: Swav temperature.
             num_prototypes: Number of prototypes, or "leaves" niches.
-            panel_subset_size: Ratio of genes kept from the panel during augmentation.
-            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
-            sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
+            {panel_subset_size}
+            {background_noise_lambda}
+            {sensitivity_noise_std}
         """
         super().__init__()
         self.slide_key = slide_key
@@ -90,7 +90,7 @@ class Novae(L.LightningModule):
         self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
         ### Modules
-        self.backbone = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
+        self.encoder = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
         self.swav_head = SwavHead(output_size, num_prototypes, temperature)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
 
@@ -122,7 +122,7 @@ class Novae(L.LightningModule):
         return self.cell_embedder(data)
 
     def forward(self, batch: dict[str, Data]) -> torch.Tensor:
-        return {key: self.backbone(self._embed_pyg_data(data)) for key, data in batch.items()}
+        return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
@@ -170,7 +170,7 @@ class Novae(L.LightningModule):
     def latent_representation(self, adata: AnnData | list[AnnData] | None = None, slide_key: str | None = None) -> None:
         """Compute the latent representation of Novae for all cells neighborhoods.
 
-        !!! info
+        Note:
             Representations are saved in `adata.obsm["novae_latent"]`
 
         Args:
@@ -185,7 +185,7 @@ class Novae(L.LightningModule):
             for batch in utils.tqdm(datamodule.predict_dataloader()):
                 batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
                 data_main = self._embed_pyg_data(batch["main"])
-                x_main = self.backbone(data_main)
+                x_main = self.encoder(data_main)
                 out_rep.append(x_main)
                 out_ = F.normalize(x_main, dim=1, p=2)
 
@@ -326,7 +326,16 @@ class Novae(L.LightningModule):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
     @utils.format_docs
-    def train(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None, **kwargs):
+    def train(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        slide_key: str | None = None,
+        max_epochs=10,
+        accelerator="cpu",
+        enable_checkpointing=False,
+        logger=False,
+        **kwargs,
+    ):
         """Train a Novae model.
 
         Args:
@@ -337,5 +346,11 @@ class Novae(L.LightningModule):
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
             self._datamodule = self._init_datamodule()
 
-        trainer = L.Trainer(**kwargs)
+        trainer = L.Trainer(
+            max_epochs=max_epochs,
+            accelerator=accelerator,
+            enable_checkpointing=enable_checkpointing,
+            logger=logger,
+            **kwargs,
+        )
         trainer.fit(self, datamodule=self.datamodule)

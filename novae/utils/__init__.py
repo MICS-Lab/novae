@@ -1,3 +1,5 @@
+from ._docs import format_docs
+from ._build import spatial_neighbors
 from .utils import (
     prepare_adatas,
     repository_root,
@@ -6,6 +8,4 @@ from .utils import (
     lower_var_names,
     wandb_log_dir,
 )
-from ._build import spatial_neighbors
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset
-from ._docs import format_docs

@@ -29,7 +29,10 @@ def spatial_neighbors(
     percentile: float | None = None,
     set_diag: bool = False,
 ):
-    """Create a Delaunay graph from spatial coordinates. This function comes from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
+    """Create a Delaunay graph from the spatial coordinates of the cells. This function was updated from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
+
+    Note:
+        The resulting graph is used by Novae to create its inputs graphs
 
     Args:
         adata: AnnData object

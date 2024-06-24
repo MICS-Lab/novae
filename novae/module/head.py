@@ -12,7 +12,7 @@ from sklearn.cluster import AgglomerativeClustering
 from torch import Tensor, nn
 
 from .._constants import Nums
-from .embedding import CellEmbedder
+from . import CellEmbedder
 
 log = logging.getLogger(__name__)
 
@@ -35,8 +35,14 @@ class SwavHead(L.LightningModule):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
     def forward(self, out1: Tensor, out2: Tensor) -> Tensor:
-        """
-        out1, out2: (B x output_size)
+        """Compute the SWAV loss for two batches of neighborhood graph views.
+
+        Args:
+            out1: Batch containing graphs embeddings `(B, output_size)`
+            out2: Batch containing graphs embeddings `(B, output_size)`
+
+        Returns:
+            The SWAV loss
         """
         self.normalize_prototypes()
 
@@ -53,8 +59,15 @@ class SwavHead(L.LightningModule):
 
     @torch.no_grad()
     def sinkhorn(self, scores: Tensor, epsilon: float = 0.05, sinkhorn_iterations: int = 3) -> Tensor:
-        """
-        scores: (B x num_prototypes)
+        """Apply the Sinkhorn-Knopp algorithm to the scores.
+
+        Args:
+            scores: The normalized embeddings projected into the prototypes
+            epsilon: The entropy regularization term.
+            sinkhorn_iterations: The number of Sinkhorn iterations.
+
+        Returns:
+            The soft codes from the Sinkhorn-Knopp algorithm.
         """
         Q = torch.exp(scores / epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
@@ -74,6 +87,9 @@ class SwavHead(L.LightningModule):
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
     def hierarchical_clustering(self) -> None:
+        """
+        Perform hierarchical clustering on the prototypes. Saves the full tree of clusters.
+        """
         X = self.prototypes.data.numpy(force=True)  # (num_prototypes, output_size)
 
         clustering = AgglomerativeClustering(
@@ -94,6 +110,15 @@ class SwavHead(L.LightningModule):
             self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
 
     def map_leaves_domains(self, series: pd.Series, n_classes: int) -> pd.Series:
+        """Map leaves to the parent domain from the corresponding level of the hierarchical tree.
+
+        Args:
+            series: Leaves classes
+            n_classes: Number of classes after mapping
+
+        Returns:
+            Series of classes (one among `n_classes`).
+        """
         if self.clusters_levels is None:
             self.hierarchical_clustering()
 

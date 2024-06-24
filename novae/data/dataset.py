@@ -11,7 +11,7 @@ from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
-from .convert import AnnDataTorch
+from . import AnnDataTorch
 
 
 class NeighborhoodDataset(Dataset):

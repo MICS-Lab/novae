@@ -13,17 +13,38 @@ from scipy.sparse import csr_matrix
 from torch import Tensor
 
 from .._constants import Keys, Nums
-from ._build import spatial_neighbors
+from . import format_docs, spatial_neighbors
 
 log = logging.getLogger(__name__)
 
 
+@format_docs
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     slide_key: str = None,
     var_names: set | list[str] | None = None,
 ) -> list[AnnData]:
-    """Ensure the AnnData objects are ready to be used by the model"""
+    """Ensure the AnnData objects are ready to be used by the model.
+
+    Note:
+        It performs the following operations:
+
+        - Preprocess the data if needed (e.g. normalize, log1p), in which case raw counts are saved in `adata.layers['counts']`
+        - Compute spatial neighbors (if not already computed), using [novae.utils.spatial_neighbors][]
+        - Compute the mean and std of each gene
+        - Save which genes are highly variable, in case the number of genes is too high
+        - If `slide_key` is provided, ensure that all `slide_key` are valid and unique
+        - If using a pretrained model, save which genes are known by the model
+
+
+    Args:
+        {adata}
+        {slide_key}
+        {var_names}
+
+    Returns:
+        A list of `AnnData` objects ready to be used by the model. If only one `adata` object is provided, it will be wrapped in a list.
+    """
     assert adata is not None or var_names is not None, "One of `adata` and `var_names` must not be None"
 
     if adata is None:

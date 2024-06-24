@@ -49,6 +49,24 @@ def dummy_dataset(
     slide_ids_unique: bool = True,
     compute_spatial_neighbors: bool = True,
 ) -> list[AnnData]:
+    """Creates a dummy dataset, useful for debugging or testing.
+
+    Args:
+        n_obs_per_domain: Number of obs per domain or niche.
+        n_vars: Number of genes.
+        n_drop: Number of genes that are removed for each `AnnData` object. It will create non-identical panels.
+        n_domains: Number of domains, or niches.
+        n_panels: Number of panels. Each panel will correspond to one output `AnnData` object.
+        n_slides_per_panel: Number of slides per panel.
+        panel_shift_factor: Shift factor for each panel.
+        batch_shift_factor: Shift factor for each batch.
+        class_shift_factor: Shift factor for each niche.
+        slide_ids_unique: Whether to ensure that slide ids are unique.
+        compute_spatial_neighbors: Whether to compute the spatial neighbors graph.
+
+    Returns:
+        A list of `AnnData` objects representing a valid `Novae` dataset.
+    """
 
     panels_shift = [panel_shift_factor * np.random.randn(n_vars) for _ in range(n_panels)]
     domains_shift = [class_shift_factor * np.random.randn(n_vars) for _ in range(n_domains)]

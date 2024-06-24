@@ -5,22 +5,43 @@ import scanpy as sc
 from anndata import AnnData
 from sklearn import metrics
 
+from .. import utils
 from .._constants import Keys, Nums
 
 
+@utils.format_docs
 def mean_fide_score(
     adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_classes: int | None = None
 ) -> float:
-    """Mean FIDE score over all slides. A low score indicates a great domain continuity."""
+    """Mean FIDE score over all slides. A low score indicates a great domain continuity.
+
+    Args:
+        adatas: An `AnnData` object, or a list of `AnnData` objects.
+        {obs_key}
+        {slide_key}
+        n_classes: Optional number of classes. This can be useful if not all classes are predicted, for a fair comparision.
+
+    Returns:
+        The FIDE score averaged for all slides.
+    """
     return np.mean([fide_score(adata, obs_key, n_classes=n_classes) for adata in _iter_uid(adatas, slide_key)])
 
 
+@utils.format_docs
 def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> float:
-    """
-    F1-score of intra-domain edges (FIDE). A high score indicates a great domain continuity.
+    """F1-score of intra-domain edges (FIDE). A high score indicates a great domain continuity.
 
-    The F1-score is computed for every class, then all F1-scores are averaged. If some classes
-    are not predicted, the `n_classes` argument allows to pad with zeros before averaging the F1-scores.
+    Note:
+        The F1-score is computed for every class, then all F1-scores are averaged. If some classes
+        are not predicted, the `n_classes` argument allows to pad with zeros before averaging the F1-scores.
+
+    Args:
+        adata: An `AnnData` object
+        {obs_key}
+        n_classes: Optional number of classes. This can be useful if not all classes are predicted, for a fair comparision.
+
+    Returns:
+        The FIDE score.
     """
     i_left, i_right = adata.obsp[Keys.ADJ].nonzero()
     classes_left, classes_right = adata.obs.iloc[i_left][obs_key], adata.obs.iloc[i_right][obs_key]
@@ -35,16 +56,17 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     return np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean()
 
 
+@utils.format_docs
 def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Jensen-Shannon divergence (JSD) over all slides
 
     Args:
-        adata: One or a list of AnnData object(s)
-        obs_key: The key containing the clusters
-        slide_key: The slide ID obs key
+        adatas: One or a list of AnnData object(s)
+        {obs_key}
+        {slide_key}
 
     Returns:
-        A float corresponding to the JSD
+        The Jensen-Shannon divergence score for all slides
     """
     distributions = [
         adata.obs[obs_key].value_counts(sort=False).values for adata in _iter_uid(adatas, slide_key, obs_key)
@@ -53,14 +75,34 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
     return _jensen_shannon_divergence(np.array(distributions))
 
 
+@utils.format_docs
 def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_top_genes: int = 3) -> float:
-    """
-    Mean SVG score over all slides. A high score indicates better niche-specific genes, or spatial variable genes.
+    """Mean SVG score over all slides. A high score indicates better niche-specific genes, or spatial variable genes.
+
+    Args:
+        adata: An `AnnData` object, or a list.
+        {obs_key}
+        {slide_key}
+        {n_top_genes}
+
+    Returns:
+        The mean SVG score accross all slides.
     """
     return np.mean([svg_score(adata, obs_key, n_top_genes=n_top_genes) for adata in _iter_uid(adata, slide_key)])
 
 
+@utils.format_docs
 def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
+    """Average score of the top differentially expressed genes for each niche.
+
+    Args:
+        adata: An `AnnData` object
+        {obs_key}
+        {n_top_genes}
+
+    Returns:
+        The average SVG score.
+    """
     sc.tl.rank_genes_groups(adata, groupby=obs_key)
     sub_recarray: np.recarray = adata.uns["rank_genes_groups"]["scores"][:n_top_genes]
     return np.mean([sub_recarray[field].mean() for field in sub_recarray.dtype.names])

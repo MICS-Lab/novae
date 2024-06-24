@@ -7,6 +7,20 @@ nav:
   - Home: index.md
   - API:
     - novae.Novae: api/novae.Novae.md
+    - novae.utils: api/novae.utils.md
+    - novae.monitor: api/novae.monitor.md
+    - novae.module:
+      - novae.module.GraphAugmentation: api/novae.module.GraphAugmentation.md
+      - novae.module.CellEmbedder: api/novae.module.CellEmbedder.md
+      - novae.module.GraphEncoder: api/novae.module.GraphEncoder.md
+      - novae.module.AttentionAggregation: api/novae.module.AttentionAggregation.md
+      - novae.module.SwavHead: api/novae.module.SwavHead.md
+      - novae.module.InferenceHeadZIE: api/novae.module.InferenceHeadZIE.md
+    - novae.data:
+      - novae.data.NeighborhoodDataset: api/novae.data.NeighborhoodDataset.md
+      - novae.data.NovaeDatamodule: api/novae.data.NovaeDatamodule.md
+      - novae.data.AnnDataTorch: api/novae.data.AnnDataTorch.md
+
 plugins:
   - search
   - mkdocstrings:

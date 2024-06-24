@@ -11,7 +11,7 @@ from . import NeighborhoodDataset
 
 class NovaeDatamodule(L.LightningDataModule):
     """
-    Datamodule used for training and inference. Small wrapper around the `LocalAugmentationDataset`
+    Datamodule used for training and inference. Small wrapper around the `NeighborhoodDataset`
     """
 
     def __init__(
