@@ -10,5 +10,3 @@ model_kwargs:
 
 trainer_kwargs:
   max_epochs: 50
-  accelerator: "gpu"
-  num_workers: 8
