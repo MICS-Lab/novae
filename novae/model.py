@@ -346,7 +346,6 @@ class Novae(L.LightningModule):
         max_epochs: int = 10,
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        enable_checkpointing: bool = False,
         logger: Logger | list[Logger] | bool = False,
         **kwargs,
     ):
@@ -358,7 +357,6 @@ class Novae(L.LightningModule):
             max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `"cuda"` or `"cpu"`.
             num_workers: Number of workers for the dataloader.
-            enable_checkpointing: Whether to enable checkpointing.
             logger: The pytorch lightning logger.
         """
         if num_workers is not None:
@@ -371,7 +369,6 @@ class Novae(L.LightningModule):
         trainer = L.Trainer(
             max_epochs=max_epochs,
             accelerator=accelerator,
-            enable_checkpointing=enable_checkpointing,
             logger=logger,
             **kwargs,
         )
