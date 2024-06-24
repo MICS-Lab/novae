@@ -115,6 +115,16 @@ class Novae(L.LightningModule):
     def dataset(self) -> NeighborhoodDataset:
         return self.datamodule.dataset
 
+    @property
+    def num_workers(self) -> int:
+        return self._num_workers
+
+    @num_workers.setter
+    def num_workers(self, value: int) -> None:
+        self._num_workers = value
+        if hasattr(self, "_datamodule"):
+            self._datamodule.num_workers = value
+
     def __repr__(self) -> str:
         return f"Novae model with {self.cell_embedder.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
 
@@ -345,9 +355,14 @@ class Novae(L.LightningModule):
         Args:
             {adata}
             {slide_key}
+            max_epochs: Maximum number of training epochs.
+            accelerator: Accelerator to use. For instance, `"cuda"` or `"cpu"`.
+            num_workers: Number of workers for the dataloader.
+            enable_checkpointing: Whether to enable checkpointing.
+            logger: The pytorch lightning logger.
         """
         if num_workers is not None:
-            self._num_workers = num_workers
+            self.num_workers = num_workers
 
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
