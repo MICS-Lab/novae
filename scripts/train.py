@@ -9,6 +9,7 @@ import argparse
 
 import lightning as L
 import pandas as pd
+import torch
 import yaml
 from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -43,6 +44,11 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
     callbacks = _get_callbacks(config, sweep, adatas_val)
 
     model = novae.Novae(adatas, **config.get("model_kwargs", {}))
+
+    if config.get("compile"):
+        log.info("Compiling the model")
+        model: novae.Novae = torch.compile(model)
+
     model.train(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
 
 
