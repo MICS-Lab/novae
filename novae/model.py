@@ -27,7 +27,7 @@ class Novae(L.LightningModule):
         import novae
 
         model = novae.Novae(adata, slide_key="slide_id")
-        model.train()
+        model.fit()
         ```
     """
 
@@ -339,7 +339,7 @@ class Novae(L.LightningModule):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
     @utils.format_docs
-    def train(
+    def fit(
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,

@@ -49,7 +49,7 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
         log.info("Compiling the model")
         model: novae.Novae = torch.compile(model)
 
-    model.train(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
+    model.fit(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
 
 
 def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) -> list[L.Callback] | None:

@@ -10,6 +10,6 @@ adatas = novae.utils.dummy_dataset(
 
 def test_train():
     model = novae.Novae(adatas)
-    model.train(max_epochs=1)
+    model.fit(max_epochs=1)
     model.latent_representation()
     model.assign_domains()
