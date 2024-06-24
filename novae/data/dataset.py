@@ -40,8 +40,8 @@ class NeighborhoodDataset(Dataset):
     ) -> None:
         super().__init__()
         self.adatas = adatas
-        self.anndata_torch = AnnDataTorch(self.adatas)
         self.cell_embedder = cell_embedder
+        self.anndata_torch = AnnDataTorch(self.adatas, self.cell_embedder)
 
         self.training = False
 
@@ -111,13 +111,13 @@ class NeighborhoodDataset(Dataset):
             A Data object
         """
         adjacency_local: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_LOCAL]
-        cells_indices = adjacency_local[obs_index].indices
+        obs_indices = adjacency_local[obs_index].indices
 
-        x, var_names = self.anndata_torch[adata_index, cells_indices]
-        genes_indices = self.cell_embedder.genes_to_indices(var_names)[None, :]
+        x, genes_indices = self.anndata_torch[adata_index, obs_indices]
 
         adjacency: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ]
-        edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[cells_indices][:, cells_indices])
+
+        edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
         edge_attr = edge_weight[:, None].to(torch.float32)
 
         return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
