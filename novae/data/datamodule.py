@@ -36,7 +36,6 @@ class NovaeDatamodule(L.LightningDataModule):
             shuffle=False,
             drop_last=True,
             num_workers=self.num_workers,
-            pin_memory=True,
         )
 
     def predict_dataloader(self):
@@ -47,5 +46,4 @@ class NovaeDatamodule(L.LightningDataModule):
             shuffle=False,
             drop_last=False,
             num_workers=self.num_workers,
-            pin_memory=True,
         )
