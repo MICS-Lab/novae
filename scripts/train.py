@@ -43,9 +43,7 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
     callbacks = _get_callbacks(config, sweep, adatas_val)
 
     model = novae.Novae(adatas, **config.get("model_kwargs", {}))
-
-    trainer = L.Trainer(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
-    trainer.fit(model, datamodule=model.datamodule)
+    model.train(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
 
 
 def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) -> list[L.Callback] | None:

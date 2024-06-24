@@ -6,6 +6,7 @@ import lightning as L
 import numpy as np
 import torch
 from anndata import AnnData
+from lightning.pytorch.loggers.logger import Logger
 from torch import nn, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
@@ -98,6 +99,7 @@ class Novae(L.LightningModule):
         self.bce_loss = nn.BCELoss()
 
         ### Datamodule
+        self._num_workers = 0
         if self.adatas is not None:
             self._datamodule = self._init_datamodule()
 
@@ -156,6 +158,7 @@ class Novae(L.LightningModule):
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
             n_hops_view=self.hparams.n_hops_view,
+            num_workers=self._num_workers,
         )
 
     def on_train_epoch_start(self):
@@ -330,10 +333,11 @@ class Novae(L.LightningModule):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
-        max_epochs=10,
-        accelerator="cpu",
-        enable_checkpointing=False,
-        logger=False,
+        max_epochs: int = 10,
+        accelerator: str = "cpu",
+        num_workers: int | None = None,
+        enable_checkpointing: bool = False,
+        logger: Logger | list[Logger] | bool = False,
         **kwargs,
     ):
         """Train a Novae model.
@@ -342,6 +346,9 @@ class Novae(L.LightningModule):
             {adata}
             {slide_key}
         """
+        if num_workers is not None:
+            self._num_workers = num_workers
+
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
             self._datamodule = self._init_datamodule()
