@@ -25,7 +25,10 @@ def mean_fide_score(
         The FIDE score averaged for all slides.
     """
     return np.mean(
-        [fide_score(adata, obs_key, n_classes=n_classes) for adata in _iter_uid(adatas, slide_key=slide_key)]
+        [
+            fide_score(adata, obs_key, n_classes=n_classes)
+            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+        ]
     )
 
 
@@ -45,8 +48,6 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     Returns:
         The FIDE score.
     """
-    adata.obs[obs_key] = adata.obs[obs_key].astype("category")
-
     i_left, i_right = adata.obsp[Keys.ADJ].nonzero()
     classes_left, classes_right = adata.obs.iloc[i_left][obs_key].values, adata.obs.iloc[i_right][obs_key].values
 
@@ -97,7 +98,10 @@ def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str 
         The mean SVG score accross all slides.
     """
     return np.mean(
-        [svg_score(adata, obs_key, n_top_genes=n_top_genes) for adata in _iter_uid(adata, slide_key=slide_key)]
+        [
+            svg_score(adata, obs_key, n_top_genes=n_top_genes)
+            for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
+        ]
     )
 
 
@@ -144,10 +148,20 @@ def _entropy(distribution: np.ndarray) -> float:
     Returns:
         The Shannon entropy
     """
-    return -(distribution * np.log(distribution + Nums.EPS)).sum()
+    return -(distribution * np.log2(distribution + Nums.EPS)).sum()
 
 
 def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs_key: str | None = None):
+    """Iterate over all slides, and make sure `adata.obs[obs_key]` is categorical.
+
+    Args:
+        adatas: One or a list of AnnData object(s).
+        slide_key: The key in `adata.obs` that contains the slide id.
+        obs_key: The key in `adata.obs` that contains the domain or niche id.
+
+    Yields:
+        One `AnnData` per slide.
+    """
     if isinstance(adatas, AnnData):
         adatas = [adatas]
 
@@ -157,8 +171,14 @@ def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs
             adata.obs[obs_key] = adata.obs[obs_key].astype("category").cat.set_categories(categories)
 
     for adata in adatas:
-        if slide_key is not None:
-            for slide_id in adata.obs[slide_key].unique():
-                yield adata[adata.obs[slide_key] == slide_id].copy()
-        else:
+        if slide_key is None:
             yield adata
+            continue
+
+        for slide_id in adata.obs[slide_key].unique():
+            adata_yield = adata[adata.obs[slide_key] == slide_id].copy()
+
+            if obs_key is not None:
+                adata_yield.obs[obs_key] = adata_yield.obs[obs_key].cat.set_categories(categories)
+
+            yield adata_yield
