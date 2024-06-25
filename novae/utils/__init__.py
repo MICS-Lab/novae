@@ -7,5 +7,6 @@ from .utils import (
     fill_invalid_indices,
     lower_var_names,
     wandb_log_dir,
+    pretty_num_parameters,
 )
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset

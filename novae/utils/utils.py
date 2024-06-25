@@ -8,6 +8,7 @@ import anndata
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import torch
 from anndata import AnnData
 from scipy.sparse import csr_matrix
 from torch import Tensor
@@ -259,3 +260,12 @@ def fill_invalid_indices(
     res = np.full((n_obs, *out.shape[1:]), fill_value, dtype=dtype)
     res[valid_indices] = out
     return res
+
+
+def pretty_num_parameters(model: torch.nn.Module) -> str:
+    n_params = sum(p.numel() for p in model.parameters())
+
+    if n_params < 1_000_000:
+        return f"{n_params / 1_000:.1f}K"
+
+    return f"{n_params / 1_000_000:.1f}M"

@@ -6,6 +6,7 @@ import lightning as L
 import numpy as np
 import torch
 from anndata import AnnData
+from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
 from torch import nn, optim
 from torch.nn import functional as F
@@ -126,7 +127,13 @@ class Novae(L.LightningModule):
             self._datamodule.num_workers = value
 
     def __repr__(self) -> str:
-        return f"Novae model with {self.cell_embedder.voc_size} known genes\n   └── [checkpoint] {self._checkpoint}"
+        info_dict = {
+            "known genes": self.cell_embedder.voc_size,
+            "parameters": utils.pretty_num_parameters(self),
+            "checkpoint": self._checkpoint,
+        }
+        rows = ["Novae model"] + [f"[{k}]: {v}" for k, v in info_dict.items()]
+        return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:
@@ -343,13 +350,17 @@ class Novae(L.LightningModule):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
-        max_epochs: int = 10,
+        max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
+        min_delta: float = 0.1,
+        patience: int = 3,
+        callbacks: list[Callback] | None = None,
+        enable_checkpointing: bool = False,
         logger: Logger | list[Logger] | bool = False,
         **kwargs,
     ):
-        """Train a Novae model.
+        """Train a Novae model. The training will be stopped by early stopping.
 
         Args:
             {adata}
@@ -357,6 +368,10 @@ class Novae(L.LightningModule):
             max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `"cuda"` or `"cpu"`.
             num_workers: Number of workers for the dataloader.
+            min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
+            patience: Number of epochs with no improvement after which training will be stopped (early stopping).
+            callbacks: Optional list of Pytorch lightning callbacks.
+            enable_checkpointing: Whether to enable model checkpointing.
             logger: The pytorch lightning logger.
         """
         if num_workers is not None:
@@ -366,10 +381,21 @@ class Novae(L.LightningModule):
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
             self._datamodule = self._init_datamodule()
 
+        early_stopping = EarlyStopping(
+            monitor="train/loss_epoch",
+            min_delta=min_delta,
+            patience=patience,
+            check_on_train_epoch_end=True,
+        )
+        callbacks = [early_stopping] + (callbacks or [])
+        enable_checkpointing = enable_checkpointing or any(isinstance(c, ModelCheckpoint) for c in callbacks)
+
         trainer = L.Trainer(
             max_epochs=max_epochs,
             accelerator=accelerator,
+            callbacks=callbacks,
             logger=logger,
+            enable_checkpointing=enable_checkpointing,
             **kwargs,
         )
         trainer.fit(self, datamodule=self.datamodule)

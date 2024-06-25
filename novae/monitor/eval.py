@@ -24,7 +24,9 @@ def mean_fide_score(
     Returns:
         The FIDE score averaged for all slides.
     """
-    return np.mean([fide_score(adata, obs_key, n_classes=n_classes) for adata in _iter_uid(adatas, slide_key)])
+    return np.mean(
+        [fide_score(adata, obs_key, n_classes=n_classes) for adata in _iter_uid(adatas, slide_key=slide_key)]
+    )
 
 
 @utils.format_docs
@@ -43,8 +45,13 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     Returns:
         The FIDE score.
     """
+    adata.obs[obs_key] = adata.obs[obs_key].astype("category")
+
     i_left, i_right = adata.obsp[Keys.ADJ].nonzero()
-    classes_left, classes_right = adata.obs.iloc[i_left][obs_key], adata.obs.iloc[i_right][obs_key]
+    classes_left, classes_right = adata.obs.iloc[i_left][obs_key].values, adata.obs.iloc[i_right][obs_key].values
+
+    where_valid = ~classes_left.isna() & ~classes_right.isna()
+    classes_left, classes_right = classes_left[where_valid], classes_right[where_valid]
 
     f1_scores = metrics.f1_score(classes_left, classes_right, average=None)
 
@@ -69,7 +76,8 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
         The Jensen-Shannon divergence score for all slides
     """
     distributions = [
-        adata.obs[obs_key].value_counts(sort=False).values for adata in _iter_uid(adatas, slide_key, obs_key)
+        adata.obs[obs_key].value_counts(sort=False).values
+        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
     ]
 
     return _jensen_shannon_divergence(np.array(distributions))
@@ -88,7 +96,9 @@ def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str 
     Returns:
         The mean SVG score accross all slides.
     """
-    return np.mean([svg_score(adata, obs_key, n_top_genes=n_top_genes) for adata in _iter_uid(adata, slide_key)])
+    return np.mean(
+        [svg_score(adata, obs_key, n_top_genes=n_top_genes) for adata in _iter_uid(adata, slide_key=slide_key)]
+    )
 
 
 @utils.format_docs
@@ -137,18 +147,18 @@ def _entropy(distribution: np.ndarray) -> float:
     return -(distribution * np.log(distribution + Nums.EPS)).sum()
 
 
-def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None, obs_key: str | None = None):
+def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs_key: str | None = None):
     if isinstance(adatas, AnnData):
         adatas = [adatas]
 
     if obs_key is not None:
-        categories = set.union(*[set(adata.obs[obs_key].unique().dropna()) for adata in adatas])
+        categories = set.union(*[set(adata.obs[obs_key].astype("category").cat.categories) for adata in adatas])
         for adata in adatas:
             adata.obs[obs_key] = adata.obs[obs_key].astype("category").cat.set_categories(categories)
 
     for adata in adatas:
         if slide_key is not None:
             for slide_id in adata.obs[slide_key].unique():
-                yield adata[adata.obs[slide_key] == slide_id]
+                yield adata[adata.obs[slide_key] == slide_id].copy()
         else:
             yield adata

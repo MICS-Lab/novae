@@ -21,6 +21,7 @@ outputs
 multirun
 lightning_logs
 novae_*
+checkpoints
 
 # Data files
 data/*

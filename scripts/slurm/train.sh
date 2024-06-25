@@ -13,7 +13,7 @@ source activate novae
 cd /mnt/beegfs/userdata/q_blampey/novae/scripts
 
 # Get config
-DEFAULT_CONFIG=swav_gpu_0.yaml
+DEFAULT_CONFIG=all_0.yaml
 CONFIG=${1:-$DEFAULT_CONFIG}
 echo Running with CONFIG=$CONFIG
 
