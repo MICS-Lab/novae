@@ -157,7 +157,7 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
 
         mean_distance = adata.obsp[Keys.ADJ].data.mean()
 
-        warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors."
+        warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors. Read the documentation of `novae.utils.spatial_neighbors` to fix this."
         if mean_distance >= Nums.MEAN_DISTANCE_UPPER_TH_WARNING:
             log.warn(f"The mean distance between neighborhood cells is {mean_distance}, which is high. {warning_cs}")
         elif mean_distance <= Nums.MEAN_DISTANCE_LOWER_TH_WARNING:

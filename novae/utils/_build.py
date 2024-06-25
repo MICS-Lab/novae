@@ -1,5 +1,5 @@
 """
-Copied from squidpy (to not have squidpy as a dependency)
+Copied and updated from squidpy (to not have squidpy as a dependency)
 Functions for building graphs from spatial coordinates.
 """
 
@@ -24,24 +24,54 @@ __all__ = ["spatial_neighbors"]
 
 def spatial_neighbors(
     adata: AnnData,
-    radius: tuple[float, float] | None,
+    radius: tuple[float, float] | float | None = 100,
     slide_key: str | None = None,
+    pixel_size: float | None = None,
+    technology: str | None = None,
     percentile: float | None = None,
     set_diag: bool = False,
 ):
-    """Create a Delaunay graph from the spatial coordinates of the cells. This function was updated from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
+    """Create a Delaunay graph from the spatial coordinates of the cells (in microns).
+    The graph is stored in `adata.obsp['spatial_connectivities']` and `adata.obsp['spatial_distances']`. The long edges
+    are removed from the graph according to the `radius` argument (if provided).
 
     Note:
-        The resulting graph is used by Novae to create its inputs graphs
+        The spatial coordinates are expected to be in microns, and stored in `adata.obsm["spatial"]`.
+        If the coordinates are in pixels, set `pixel_size` to the size of a pixel in microns.
+        If you don't know the `pixel_size`, or if you don't have `adata.obsm["spatial"]`, you can also provide the `technology` argument.
+
+    Info:
+        This function was updated from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
 
     Args:
         adata: AnnData object
-        radius: tuple that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]`. If `None`, all edges are kept.
-        slide_key: Optional batch key in adata.obs
+        radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]` microns. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
+        slide_key: Optional key in `adata.obs` indicating the slide ID of each cell. If provided, the graph is computed for each slide separately.
+        pixel_size: Number of microns in one pixel of the image (use this argument if `adata.obsm["spatial"]` is in pixels). If `None`, the coordinates are assumed to be in microns.
+        technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium"`. If `None`, the coordinates are assumed to be in microns.
         percentile: Percentile of the distances to use as threshold.
         set_diag: Whether to set the diagonal of the spatial connectivities to `1.0`.
     """
+    if isinstance(radius, float) or isinstance(radius, int):
+        radius = [0.0, float(radius)]
+
     assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"
+
+    assert pixel_size is None or technology is None, "You must choose argument between `pixel_size` and `technology`"
+
+    if technology is not None:
+        adata.obsm["spatial"] = _get_technology_coords(adata, technology)
+
+    assert (
+        "spatial" in adata.obsm
+    ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
+
+    if pixel_size is not None:
+        assert (
+            "spatial_pixel" not in adata.obsm
+        ), "Do nott run `novae.utils.spatial_neighbors` twice ('spatial_pixel' already present in `adata.obsm`)."
+        adata.obsm["spatial_pixel"] = adata.obsm["spatial"].copy()
+        adata.obsm["spatial"] = adata.obsm["spatial"] * pixel_size
 
     log.info("Computing delaunay graph")
 
@@ -87,10 +117,6 @@ def _spatial_neighbor(
     set_diag: bool = False,
     percentile: float | None = None,
 ) -> tuple[csr_matrix, csr_matrix]:
-    assert (
-        "spatial" in adata.obsm
-    ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
-
     coords = adata.obsm["spatial"]
 
     assert coords.shape[1] == 2, f"adata.obsm['spatial'] has {coords.shape[1]} dimension(s). Expected 2."
@@ -146,6 +172,27 @@ def _build_connectivity(
     Dst.setdiag(0.0)
 
     return Adj, Dst
+
+
+def _get_technology_coords(adata: AnnData, technology: str) -> np.ndarray:
+    VALID_TECHNOLOGIES = ["cosmx", "merscope", "xenium"]
+    factor: float = 1.0
+
+    assert technology in VALID_TECHNOLOGIES, f"Invalid `technology` argument. Choose one of {VALID_TECHNOLOGIES}"
+
+    if technology == "cosmx":
+        columns = ["CenterX_global_px", "CenterY_global_px"]
+        factor = 0.120280945
+
+    if technology == "merscope":
+        columns = ["center_x", "center_y"]
+
+    if technology == "xenium":
+        columns = ["x_centroid", "y_centroid"]
+
+    assert all(column in adata.obs for column in columns), f"For {technology=}, you must have {columns} in `adata.obs`"
+
+    return adata.obs[columns].values * factor
 
 
 def _check_has_delaunay(adata: AnnData):
