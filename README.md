@@ -1,10 +1,10 @@
 # Novae
 
-Graph-based foundation model for spatial transcriptomics data
+Graph-based foundation model for spatial transcriptomics data.
 
 ## Documentation
 
-TODO
+The [complete documentation can be found here](https://mics-lab.github.io/novae/). It contains installation guidelines, tutorials, a description of the API, etc.
 
 ## Overview
 
@@ -14,24 +14,36 @@ TODO
 
 ### PyPI
 
-TODO
+`novae` can be installed via `PyPI` on all OS, for `python>=3.9`.
 
-### Poetry
-
-```sh
-poetry install    # minimal dependencies
-poetry install --all-extras    # all extras
+```
+pip install novae
 ```
 
-### pip (editable mode)
+### Editable mode
+
+To install `novae` in editable mode (e.g., to contribute), clone the repository and choose among the options below.
+
 ```sh
-pip install -e .    # minimal dependencies
-pip install -e ".[monitor,dev]"    # all extras (monitor: wandb usage)
+pip install -e .                 # pip, minimal dependencies
+pip install -e '.[dev,monitor]'  # pip, all extras
+poetry install                   # poetry, minimal dependencies
+poetry install --all-extras      # poetry, all extras
 ```
 
 ## Usage
 
-TODO
+Here is a minimal usage guide. For more details (e.g. how to load a pretrained model), refer to the [documentation](https://mics-lab.github.io/novae/).
+
+```python
+import novae
+
+model = novae.Novae(adata)
+
+model.fit()
+model.latent_representation()
+model.assign_domains()
+```
 
 ## Cite us
 

@@ -24,11 +24,23 @@ poetry install -E dev
 
 ## Coding guidelines
 
-- Use the `black` formatter and `isort`. Their usage should be automatic as they are in the `pyproject.toml` file. Depending on your IDE, you can choose to format your code on save.
-- Run `flake8` inside the whole `novae` directory, i.e. `flake8 novae`
+We use `pre-commit` to run code quality controls before the commits. This includes running `black`, `isort`, `flake8`, and others.
+
+
+After installing `pre-commit`, you can set it up at the root of `novae` like this:
+```sh
+pre-commit install
+```
+
+Then, it will run the pre-commit automatically before commit. But you can also run the pre-commit manually:
+```sh
+pre-commit run --all-files
+```
+
+Apart from this, we also recommend to follow the standard styling conventions:
 - Follow the [PEP8](https://peps.python.org/pep-0008/) style guide.
 - Provide meaningful names to all your variables and functions.
-- Document your functions and type your function inputs/outputs.
+- Type your function inputs/outputs, and add docstrings in the Google style.
 - Try as much as possible to follow the same coding style as the rest of the repository.
 
 ## Pull Requests
