@@ -56,6 +56,7 @@ class Novae(L.LightningModule):
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
+        epoch_unfreeze_prototypes: int = 2,
     ) -> None:
         """
 
@@ -182,6 +183,8 @@ class Novae(L.LightningModule):
         )
 
     def on_train_epoch_start(self):
+        self.swav_head.prototypes.requires_grad_(self.current_epoch >= self.hparams.epoch_unfreeze_prototypes)
+
         self.datamodule.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):

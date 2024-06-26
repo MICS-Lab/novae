@@ -17,6 +17,7 @@ from torch import nn
 from torch_geometric.data import Data
 
 from .. import utils
+from .._constants import Keys
 
 log = logging.getLogger(__name__)
 
@@ -129,6 +130,8 @@ class CellEmbedder(L.LightningModule):
         """
         if adatas is None:
             return
+
+        adatas = [adata[:, adata.var[Keys.USE_GENE]] for adata in adatas]
 
         adata = max(adatas, key=lambda adata: adata.n_vars)
 
