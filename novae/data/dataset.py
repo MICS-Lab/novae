@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
+from .. import utils
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
 from . import AnnDataTorch
@@ -30,6 +31,7 @@ class NeighborhoodDataset(Dataset):
     obs_ilocs: np.ndarray
     shuffled_obs_ilocs: np.ndarray
 
+    @utils.format_docs
     def __init__(
         self,
         adatas: list[AnnData],
@@ -38,6 +40,15 @@ class NeighborhoodDataset(Dataset):
         n_hops_local: int,
         n_hops_view: int,
     ) -> None:
+        """_summary_
+
+        Args:
+            adatas: A list of `AnnData` objects.
+            cell_embedder: A [novae.module.CellEmbedder][] object.
+            batch_size: The model batch size.
+            {n_hops_local}
+            {n_hops_view}
+        """
         super().__init__()
         self.adatas = adatas
         self.cell_embedder = cell_embedder
@@ -84,7 +95,15 @@ class NeighborhoodDataset(Dataset):
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)
 
-    def __getitem__(self, index: int) -> tuple[Data, Data, Data]:
+    def __getitem__(self, index: int) -> dict[str, Data]:
+        """Gets a sample from the dataset, with one "main" graph and its corresponding "view" graph.
+
+        Args:
+            index: Index of the sample to retrieve.
+
+        Returns:
+            A dictionnary whose keys are "main" and "view", and values are PyTorch Geometric `Data` objects.
+        """
         if self.training:
             adata_index, obs_index = self.shuffled_obs_ilocs[index]
         else:
@@ -100,7 +119,7 @@ class NeighborhoodDataset(Dataset):
 
         return {"main": data, "view": data_ngh}
 
-    def to_pyg_data(self, adata_index: int, obs_index: int) -> Data | tuple[Data, Data]:
+    def to_pyg_data(self, adata_index: int, obs_index: int) -> Data:
         """Create a PyTorch Geometric Data object for the input cell
 
         Args:
@@ -130,6 +149,7 @@ class NeighborhoodDataset(Dataset):
         return slides_metadata
 
     def shuffle_obs_ilocs(self):
+        """Shuffle the indices of the cells to be used in the dataset (for training only)."""
         if self.single_slide_mode:
             self.shuffled_obs_ilocs = self.obs_ilocs[np.random.permutation(len(self.obs_ilocs))]
             return

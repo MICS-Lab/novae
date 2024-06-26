@@ -23,12 +23,15 @@ log = logging.getLogger(__name__)
 class Novae(L.LightningModule):
     """Novae model class. It can be used to load a pretrained model or train a new one.
 
-    Note:
+    !!! note "Example usage"
         ```python
         import novae
 
-        model = novae.Novae(adata, slide_key="slide_id")
+        model = novae.Novae(adata)
+
         model.fit()
+        model.latent_representation()
+        model.assign_domains()
         ```
     """
 
@@ -63,8 +66,8 @@ class Novae(L.LightningModule):
             {var_names}
             embedding_size: Size of the gene embedding. Do not use it when loading embeddings from scGPT.
             output_size: Size of the latent space.
-            n_hops_local: Number of hops between a cell and its neighborhood cells.
-            n_hops_view: Number of hops between a cell and the origin of a second graph (or "view").
+            {n_hops_local}
+            {n_hops_view}
             heads: Number of heads for the graph encoder.
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.

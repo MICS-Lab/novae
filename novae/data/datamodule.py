@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import lightning as L
-import numpy as np
 from anndata import AnnData
 from torch_geometric.loader import DataLoader
 
@@ -11,7 +10,7 @@ from . import NeighborhoodDataset
 
 class NovaeDatamodule(L.LightningDataModule):
     """
-    Datamodule used for training and inference. Small wrapper around the `NeighborhoodDataset`
+    Datamodule used for training and inference. Small wrapper around the [novae.data.NeighborhoodDataset][]
     """
 
     def __init__(
@@ -28,7 +27,12 @@ class NovaeDatamodule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def train_dataloader(self) -> np.Any:
+    def train_dataloader(self) -> DataLoader:
+        """Get a Pytorch dataloader for prediction.
+
+        Returns:
+            The training dataloader.
+        """
         self.dataset.training = True
         return DataLoader(
             self.dataset,
@@ -38,7 +42,12 @@ class NovaeDatamodule(L.LightningDataModule):
             num_workers=self.num_workers,
         )
 
-    def predict_dataloader(self):
+    def predict_dataloader(self) -> DataLoader:
+        """Get a Pytorch dataloader for prediction or inference.
+
+        Returns:
+            The prediction dataloader.
+        """
         self.dataset.training = False
         return DataLoader(
             self.dataset,

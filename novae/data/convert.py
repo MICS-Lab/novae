@@ -14,31 +14,55 @@ class AnnDataTorch:
     genes_indices_list: list[Tensor]
 
     def __init__(self, adatas: list[AnnData], cell_embedder: CellEmbedder):
+        """Converting AnnData objects to PyTorch tensors.
+
+        Args:
+            adatas: A list of `AnnData` objects.
+            cell_embedder: A [novae.module.CellEmbedder][] object.
+        """
         super().__init__()
         self.adatas = adatas
         self.cell_embedder = cell_embedder
 
-        self.tensors = None
-        # Tensors are loaded in-memory for low numbers of cells
-        if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
-            self.tensors = [torch.tensor(self.array(adata)) for adata in self.adatas]
-
         self.genes_indices_list = [self._adata_to_genes_indices(adata) for adata in self.adatas]
+        self.tensors = None
+
+        # Tensors are loaded in memory for low numbers of cells
+        if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
+            self.tensors = [self.to_tensor(adata) for adata in self.adatas]
 
     def _adata_to_genes_indices(self, adata: AnnData) -> Tensor:
-        return self.cell_embedder.genes_to_indices(adata.var_names[adata.var[Keys.USE_GENE]])[None, :]
+        return self.cell_embedder.genes_to_indices(adata.var_names[self._keep_var(adata)])[None, :]
 
-    def array(self, adata: AnnData) -> np.ndarray:
-        adata = adata[:, adata.var[Keys.USE_GENE]]
+    def _keep_var(self, adata: AnnData) -> AnnData:
+        return adata.var[Keys.USE_GENE]
+
+    def to_tensor(self, adata: AnnData) -> Tensor:
+        """Get the normalized gene expressions of the cells in the dataset.
+        Only the genes of interest are kept (known genes and highly variable).
+
+        Args:
+            adata: An `AnnData` object.
+
+        Returns:
+            A `Tensor` containing the normalized gene expresions.
+        """
+        adata = adata[:, self._keep_var(adata)]
 
         X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
-        X = X.astype(np.float32)
-
         X = (X - adata.var["mean"].values) / (adata.var["std"].values + Nums.EPS)
 
-        return X
+        return torch.tensor(X, dtype=torch.float32)
 
     def __getitem__(self, item: tuple[int, slice]) -> tuple[Tensor, Tensor]:
+        """Get the expression values for a subset of cells (corresponding to a subgraph).
+
+        Args:
+            item: A `tuple` containing the index of the `AnnData` object and the indices of the cells in the neighborhoods.
+
+        Returns:
+            A `Tensor` of normalized gene expressions and a `Tensor` of gene indices.
+        """
         adata_index, obs_indices = item
 
         if self.tensors is not None:
@@ -47,4 +71,4 @@ class AnnDataTorch:
         adata = self.adatas[adata_index]
         adata_view = adata[obs_indices]
 
-        return torch.tensor(self.array(adata_view)), self.genes_indices_list[adata_index]
+        return self.to_tensor(adata_view), self.genes_indices_list[adata_index]

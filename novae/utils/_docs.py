@@ -9,6 +9,8 @@ _format_doc_dict = {
     "data": "A Pytorch Geometric `Data` object representing a batch of `B` graphs.",
     "obs_key": "Key of `adata.obs` containing the niches annotation.",
     "n_top_genes": "Number of genes per niche to consider.",
+    "n_hops_local": "Number of hops between a cell and its neighborhood cells.",
+    "n_hops_view": "Number of hops between a cell and the origin of a second graph (or 'view').",
 }
 
 _format_doc_map = {k: f"{k}: {v}" for k, v in _format_doc_dict.items()}
