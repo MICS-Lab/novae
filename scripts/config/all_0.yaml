@@ -7,6 +7,8 @@ model_kwargs:
   heads: 8
   hidden_size: 128
   scgpt_model_dir: /mnt/beegfs/userdata/q_blampey/data/checkpoints/scgpt/scGPT_human
+  temperature: 0.1
+  background_noise_lambda: 5
 
 trainer_kwargs:
   max_epochs: 50
