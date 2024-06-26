@@ -90,7 +90,8 @@ class NeighborhoodDataset(Dataset):
 
     def __len__(self) -> int:
         if self.training:
-            return min(len(self.shuffled_obs_ilocs), Nums.MAX_DATASET_LENGTH)
+            n_obs = len(self.shuffled_obs_ilocs)
+            return min(n_obs, max(Nums.MIN_DATASET_LENGTH, int(n_obs * Nums.MAX_DATASET_LENGTH_RATIO)))
 
         assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
         return len(self.obs_ilocs)

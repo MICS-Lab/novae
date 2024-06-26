@@ -68,11 +68,11 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
     callbacks.extend(
         [
             ModelCheckpoint(monitor="train/loss_epoch"),
-            monitor.ComputeSwavOutputsCallback(),
-            monitor.LogDomainsCallback(),
-            monitor.EvalCallback(),
-            monitor.LogLatent(),
-            monitor.LogProtoCovCallback(),
+            # monitor.ComputeSwavOutputsCallback(),
+            # monitor.LogDomainsCallback(),
+            # monitor.EvalCallback(),
+            # monitor.LogLatent(),
+            # monitor.LogProtoCovCallback(),
         ]
     )
 

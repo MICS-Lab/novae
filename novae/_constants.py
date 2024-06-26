@@ -33,12 +33,13 @@ class Keys:
 class Nums:
     # training constants
     EPS: float = 1e-8
-    MAX_DATASET_LENGTH: int = 50_000
+    MIN_DATASET_LENGTH: int = 50_000
+    MAX_DATASET_LENGTH_RATIO: float = 0.02
 
     # distances constants and thresholds (in microns)
     CELLS_CHARACTERISTIC_DISTANCE: int = 20  # characteristic distance between two cells, in microns
     DELAUNAY_RADIUS_TH: int = 100
-    MEAN_DISTANCE_UPPER_TH_WARNING: float = 30
+    MEAN_DISTANCE_UPPER_TH_WARNING: float = 50
     MEAN_DISTANCE_LOWER_TH_WARNING: float = 4
 
     # genes constants
