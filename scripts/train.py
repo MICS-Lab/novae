@@ -37,6 +37,10 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
         config["model_kwargs"] = config.get("model_kwargs", {}) | dict(wandb.config)
     log.info(f"Full config:\n{config}")
 
+    assert "slide_key" not in config.get(
+        "model_kwargs", {}
+    ), "'slide_key' not supported in model_kwargs yet. Provide one adata per file."
+
     wandb_logger = WandbLogger(save_dir=novae.utils.wandb_log_dir(), log_model="all", project="novae")
 
     config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]

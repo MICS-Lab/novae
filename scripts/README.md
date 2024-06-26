@@ -1,6 +1,6 @@
 # Pre-training scripts
 
-These scripts are used to train and monitor Novae with Weight & Biases. To see the actualy source code, refer to the `novae` directory.
+These scripts are used to pretrain and monitor Novae with Weight & Biases. To see the actualy source code of Novae, refer to the `novae` directory.
 
 ## Setup
 
@@ -37,7 +37,9 @@ Run the sweep with:
 wandb agent <SWEEP_ID> --count 1
 ```
 
-### SLURM usage
+### Slurm usage
+
+⚠️ Warning: the scripts below are specific to one cluster (Flamingo, Gustave Roussy). You'll need to update the `.sh` scripts according to your cluster.
 
 In the `slurm` directory:
 - `train.sh` / `train_cpu.sh` for training
