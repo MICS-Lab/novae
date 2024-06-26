@@ -209,12 +209,13 @@ def _to_adjacency_pair(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
         adjacency_pair.eliminate_zeros()
         return adjacency_pair
 
-    adjacency_pair: lil_matrix = adjacency.copy().tolil()
+    adjacency_pair = adjacency.copy()
     adjacency_pair.setdiag(1)
     for i in range(n_hops_view - 1):
         if i == n_hops_view - 2:
-            adjacency_previous: lil_matrix = adjacency_pair.copy()
+            adjacency_previous = adjacency_pair.copy()
         adjacency_pair = adjacency_pair @ adjacency
+    adjacency_pair = adjacency_pair.tolil()
     adjacency_pair[adjacency_previous.nonzero()] = 0
     adjacency_pair: csr_matrix = adjacency_pair.tocsr()
     adjacency_pair.eliminate_zeros()
