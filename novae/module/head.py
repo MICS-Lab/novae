@@ -18,11 +18,29 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    def __init__(self, output_size: int, num_prototypes: int, temperature: float):
+    def __init__(
+        self,
+        output_size: int,
+        num_prototypes: int,
+        temperature: float,
+        epsilon: float = 0.05,
+        sinkhorn_iterations: int = 3,
+    ):
+        """SwavHead module, adapted from in the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
+
+        Args:
+            output_size: Size of the encoder embeddings.
+            num_prototypes: Number of prototypes.
+            temperature: Temperature used in the cross-entropy loss.
+            epsilon: The entropy regularization term.
+            sinkhorn_iterations: The number of Sinkhorn-Knopp iterations.
+        """
         super().__init__()
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
+        self.epsilon = epsilon
+        self.sinkhorn_iterations = sinkhorn_iterations
 
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
@@ -58,23 +76,21 @@ class SwavHead(L.LightningModule):
         return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
     @torch.no_grad()
-    def sinkhorn(self, scores: Tensor, epsilon: float = 0.05, sinkhorn_iterations: int = 3) -> Tensor:
+    def sinkhorn(self, scores: Tensor) -> Tensor:
         """Apply the Sinkhorn-Knopp algorithm to the scores.
 
         Args:
             scores: The normalized embeddings projected into the prototypes
-            epsilon: The entropy regularization term.
-            sinkhorn_iterations: The number of Sinkhorn iterations.
 
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm.
         """
-        Q = torch.exp(scores / epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
+        Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
         K, B = Q.shape
 
-        for _ in range(sinkhorn_iterations):
+        for _ in range(self.sinkhorn_iterations):
             sum_of_rows = torch.sum(Q, dim=1, keepdim=True)
             Q /= sum_of_rows
             Q /= K

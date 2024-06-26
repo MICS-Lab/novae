@@ -199,28 +199,42 @@ class Novae(L.LightningModule):
         """
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
+            valid_indices = datamodule.dataset.valid_indices[0]
 
-            out_rep = []
-            out = []
+            representations = []
+            codes = []
             for batch in utils.tqdm(datamodule.predict_dataloader()):
                 batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-                data_main = self._embed_pyg_data(batch["main"])
-                x_main = self.encoder(data_main)
-                out_rep.append(x_main)
-                out_ = F.normalize(x_main, dim=1, p=2)
+                representation = self.encoder(self._embed_pyg_data(batch["main"]))
 
-                out.append(out_ @ self.swav_head.prototypes.T)
+                representations.append(representation)
+                repr_normalized = F.normalize(representation, dim=1, p=2)
+                codes.append(repr_normalized @ self.swav_head.prototypes.T)
 
-            out_rep = torch.cat(out_rep)
-            out = torch.cat(out)
-            out = self.swav_head.sinkhorn(out)  # TODO: sinkhorn per slide_id
-
+            representations = torch.cat(representations)
             adata.obsm[Keys.REPR] = utils.fill_invalid_indices(
-                out_rep, adata.n_obs, datamodule.dataset.valid_indices[0], fill_value=0
+                representations, adata.n_obs, valid_indices, fill_value=0
             )
 
-            codes = utils.fill_invalid_indices(out, adata.n_obs, datamodule.dataset.valid_indices[0])
+            codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
+            codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
             adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
+
+    def _apply_sinkhorn_per_slide(
+        self, scores: torch.Tensor, adata: AnnData, valid_indices: np.ndarray
+    ) -> torch.Tensor:
+        slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
+
+        unique_slide_ids = np.unique(slide_ids)
+
+        if len(unique_slide_ids) == 1:
+            return self.swav_head.sinkhorn(scores)
+
+        for slide_id in unique_slide_ids:
+            indices = np.where(slide_ids == slide_id)[0]
+            scores[indices] = self.swav_head.sinkhorn(scores[indices])
+
+        return scores
 
     def _get_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
         if adata is None:
