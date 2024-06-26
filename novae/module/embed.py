@@ -41,11 +41,11 @@ class CellEmbedder(L.LightningModule):
         assert (embedding_size is None) ^ (embedding is None), "Either embedding_size or embedding must be provided"
 
         if isinstance(gene_names, dict):
-            self.gene_to_index = gene_names
-            self.gene_names = list(gene_names.keys())
+            self.gene_to_index = {gene.lower(): index for gene, index in gene_names.items()}
+            self.gene_names = list(self.gene_to_index.keys())
         else:
-            self.gene_names = gene_names
-            self.gene_to_index = {gene: i for i, gene in enumerate(gene_names)}
+            self.gene_names = [gene.lower() for gene in gene_names]
+            self.gene_to_index = {gene: i for i, gene in enumerate(self.gene_names)}
 
         self.voc_size = len(self.gene_names)
 
@@ -81,7 +81,6 @@ class CellEmbedder(L.LightningModule):
 
         with open(vocab_file, "r") as file:
             gene_to_index: dict[str, int] = json.load(file)
-            gene_to_index = {gene.lower(): index for gene, index in gene_to_index.items()}
 
         checkpoint = torch.load(scgpt_model_dir / "best_model.pt", map_location=torch.device("cpu"))
         embedding = checkpoint["encoder.embedding.weight"]
