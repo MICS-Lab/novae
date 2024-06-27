@@ -110,7 +110,7 @@ def main(args: argparse.Namespace) -> None:
     train_dataset_path = config["data"]["train_dataset"]
     adatas = novae.utils._load_dataset(train_dataset_path)
 
-    val_dataset_path = config["data"]["val_dataset"]
+    val_dataset_path = config["data"].get("val_dataset")
     adatas_val = novae.utils._load_dataset(val_dataset_path) if val_dataset_path else None
 
     train(adatas, config, sweep=args.sweep, adatas_val=adatas_val)
