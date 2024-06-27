@@ -14,3 +14,4 @@ trainer_kwargs:
   max_epochs: 50
   accelerator: "gpu"
   num_workers: 8
+  patience: 10
