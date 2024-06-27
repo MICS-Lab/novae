@@ -89,7 +89,7 @@ class Novae(L.LightningModule):
             self.cell_embedder.pca_init(self.adatas)
         else:
             self.cell_embedder = CellEmbedder.from_scgpt_embedding(scgpt_model_dir)
-            self.hparams["embedding_size"] = self.cell_embedder.embedding_size
+            embedding_size = self.cell_embedder.embedding_size
             _scgpt_var_names = self.cell_embedder.gene_names
             self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=_scgpt_var_names)
 
@@ -290,21 +290,23 @@ class Novae(L.LightningModule):
         return key_added
 
     @classmethod
-    def load_from_wandb_artifact(cls, name: str, **kwargs) -> "Novae":
+    def load_from_wandb_artifact(cls, name: str, map_location: str = "cpu", **kwargs) -> "Novae":
         """Initialize a model from a Weights & Biases artifact.
 
         Args:
             name: Name of the artifact.
+            map_location: If your checkpoint saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map to the new setup. The behaviour is the same as in `torch.load()`.
+            kwargs: Optional kwargs for the Pytorch Lightning `load_from_checkpoint` method.
 
         Returns:
             A Novae model.
         """
-        artifact_dir = utils._load_wandb_artifact(name)
+        artifact_path = utils._load_wandb_artifact(name) / "model.ckpt"
 
         try:
-            model = cls.load_from_checkpoint(artifact_dir / "model.ckpt", strict=False, **kwargs)
+            model = cls.load_from_checkpoint(artifact_path, map_location=map_location, strict=False, **kwargs)
         except:
-            ckpt_version = torch.load(artifact_dir / "model.ckpt").get(Keys.NOVAE_VERSION, "unknown")
+            ckpt_version = torch.load(artifact_path, map_location=map_location).get(Keys.NOVAE_VERSION, "unknown")
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
         model._checkpoint = f"wandb: {name}"
@@ -402,6 +404,7 @@ class Novae(L.LightningModule):
             callbacks: Optional list of Pytorch lightning callbacks.
             enable_checkpointing: Whether to enable model checkpointing.
             logger: The pytorch lightning logger.
+            kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
         if num_workers is not None:
             self.num_workers = num_workers
