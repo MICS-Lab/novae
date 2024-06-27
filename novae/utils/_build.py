@@ -76,7 +76,7 @@ def spatial_neighbors(
     log.info("Computing delaunay graph")
 
     if slide_key is not None:
-        assert adata.obs[slide_key].dtype == "category"
+        adata.obs[slide_key] = adata.obs[slide_key].astype("category")
         slides = adata.obs[slide_key].cat.categories
         make_index_unique(adata.obs_names)
     else:

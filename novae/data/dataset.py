@@ -69,7 +69,7 @@ class NeighborhoodDataset(Dataset):
             adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
             adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
-            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_pair(adjacency, self.n_hops_view)
+            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
             adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
@@ -196,7 +196,7 @@ def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:
     return adjacency_local.tocsr()
 
 
-def _to_adjacency_pair(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
+def _to_adjacency_view(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
     """
     Creates an adjacancy matrix for which all nodes separated by
     precisely `n_hops_view` nodes are linked.
