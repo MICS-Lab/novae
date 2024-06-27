@@ -150,18 +150,23 @@ class Novae(L.LightningModule):
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
 
-        loss = self.swav_head(out["main"], out["view"])
+        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"])
 
-        self.log(
-            "train/loss",
-            loss,
-            on_epoch=True,
-            on_step=True,
-            batch_size=self.hparams.batch_size,
-            prog_bar=True,
-        )
+        self._log_all({"loss": loss, "entropy": mean_entropy_normalized})
 
         return loss
+
+    def _log_all(self, log_dict: dict[str, float], **kwargs):
+        for name, value in log_dict.items():
+            self.log(
+                f"train/{name}",
+                value,
+                on_epoch=True,
+                on_step=True,
+                batch_size=self.hparams.batch_size,
+                prog_bar=True,
+                **kwargs,
+            )
 
     def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
         if adata is None:

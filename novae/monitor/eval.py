@@ -136,10 +136,10 @@ def _jensen_shannon_divergence(distributions: np.ndarray) -> float:
     distributions = distributions / distributions.sum(1)[:, None]
     mean_distribution = np.mean(distributions, 0)
 
-    return _entropy(mean_distribution) - np.mean([_entropy(dist) for dist in distributions])
+    return entropy(mean_distribution) - np.mean([entropy(dist) for dist in distributions])
 
 
-def _entropy(distribution: np.ndarray) -> float:
+def entropy(distribution: np.ndarray) -> float:
     """Shannon entropy
 
     Args:

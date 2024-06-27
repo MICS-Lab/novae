@@ -70,10 +70,12 @@ class SwavHead(L.LightningModule):
         scores1 = out1 @ self.prototypes.T  # (B x num_prototypes)
         scores2 = out2 @ self.prototypes.T  # (B x num_prototypes)
 
-        q1 = self.sinkhorn(scores1)
-        q2 = self.sinkhorn(scores2)
+        q1 = self.sinkhorn(scores1)  # (B x num_prototypes)
+        q2 = self.sinkhorn(scores2)  # (B x num_prototypes)
 
-        return -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
+        loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
+
+        return loss, _mean_entropy_normalized(q1)
 
     @torch.no_grad()
     def sinkhorn(self, scores: Tensor) -> Tensor:
@@ -166,6 +168,13 @@ class SwavHead(L.LightningModule):
             + gamma[..., None, None] * sum_centroids[..., None, :] * sum_centroids[..., None]
             + 2 * centroids_reference[..., None] * centroids[..., None, :]
         )
+
+
+@torch.no_grad()
+def _mean_entropy_normalized(q: Tensor) -> Tensor:
+    entropy = -(q * torch.log2(q + Nums.EPS)).sum(-1)
+    max_entropy = torch.log2(torch.tensor(q.shape[-1]))
+    return (entropy / max_entropy).mean()
 
 
 def _mlp(input_size: int, hidden_size: int, n_layers: int, output_size: int) -> nn.Sequential:

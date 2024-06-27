@@ -5,7 +5,7 @@ from anndata import AnnData
 from pytest import approx
 
 import novae
-from novae.monitor.eval import _entropy, _jensen_shannon_divergence
+from novae.monitor.eval import _jensen_shannon_divergence, entropy
 
 domains = [
     ["D1", "D2", "D3", "D4", "D5"],
@@ -73,11 +73,11 @@ def test_jensen_shannon_divergence_manual():
 
     means = np.array([0.15, 0.15, 0.7])
 
-    entropy_means = _entropy(means)
+    entropy_means = entropy(means)
 
     assert entropy_means == approx(1.18, rel=1e-2)
 
-    jsd_manual = entropy_means - 0.25 * sum(_entropy(d) for d in distribution)
+    jsd_manual = entropy_means - 0.25 * sum(entropy(d) for d in distribution)
 
     jsd = _jensen_shannon_divergence(distribution)
 
