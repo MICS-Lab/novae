@@ -60,7 +60,8 @@ class NeighborhoodDataset(Dataset):
         self.n_hops_local = n_hops_local
         self.n_hops_view = n_hops_view
 
-        self.single_slide_mode = len(self.adatas) == 1 and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
+        self.single_adata = len(self.adatas) == 1
+        self.single_slide_mode = self.single_adata and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
 
         self._init_dataset()
 
@@ -75,7 +76,7 @@ class NeighborhoodDataset(Dataset):
         self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
 
         self.obs_ilocs = None
-        if self.single_slide_mode:
+        if self.single_adata:
             self.obs_ilocs = np.array([(0, obs_index) for obs_index in self.valid_indices[0]])
 
         self.slides_metadata: pd.DataFrame = pd.concat(
@@ -93,7 +94,8 @@ class NeighborhoodDataset(Dataset):
             n_obs = len(self.shuffled_obs_ilocs)
             return min(n_obs, max(Nums.MIN_DATASET_LENGTH, int(n_obs * Nums.MAX_DATASET_LENGTH_RATIO)))
 
-        assert self.obs_ilocs is not None, "Multi-adata mode not yet supported for inference"
+        assert self.single_adata, "Multi-adata mode not supported for inference"
+
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> dict[str, Data]:
