@@ -103,17 +103,16 @@ class Novae(L.LightningModule):
         ### Losses
         self.bce_loss = nn.BCELoss()
 
-        ### Datamodule
+        ### Misc
         self._num_workers = 0
-        if self.adatas is not None:
-            self._datamodule = self._init_datamodule()
-
-        ### Checkpoint
         self._checkpoint = None
+        self._datamodule = None
 
     @property
     def datamodule(self) -> NovaeDatamodule:
-        assert hasattr(self, "_datamodule"), "The datamodule was not initialized. Please provide an `adata` object."
+        assert (
+            self._datamodule is not None
+        ), "The datamodule was not initialized. You first need to fit the model, i.e. `model.fit(...)`"
         return self._datamodule
 
     @property
@@ -127,7 +126,7 @@ class Novae(L.LightningModule):
     @num_workers.setter
     def num_workers(self, value: int) -> None:
         self._num_workers = value
-        if hasattr(self, "_datamodule"):
+        if self._datamodule is not None:
             self._datamodule.num_workers = value
 
     def __repr__(self) -> str:
@@ -208,28 +207,33 @@ class Novae(L.LightningModule):
             {adata}
             {slide_key}
         """
+        if adata is None and len(self.adatas) == 1:  # using existing datamodule
+            self._latent_representation_datamodule(self.adatas[0], self.datamodule)
+            return
+
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
-            valid_indices = datamodule.dataset.valid_indices[0]
+            self._latent_representation_datamodule(adata, datamodule)
 
-            representations = []
-            codes = []
-            for batch in utils.tqdm(datamodule.predict_dataloader()):
-                batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-                representation = self.encoder(self._embed_pyg_data(batch["main"]))
+    def _latent_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
+        valid_indices = datamodule.dataset.valid_indices[0]
 
-                representations.append(representation)
-                repr_normalized = F.normalize(representation, dim=1, p=2)
-                codes.append(repr_normalized @ self.swav_head.prototypes.T)
+        representations = []
+        codes = []
+        for batch in utils.tqdm(datamodule.predict_dataloader()):
+            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
+            representation = self.encoder(self._embed_pyg_data(batch["main"]))
 
-            representations = torch.cat(representations)
-            adata.obsm[Keys.REPR] = utils.fill_invalid_indices(
-                representations, adata.n_obs, valid_indices, fill_value=0
-            )
+            representations.append(representation)
+            repr_normalized = F.normalize(representation, dim=1, p=2)
+            codes.append(repr_normalized @ self.swav_head.prototypes.T)
 
-            codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
-            codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
-            adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
+        representations = torch.cat(representations)
+        adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
+
+        codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
+        codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
+        adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
 
     def _apply_sinkhorn_per_slide(
         self, scores: torch.Tensor, adata: AnnData, valid_indices: np.ndarray
@@ -404,7 +408,8 @@ class Novae(L.LightningModule):
 
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
-            self._datamodule = self._init_datamodule()
+
+        self._datamodule = self._init_datamodule()
 
         early_stopping = EarlyStopping(
             monitor="train/loss_epoch",

@@ -20,6 +20,7 @@ def test_raise_invalid_slide_id():
 
 def test_single_panel():
     model = novae.Novae(single_adata)
+    model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == 1
     assert model.dataset.obs_ilocs is not None
@@ -27,15 +28,17 @@ def test_single_panel():
 
 def test_single_panel_slide_key():
     model = novae.Novae(single_adata, slide_key="slide_key")
+    model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == N_SLIDES_PER_PANEL
-    assert model.dataset.obs_ilocs is None
+    assert model.dataset.obs_ilocs is not None
 
     _ensure_batch_same_slide(model)
 
 
 def test_multi_panel():
     model = novae.Novae(adatas)
+    model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == N_PANELS
     assert model.dataset.obs_ilocs is None
@@ -45,6 +48,7 @@ def test_multi_panel():
 
 def test_multi_panel_slide_key():
     model = novae.Novae(adatas, slide_key="slide_key")
+    model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == N_PANELS * N_SLIDES_PER_PANEL
     assert model.dataset.obs_ilocs is None

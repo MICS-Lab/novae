@@ -128,7 +128,6 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
     assert all(isinstance(adata, AnnData) for adata in adatas), "All `adata` elements must be AnnData objects"
 
     count_raw = 0
-    count_no_adj = 0
 
     for adata in adatas:
         if Keys.SLIDE_ID in adata.obs:
@@ -153,7 +152,6 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
 
         if Keys.ADJ not in adata.obsp:
             spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
-            count_no_adj += 1
 
         mean_distance = adata.obsp[Keys.ADJ].data.mean()
 
@@ -169,11 +167,6 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
                 log.warn(
                     f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different `radius` threshold."
                 )
-
-    if count_no_adj:
-        log.warn(
-            f"Added delaunay graph to {count_no_adj} adata object(s) with default radius threshold ({Nums.DELAUNAY_RADIUS_TH} microns)"
-        )
 
     if count_raw:
         log.info(

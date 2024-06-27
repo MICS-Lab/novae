@@ -73,7 +73,7 @@ def spatial_neighbors(
         adata.obsm["spatial_pixel"] = adata.obsm["spatial"].copy()
         adata.obsm["spatial"] = adata.obsm["spatial"] * pixel_size
 
-    log.info("Computing delaunay graph")
+    log.info(f"Computing delaunay graph on {adata.n_obs:,} cells (radius threshold: {radius} microns)")
 
     if slide_key is not None:
         adata.obs[slide_key] = adata.obs[slide_key].astype("category")
