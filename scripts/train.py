@@ -17,7 +17,8 @@ from lightning.pytorch.loggers import WandbLogger
 
 import novae
 import wandb
-from novae import log  # , monitor
+from novae import log
+from novae.monitor.callback import LogProtoCovCallback
 
 
 def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: list[AnnData] | None = None):
@@ -76,7 +77,7 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
     if config.get("wandb_init_kwargs", {}).get("mode") == "disabled":
         return None
 
-    # callbacks = [monitor.ValidationCallback(adatas_val)]
+    # callbacks = [ValidationCallback(adatas_val)]
     callbacks = []
 
     if sweep:
@@ -85,11 +86,11 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
     callbacks.extend(
         [
             ModelCheckpoint(monitor="train/loss_epoch"),
-            # monitor.ComputeSwavOutputsCallback(),
-            # monitor.LogDomainsCallback(),
-            # monitor.EvalCallback(),
-            # monitor.LogLatent(),
-            # monitor.LogProtoCovCallback(),
+            # ComputeSwavOutputsCallback(),
+            # LogDomainsCallback(),
+            # EvalCallback(),
+            # LogLatent(),
+            LogProtoCovCallback(),
         ]
     )
 
