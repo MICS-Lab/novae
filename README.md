@@ -1,8 +1,9 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MICS-Lab/sopa/master/docs/assets/banner.png" alt="novae_banner" width="250"/>
+  <img src="docs/assets/banner.png" alt="novae_banner" width="100%"/>
 </p>
+<!-- TODO: when it becomes public: https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png -->
 
-Graph-based foundation model for spatial transcriptomics data.
+Graph-based foundation model for spatial transcriptomics data
 
 ## Documentation
 
