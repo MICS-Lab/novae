@@ -101,7 +101,7 @@ class CellEmbedder(L.LightningModule):
         indices = [self.gene_to_index[gene] for gene in utils.lower_var_names(gene_names)]
 
         if as_torch:
-            return torch.tensor(indices, dtype=torch.long, device=self.device)
+            return torch.tensor(indices, dtype=torch.long)
 
         return np.array(indices, dtype=np.int16)
 
