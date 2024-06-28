@@ -1,4 +1,6 @@
-# Novae
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MICS-Lab/sopa/master/docs/assets/banner.png" alt="novae_banner" width="250"/>
+</p>
 
 Graph-based foundation model for spatial transcriptomics data.
 

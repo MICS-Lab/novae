@@ -4,6 +4,8 @@ repo_url: https://github.com/MICS-Lab/novae
 copyright: Copyright &copy; 2024 Quentin Blampey
 theme:
   name: material
+  logo: assets/logo_small_black.png
+  favicon: assets/logo_favicon.png
   palette:
     scheme: slate
     primary: white
