@@ -53,6 +53,8 @@ def prepare_adatas(
 
     adatas = [adata] if isinstance(adata, AnnData) else adata
 
+    assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
+
     _sanity_check(adatas, slide_key=slide_key)
 
     _lookup_highly_variable_genes(adatas)
