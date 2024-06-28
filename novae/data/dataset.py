@@ -69,9 +69,12 @@ class NeighborhoodDataset(Dataset):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
-            adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
-            adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
-            adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
+            if Keys.ADJ_LOCAL not in adata.obsp:
+                adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
+            if Keys.ADJ_PAIR not in adata.obsp:
+                adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
+            if Keys.IS_VALID_OBS not in adata.obs:
+                adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
         self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
 
