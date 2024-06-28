@@ -1,15 +1,14 @@
 data:
-  train_dataset: sdm_bench
-  val_dataset: sdm_bench
+  train_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
+  val_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
 
 model_kwargs:
   n_hops_local: 2
   n_hops_view: 3
-  heads: 4
+  hidden_size: 256
 
 trainer_kwargs:
-  max_epochs: 1
+  max_epochs: 2
   accelerator: "gpu"
-
-wandb_init_kwargs:
-  mode: "disabled"
+  profiler: "simple"
+  num_workers: 8
