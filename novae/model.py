@@ -406,6 +406,11 @@ class Novae(L.LightningModule):
             logger: The pytorch lightning logger.
             kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
+        if accelerator == "cpu" and num_workers:
+            log.warning(
+                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
+            )
+
         if num_workers is not None:
             self.num_workers = num_workers
 
