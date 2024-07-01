@@ -387,6 +387,18 @@ class Novae(L.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
+    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, return_device: bool = False):
+        if accelerator == "cpu" and num_workers:
+            log.warn(
+                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
+            )
+
+        if num_workers is not None:
+            self.num_workers = num_workers
+
+        if return_device:
+            return utils.parse_device_args(accelerator)
+
     @utils.format_docs
     def fit(
         self,
@@ -442,15 +454,3 @@ class Novae(L.LightningModule):
             **kwargs,
         )
         trainer.fit(self, datamodule=self.datamodule)
-
-    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, return_device: bool = False):
-        if accelerator == "cpu" and num_workers:
-            log.warning(
-                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
-            )
-
-        if num_workers is not None:
-            self.num_workers = num_workers
-
-        if return_device:
-            return utils.parse_device_args(accelerator)
