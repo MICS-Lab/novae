@@ -18,14 +18,7 @@ from lightning.pytorch.loggers import WandbLogger
 import novae
 import wandb
 from novae import log
-from novae.monitor.callback import (
-    ComputeSwavOutputsCallback,
-    EvalCallback,
-    LogDomainsCallback,
-    LogLatent,
-    LogProtoCovCallback,
-    ValidationCallback,
-)
+from novae.monitor.callback import LogProtoCovCallback, ValidationCallback
 
 
 def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: list[AnnData] | None = None):
@@ -64,14 +57,14 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
     model.fit(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
 
     if config.get("save_result"):
-        _save_result(model, config["save_result"])
+        _save_result(model, config)
 
 
-def _save_result(model: novae.Novae, name: str):
-    model.compute_representation()
+def _save_result(model: novae.Novae, config: dict):
+    model.compute_representation(**_get_hardware_kwargs(config))
     for k in [5, 7, 10, 15]:
         model.assign_domains(k)
-    res_dir = novae.utils.repository_root() / "data" / "results" / name
+    res_dir = novae.utils.repository_root() / "data" / "results" / config["save_result"]
     res_dir.mkdir(parents=True, exist_ok=True)
 
     for adata in model.adatas:
@@ -80,25 +73,22 @@ def _save_result(model: novae.Novae, name: str):
         adata.write_h5ad(out_path)
 
 
+def _get_hardware_kwargs(config: dict) -> dict:
+    num_workers = config.get("trainer_kwargs", {}).get("num_workers")
+    accelerator = config.get("trainer_kwargs", {}).get("accelerator")
+    return {"num_workers": num_workers, "accelerator": accelerator}
+
+
 def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) -> list[L.Callback] | None:
     if config.get("wandb_init_kwargs", {}).get("mode") == "disabled":
         return None
 
-    callbacks = [ValidationCallback(adatas_val)]
+    callbacks = [ValidationCallback(adatas_val, **_get_hardware_kwargs(config))]
 
     if sweep:
         return callbacks
 
-    callbacks.extend(
-        [
-            ModelCheckpoint(monitor="train/loss_epoch"),
-            ComputeSwavOutputsCallback(),
-            LogDomainsCallback(),
-            EvalCallback(),
-            LogLatent(),
-            LogProtoCovCallback(),
-        ]
-    )
+    callbacks.extend([ModelCheckpoint(monitor="train/loss_epoch"), LogProtoCovCallback()])
 
     return callbacks
 

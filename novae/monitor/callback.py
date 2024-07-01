@@ -53,14 +53,16 @@ class LogProtoCovCallback(Callback):
 
 
 class ValidationCallback(Callback):
-    def __init__(self, adatas: list[AnnData] | None):
+    def __init__(self, adatas: list[AnnData] | None, accelerator: str | None = None, num_workers: int | None = None):
         self.adatas = adatas
+        self.accelerator = accelerator
+        self.num_workers = num_workers
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         if self.adatas is None:
             return
 
-        model.compute_representation(self.adatas)
+        model.compute_representation(self.adatas, accelerator=self.accelerator, num_workers=self.num_workers)
         model.swav_head.hierarchical_clustering()
 
         n_classes = DEFAULT_N_DOMAINS[0]
