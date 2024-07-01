@@ -8,5 +8,6 @@ from .utils import (
     lower_var_names,
     wandb_log_dir,
     pretty_num_parameters,
+    parse_device_args,
 )
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset

@@ -13,7 +13,7 @@ adatas = novae.utils.dummy_dataset(
 def test_train():
     model = novae.Novae(adatas)
     model.fit(max_epochs=1)
-    model.latent_representation()
+    model.compute_representation()
     obs_key = model.assign_domains(k=2)
 
     adatas[0].obs.iloc[0][obs_key] = np.nan

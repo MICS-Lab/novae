@@ -11,6 +11,7 @@ _format_doc_dict = {
     "n_top_genes": "Number of genes per niche to consider.",
     "n_hops_local": "Number of hops between a cell and its neighborhood cells.",
     "n_hops_view": "Number of hops between a cell and the origin of a second graph (or 'view').",
+    "accelerator": "Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.",
 }
 
 _format_doc_map = {k: f"{k}: {v}" for k, v in _format_doc_dict.items()}

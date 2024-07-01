@@ -20,7 +20,7 @@ DEFAULT_N_DOMAINS = [7, 14]
 
 class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
-        model.latent_representation()
+        model.compute_representation()
         model.swav_head.hierarchical_clustering()
 
         for adata in model.adatas:
@@ -60,7 +60,7 @@ class ValidationCallback(Callback):
         if self.adatas is None:
             return
 
-        model.latent_representation(self.adatas)
+        model.compute_representation(self.adatas)
         model.swav_head.hierarchical_clustering()
 
         n_classes = DEFAULT_N_DOMAINS[0]

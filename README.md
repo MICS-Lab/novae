@@ -44,7 +44,7 @@ import novae
 model = novae.Novae(adata)
 
 model.fit()
-model.latent_representation()
+model.compute_representation()
 model.assign_domains()
 ```
 

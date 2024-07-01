@@ -68,7 +68,7 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
 
 
 def _save_result(model: novae.Novae, name: str):
-    model.latent_representation()
+    model.compute_representation()
     for k in [5, 7, 10, 15]:
         model.assign_domains(k)
     res_dir = novae.utils.repository_root() / "data" / "results" / name
@@ -85,7 +85,6 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
         return None
 
     callbacks = [ValidationCallback(adatas_val)]
-    callbacks = []
 
     if sweep:
         return callbacks

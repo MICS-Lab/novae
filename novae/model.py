@@ -30,7 +30,7 @@ class Novae(L.LightningModule):
         model = novae.Novae(adata)
 
         model.fit()
-        model.latent_representation()
+        model.compute_representation()
         model.assign_domains()
         ```
     """
@@ -197,7 +197,13 @@ class Novae(L.LightningModule):
 
     @utils.format_docs
     @torch.no_grad()
-    def latent_representation(self, adata: AnnData | list[AnnData] | None = None, slide_key: str | None = None) -> None:
+    def compute_representation(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        slide_key: str | None = None,
+        accelerator: str = "cpu",
+        num_workers: int | None = None,
+    ) -> None:
         """Compute the latent representation of Novae for all cells neighborhoods.
 
         Note:
@@ -206,16 +212,21 @@ class Novae(L.LightningModule):
         Args:
             {adata}
             {slide_key}
+            {accelerator}
+            num_workers: Number of workers for the dataloader.
         """
+        device = self._parse_hardware_args(accelerator, num_workers, return_device=True)
+        self.to(device)
+
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
-            self._latent_representation_datamodule(self.adatas[0], self.datamodule)
+            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
             return
 
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
-            self._latent_representation_datamodule(adata, datamodule)
+            self._compute_representation_datamodule(adata, datamodule)
 
-    def _latent_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
+    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
         valid_indices = datamodule.dataset.valid_indices[0]
 
         representations = []
@@ -263,7 +274,7 @@ class Novae(L.LightningModule):
         """Assign a domain (or niche) to each cell based on the "leaves" classes.
 
         Note:
-            You'll need to run `model.latent_representation(...)` first.
+            You'll need to run `model.compute_representation(...)` first.
 
             The domains are saved in `adata.obs["novae_niche_k"]` by default, where `k=10`.
 
@@ -283,7 +294,7 @@ class Novae(L.LightningModule):
         for adata in adatas:
             assert (
                 Keys.SWAV_CLASSES in adata.obs
-            ), f"Did not found `adata.obs['{Keys.SWAV_CLASSES}']`. Please run `model.latent_representation(...)` first"
+            ), f"Did not found `adata.obs['{Keys.SWAV_CLASSES}']`. Please run `model.compute_representation(...)` first"
             adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
 
         log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
@@ -397,7 +408,7 @@ class Novae(L.LightningModule):
             {adata}
             {slide_key}
             max_epochs: Maximum number of training epochs.
-            accelerator: Accelerator to use. For instance, `"cuda"` or `"cpu"`.
+            {accelerator}
             num_workers: Number of workers for the dataloader.
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
@@ -406,13 +417,7 @@ class Novae(L.LightningModule):
             logger: The pytorch lightning logger.
             kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
-        if accelerator == "cpu" and num_workers:
-            log.warning(
-                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
-            )
-
-        if num_workers is not None:
-            self.num_workers = num_workers
+        self._parse_hardware_args(accelerator, num_workers)
 
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
@@ -437,3 +442,15 @@ class Novae(L.LightningModule):
             **kwargs,
         )
         trainer.fit(self, datamodule=self.datamodule)
+
+    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, return_device: bool = False):
+        if accelerator == "cpu" and num_workers:
+            log.warning(
+                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
+            )
+
+        if num_workers is not None:
+            self.num_workers = num_workers
+
+        if return_device:
+            return utils.parse_device_args(accelerator)

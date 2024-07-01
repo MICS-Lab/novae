@@ -10,6 +10,9 @@ import pandas as pd
 import scanpy as sc
 import torch
 from anndata import AnnData
+from lightning.pytorch.trainer.connectors.accelerator_connector import (
+    _AcceleratorConnector,
+)
 from scipy.sparse import csr_matrix
 from torch import Tensor
 
@@ -264,3 +267,22 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
         return f"{n_params / 1_000:.1f}K"
 
     return f"{n_params / 1_000_000:.1f}M"
+
+
+def parse_device_args(accelerator: str = "cpu") -> torch.device:
+    """Updated from scvi-tools"""
+    connector = _AcceleratorConnector(accelerator=accelerator)
+    _accelerator = connector._accelerator_flag
+    _devices = connector._devices_flag
+
+    if _accelerator == "cpu":
+        return torch.device("cpu")
+
+    if isinstance(_devices, list):
+        device_idx = _devices[0]
+    elif isinstance(_devices, str) and "," in _devices:
+        device_idx = _devices.split(",")[0]
+    else:
+        device_idx = _devices
+
+    return torch.device(f"{_accelerator}:{device_idx}")
