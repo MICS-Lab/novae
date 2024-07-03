@@ -68,8 +68,8 @@ def _save_result(model: novae.Novae, config: dict):
     res_dir.mkdir(parents=True, exist_ok=True)
 
     for adata in model.adatas:
-        if "rank_genes_groups" in adata.uns:
-            del adata.uns["rank_genes_groups"]
+        print(adata.obs["novae_leaves"])
+        del adata.obs["novae_leaves"]
         out_path = res_dir / f"{id(adata)}.h5ad"
         log.info(f"Writing adata file to {out_path}: {adata}")
         adata.write_h5ad(out_path)
