@@ -71,7 +71,7 @@ def _save_result(model: novae.Novae, config: dict):
         if "rank_genes_groups" in adata.uns:
             del adata.uns["rank_genes_groups"]
         out_path = res_dir / f"{id(adata)}.h5ad"
-        log.info(f"Writing adata file to {out_path}")
+        log.info(f"Writing adata file to {out_path}: {adata}")
         adata.write_h5ad(out_path)
 
 
