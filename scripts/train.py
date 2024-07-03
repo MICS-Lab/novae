@@ -63,11 +63,13 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
 def _save_result(model: novae.Novae, config: dict):
     model.compute_representation(**_get_hardware_kwargs(config))
     for k in [5, 7, 10, 15]:
-        model.assign_domains(k)
+        model.assign_domains(k=k)
     res_dir = novae.utils.repository_root() / "data" / "results" / config["save_result"]
     res_dir.mkdir(parents=True, exist_ok=True)
 
     for adata in model.adatas:
+        if "rank_genes_groups" in adata.uns:
+            del adata.uns["rank_genes_groups"]
         out_path = res_dir / f"{id(adata)}.h5ad"
         log.info(f"Writing adata file to {out_path}")
         adata.write_h5ad(out_path)
