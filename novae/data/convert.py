@@ -47,7 +47,7 @@ class AnnDataTorch:
         for adata in self.adatas:
             slide_ids = adata.obs[Keys.SLIDE_ID]
             for slide_id in slide_ids.cat.categories:
-                adata_slide = adata[adata.obs[Keys.SLIDE_ID] == slide_id]
+                adata_slide = adata[adata.obs[Keys.SLIDE_ID] == slide_id, self._keep_var(adata)]
 
                 mean = adata_slide.X.mean(0)
                 mean = mean.A1 if isinstance(mean, np.matrix) else mean
@@ -79,7 +79,7 @@ class AnnDataTorch:
         adata = adata[:, self._keep_var(adata)]
 
         if len(np.unique(adata.obs[Keys.SLIDE_ID])) == 1:
-            slide_id_index = self.label_encoder.transform(adata.obs.iloc[:1][Keys.SLIDE_ID])
+            slide_id_index = self.label_encoder.transform([adata.obs.iloc[0][Keys.SLIDE_ID]])[0]
             mean, std = self.means[slide_id_index], self.stds[slide_id_index]
         else:
             slide_id_indices = self.label_encoder.transform(adata.obs[Keys.SLIDE_ID])
