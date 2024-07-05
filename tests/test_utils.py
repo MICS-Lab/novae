@@ -54,6 +54,32 @@ def test_build_slide_key():
     assert (adata_.obsp["spatial_connectivities"].A == true_connectivities).all()
 
 
+def test_build_slide_key_disjoint_indices():
+    adata = novae.utils.dummy_dataset(
+        n_panels=1,
+        n_slides_per_panel=1,
+        n_obs_per_domain=100,
+        n_domains=2,
+        compute_spatial_neighbors=False,
+    )[0]
+
+    adata2 = adata.copy()
+    adata2.obs["slide_key"] = "slide_key2"
+    adata2.obs_names = adata2.obs_names + "_2"
+
+    novae.utils.spatial_neighbors(adata)
+    novae.utils.spatial_neighbors(adata2)
+
+    n1, n2 = len(adata.obsp["spatial_connectivities"].data), len(adata2.obsp["spatial_connectivities"].data)
+    assert n1 == n2
+
+    adata_concat = anndata.concat([adata, adata2], axis=0).copy()
+
+    novae.utils.spatial_neighbors(adata_concat, slide_key="slide_key")
+
+    assert len(adata_concat.obsp["spatial_connectivities"].data) == n1 + n2
+
+
 def test_build_pixel_size():
     adata_pixel = adata.copy()
     novae.utils.spatial_neighbors(adata_pixel, radius=5, pixel_size=10)

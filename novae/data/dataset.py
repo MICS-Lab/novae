@@ -15,7 +15,7 @@ from ..module import CellEmbedder
 from . import AnnDataTorch
 
 
-class NeighborhoodDataset(Dataset):
+class NovaeDataset(Dataset):
     """
     Dataset used for training and inference.
 
@@ -64,6 +64,11 @@ class NeighborhoodDataset(Dataset):
         self.single_slide_mode = self.single_adata and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
 
         self._init_dataset()
+
+    def __repr__(self) -> str:
+        multi_slide_mode, multi_adata = not self.single_slide_mode, not self.single_adata
+        n_samples = sum(len(indices) for indices in self.valid_indices)
+        return f"{self.__class__.__name__} with {n_samples} samples ({multi_slide_mode=}, {multi_adata=})"
 
     def _init_dataset(self):
         for adata in self.adatas:

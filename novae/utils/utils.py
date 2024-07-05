@@ -63,13 +63,6 @@ def prepare_adatas(
     _lookup_highly_variable_genes(adatas)
 
     for adata in adatas:
-        mean = adata.X.mean(0)
-        mean = mean.A1 if isinstance(mean, np.matrix) else mean
-        adata.var[Keys.VAR_MEAN] = mean.astype(np.float32)
-
-        std = adata.X.std(0) if isinstance(adata.X, np.ndarray) else _sparse_std(adata.X, 0).A1
-        adata.var[Keys.VAR_STD] = std.astype(np.float32)
-
         _lookup_valid_genes(adata, var_names)
 
         adata.var[Keys.USE_GENE] = _var_or_true(adata, Keys.HIGHLY_VARIABLE) & _var_or_true(adata, Keys.IS_KNOWN_GENE)

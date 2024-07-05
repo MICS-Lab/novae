@@ -14,7 +14,7 @@ from torch_geometric.data import Data
 
 from . import __version__, utils
 from ._constants import Keys, Nums
-from .data import NeighborhoodDataset, NovaeDatamodule
+from .data import NovaeDatamodule, NovaeDataset
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
@@ -116,7 +116,7 @@ class Novae(L.LightningModule):
         return self._datamodule
 
     @property
-    def dataset(self) -> NeighborhoodDataset:
+    def dataset(self) -> NovaeDataset:
         return self.datamodule.dataset
 
     @property
@@ -215,6 +215,7 @@ class Novae(L.LightningModule):
             {accelerator}
             num_workers: Number of workers for the dataloader.
         """
+        self.training = False
         device = self._parse_hardware_args(accelerator, num_workers, return_device=True)
         self.to(device)
 
@@ -245,6 +246,8 @@ class Novae(L.LightningModule):
         codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
         codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
         adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
+
+        return representations, codes, valid_indices
 
     def _apply_sinkhorn_per_slide(
         self, scores: torch.Tensor, adata: AnnData, valid_indices: np.ndarray

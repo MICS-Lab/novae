@@ -3,10 +3,12 @@ from __future__ import annotations
 import numpy as np
 import torch
 from anndata import AnnData
+from sklearn.preprocessing import LabelEncoder
 from torch import Tensor
 
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
+from ..utils.utils import _sparse_std
 
 
 class AnnDataTorch:
@@ -27,6 +29,8 @@ class AnnDataTorch:
         self.genes_indices_list = [self._adata_to_genes_indices(adata) for adata in self.adatas]
         self.tensors = None
 
+        self.means, self.stds, self.label_encoder = self._compute_means_stds()
+
         # Tensors are loaded in memory for low numbers of cells
         if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
             self.tensors = [self.to_tensor(adata) for adata in self.adatas]
@@ -36,6 +40,31 @@ class AnnDataTorch:
 
     def _keep_var(self, adata: AnnData) -> AnnData:
         return adata.var[Keys.USE_GENE]
+
+    def _compute_means_stds(self) -> tuple[Tensor, Tensor, LabelEncoder]:
+        means, stds = {}, {}
+
+        for adata in self.adatas:
+            slide_ids = adata.obs[Keys.SLIDE_ID]
+            for slide_id in slide_ids.cat.categories:
+                adata_slide = adata[adata.obs[Keys.SLIDE_ID] == slide_id]
+
+                mean = adata_slide.X.mean(0)
+                mean = mean.A1 if isinstance(mean, np.matrix) else mean
+                means[slide_id] = mean.astype(np.float32)
+
+                std = (
+                    adata_slide.X.std(0) if isinstance(adata_slide.X, np.ndarray) else _sparse_std(adata_slide.X, 0).A1
+                )
+                stds[slide_id] = std.astype(np.float32)
+
+        label_encoder = LabelEncoder()
+        label_encoder.fit(list(means.keys()))
+
+        means = torch.stack([torch.tensor(means[slide_id]) for slide_id in label_encoder.classes_])
+        stds = torch.stack([torch.tensor(stds[slide_id]) for slide_id in label_encoder.classes_])
+
+        return means, stds, label_encoder
 
     def to_tensor(self, adata: AnnData) -> Tensor:
         """Get the normalized gene expressions of the cells in the dataset.
@@ -49,10 +78,18 @@ class AnnDataTorch:
         """
         adata = adata[:, self._keep_var(adata)]
 
-        X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
-        X = (X - adata.var["mean"].values) / (adata.var["std"].values + Nums.EPS)
+        if len(np.unique(adata.obs[Keys.SLIDE_ID])) == 1:
+            slide_id_index = self.label_encoder.transform(adata.obs.iloc[:1][Keys.SLIDE_ID])
+            mean, std = self.means[slide_id_index], self.stds[slide_id_index]
+        else:
+            slide_id_indices = self.label_encoder.transform(adata.obs[Keys.SLIDE_ID])
+            mean, std = self.means[slide_id_indices], self.stds[slide_id_indices]
 
-        return torch.tensor(X, dtype=torch.float32)
+        X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
+        X = torch.tensor(X, dtype=torch.float32)
+        X = (X - mean) / (std + Nums.EPS)
+
+        return X
 
     def __getitem__(self, item: tuple[int, slice]) -> tuple[Tensor, Tensor]:
         """Get the expression values for a subset of cells (corresponding to a subgraph).

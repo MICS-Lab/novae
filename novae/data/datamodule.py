@@ -5,7 +5,7 @@ from anndata import AnnData
 from torch_geometric.loader import DataLoader
 
 from ..module import CellEmbedder
-from . import NeighborhoodDataset
+from . import NovaeDataset
 
 
 class NovaeDatamodule(L.LightningDataModule):
@@ -23,7 +23,7 @@ class NovaeDatamodule(L.LightningDataModule):
         num_workers: int = 0,
     ) -> None:
         super().__init__()
-        self.dataset = NeighborhoodDataset(adatas, cell_embedder, batch_size, n_hops_local, n_hops_view)
+        self.dataset = NovaeDataset(adatas, cell_embedder, batch_size, n_hops_local, n_hops_view)
         self.batch_size = batch_size
         self.num_workers = num_workers
 
