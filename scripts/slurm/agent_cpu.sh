@@ -2,9 +2,8 @@
 #SBATCH --job-name=novae
 #SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
 #SBATCH --mem=80G
-#SBATCH --cpus-per-task=16
-#SBATCH --partition=gpgpuq
-#SBATCH --gres=gpu:a100:1
+#SBATCH --cpus-per-task=8
+#SBATCH --partition=longq
 
 module purge
 module load anaconda3/2020-11
