@@ -8,7 +8,7 @@ import torch
 from anndata import AnnData
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
-from torch import nn, optim
+from torch import Tensor, nn, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 
@@ -143,7 +143,7 @@ class Novae(L.LightningModule):
             data = self.augmentation(data)
         return self.cell_embedder(data)
 
-    def forward(self, batch: dict[str, Data]) -> torch.Tensor:
+    def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
         return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
@@ -187,13 +187,12 @@ class Novae(L.LightningModule):
         )
 
     def on_train_epoch_start(self):
+        self.training = True
         self.swav_head.prototypes.requires_grad_(self.current_epoch >= self.hparams.epoch_unfreeze_prototypes)
-
         self.datamodule.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.hparams.lr)
-        return optimizer
+        return optim.Adam(self.parameters(), lr=self.hparams.lr)
 
     @utils.format_docs
     @torch.no_grad()
@@ -249,9 +248,7 @@ class Novae(L.LightningModule):
 
         return representations, codes, valid_indices
 
-    def _apply_sinkhorn_per_slide(
-        self, scores: torch.Tensor, adata: AnnData, valid_indices: np.ndarray
-    ) -> torch.Tensor:
+    def _apply_sinkhorn_per_slide(self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray) -> Tensor:
         slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
 
         unique_slide_ids = np.unique(slide_ids)
