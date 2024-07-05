@@ -51,7 +51,7 @@ class Novae(L.LightningModule):
         num_layers: int = 10,
         batch_size: int = 512,
         lr: float = 1e-3,
-        temperature: float = 0.5,
+        temperature: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
