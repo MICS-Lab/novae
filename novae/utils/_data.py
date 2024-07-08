@@ -67,6 +67,8 @@ def dummy_dataset(
     Returns:
         A list of `AnnData` objects representing a valid `Novae` dataset.
     """
+    assert n_obs_per_domain > 10
+    assert n_vars - n_drop - n_panels > 2
 
     panels_shift = [panel_shift_factor * np.random.randn(n_vars) for _ in range(n_panels)]
     domains_shift = [class_shift_factor * np.random.randn(n_vars) for _ in range(n_domains)]
@@ -83,22 +85,24 @@ def dummy_dataset(
             slides_shift = np.array([batch_shift_factor * np.random.randn(n_vars) for _ in range(n_slides_per_panel)])
 
         for domain_index in range(n_domains):
-            cell_shift = np.random.randn(n_obs_per_domain, n_vars)
-            slide_ids_domain_ = np.random.randint(0, n_slides_per_panel, n_obs_per_domain)
+            n_obs = n_obs_per_domain + panel_index  # ensure n_obs different
+            cell_shift = np.random.randn(n_obs, n_vars)
+            slide_ids_domain_ = np.random.randint(0, n_slides_per_panel, n_obs)
             X_domain_ = cell_shift + domains_shift[domain_index] + panels_shift[panel_index]
 
             if n_slides_per_panel > 1:
                 X_domain_ += slides_shift[slide_ids_domain_]
 
             X_.append(X_domain_)
-            spatial_.append(np.random.randn(n_obs_per_domain, 2) + loc_shift[domain_index])
-            domains_.append(np.array([f"domain_{domain_index}"] * n_obs_per_domain))
+            spatial_.append(np.random.randn(n_obs, 2) + loc_shift[domain_index])
+            domains_.append(np.array([f"domain_{domain_index}"] * n_obs))
             slide_ids_.append(slide_ids_domain_)
 
         X = np.concatenate(X_, axis=0).clip(0)
 
         if n_drop > 0:
-            var_indices = np.random.choice(n_vars, size=n_vars - n_drop, replace=False)
+            size = n_vars - n_drop - panel_index  # ensure n_vars different
+            var_indices = np.random.choice(n_vars, size=size, replace=False)
             X = X[:, var_indices]
             var_names = var_names[var_indices]
 
@@ -109,6 +113,9 @@ def dummy_dataset(
         adata.obs["domain"] = np.concatenate(domains_)
         adata.obs["slide_key"] = (slide_key + pd.Series(np.concatenate(slide_ids_)).astype(str)).values
         adata.obsm["spatial"] = np.concatenate(spatial_, axis=0)
+
+        adata.obsm["spatial"][[1, 2]] += 100  # ensure at least two indices are connected to only one node
+        adata.obsm["spatial"][4] += 1000  # ensure at least one index is non-connected
 
         if compute_spatial_neighbors:
             spatial_neighbors(adata, radius=[0, 3])

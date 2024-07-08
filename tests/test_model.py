@@ -72,11 +72,11 @@ def test_representation_single_panel(slide_key: str | None):
 
     model.compute_representation()
 
-    assert (niches == adata.obs[Keys.SWAV_CLASSES]).all()
+    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])
 
     model.compute_representation([adata], slide_key=slide_key)
 
-    assert (niches == adata.obs[Keys.SWAV_CLASSES]).all()
+    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])
 
     if slide_key is not None:
         sids = adata.obs[slide_key].unique()
@@ -86,13 +86,13 @@ def test_representation_single_panel(slide_key: str | None):
 
         adata_concat = anndata.concat(adatas)
 
-        assert (niches == adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index]).all()
+        assert niches.equals(adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index])
 
         model.compute_representation(adatas, slide_key=slide_key)
 
         adata_concat = anndata.concat(adatas)
 
-        assert (niches == adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index]).all()
+        assert niches.equals(adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index])
 
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
@@ -116,7 +116,7 @@ def test_representation_multi_panel(slide_key: str | None):
 
     niches_series2 = pd.concat([adata.obs[Keys.SWAV_CLASSES].copy() for adata in adatas])
 
-    assert (niches_series2.loc[niches_series.index] == niches_series).all()
+    assert niches_series.equals(niches_series2.loc[niches_series.index])
 
     adata_split = [
         adata[adata.obs[Keys.SLIDE_ID] == sid].copy() for adata in adatas for sid in adata.obs[Keys.SLIDE_ID].unique()
@@ -126,4 +126,4 @@ def test_representation_multi_panel(slide_key: str | None):
 
     niches_series2 = pd.concat([adata.obs[Keys.SWAV_CLASSES] for adata in adata_split])
 
-    assert (niches_series2.loc[niches_series.index] == niches_series).all()
+    assert niches_series.equals(niches_series2.loc[niches_series.index])

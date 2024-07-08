@@ -61,8 +61,8 @@ class AnnDataTorch:
         label_encoder = LabelEncoder()
         label_encoder.fit(list(means.keys()))
 
-        means = torch.stack([torch.tensor(means[slide_id]) for slide_id in label_encoder.classes_])
-        stds = torch.stack([torch.tensor(stds[slide_id]) for slide_id in label_encoder.classes_])
+        means = [torch.tensor(means[slide_id]) for slide_id in label_encoder.classes_]
+        stds = [torch.tensor(stds[slide_id]) for slide_id in label_encoder.classes_]
 
         return means, stds, label_encoder
 
@@ -83,7 +83,8 @@ class AnnDataTorch:
             mean, std = self.means[slide_id_index], self.stds[slide_id_index]
         else:
             slide_id_indices = self.label_encoder.transform(adata.obs[Keys.SLIDE_ID])
-            mean, std = self.means[slide_id_indices], self.stds[slide_id_indices]
+            mean = torch.stack([self.means[i] for i in slide_id_indices])  # TODO: avoid stack (only if not fast enough)
+            std = torch.stack([self.stds[i] for i in slide_id_indices])
 
         X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
         X = torch.tensor(X, dtype=torch.float32)
