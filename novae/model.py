@@ -8,7 +8,7 @@ import torch
 from anndata import AnnData
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
-from torch import Tensor, nn, optim
+from torch import Tensor, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 
@@ -99,9 +99,6 @@ class Novae(L.LightningModule):
         self.encoder = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
         self.swav_head = SwavHead(output_size, num_prototypes, temperature)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-
-        ### Losses
-        self.bce_loss = nn.BCELoss()
 
         ### Misc
         self._num_workers = 0
