@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=novae
 #SBATCH --output=/mnt/beegfs/userdata/q_blampey/.jobs_outputs/%j
-#SBATCH --mem=80G
+#SBATCH --mem=256G
 #SBATCH --cpus-per-task=16
 #SBATCH --partition=gpgpuq
 #SBATCH --gres=gpu:a100:1
