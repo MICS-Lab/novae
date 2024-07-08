@@ -68,8 +68,6 @@ def _save_result(model: novae.Novae, config: dict):
     res_dir.mkdir(parents=True, exist_ok=True)
 
     for adata in model.adatas:
-        print(adata.obs["novae_leaves"])
-        del adata.obs["novae_leaves"]
         out_path = res_dir / f"{id(adata)}.h5ad"
         log.info(f"Writing adata file to {out_path}: {adata}")
         adata.write_h5ad(out_path)

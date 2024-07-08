@@ -241,7 +241,9 @@ class Novae(L.LightningModule):
 
         codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
         codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
-        adata.obs[Keys.SWAV_CLASSES] = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1).astype(object))
+
+        leaves_predictions = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1))
+        adata.obs[Keys.SWAV_CLASSES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
 
         return representations, codes, valid_indices
 

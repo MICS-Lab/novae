@@ -140,7 +140,7 @@ class SwavHead(L.LightningModule):
         if self.clusters_levels is None:
             self.hierarchical_clustering()
 
-        return series.map(lambda x: x if np.isnan(float(x)) else f"N{self.clusters_levels[-n_classes, int(x)]}")
+        return series.map(lambda x: f"N{self.clusters_levels[-n_classes, int(x[1:])]}" if isinstance(x, str) else x)
 
     def rotations_geodesic(self, centroids: np.ndarray, centroids_reference: np.ndarray) -> np.ndarray:
         """Computes the rotation matrices that transforms the centroids to the centroids_reference along the geodesic.
