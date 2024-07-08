@@ -9,8 +9,6 @@ parameters:
     values: [8, 16]
   num_prototypes:
     values: [256, 512, 1024]
-  batch_size:
-    values: [512, 1024, 2048]
   output_size:
     values: [128, 256, 512]
   num_layers:
