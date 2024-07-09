@@ -14,7 +14,7 @@ data:
 model_kwargs: # Novae model kwargs
   heads: 4
 
-trainer_kwargs: # Trainer kwargs (from Lightning)
+fit_kwargs: # Trainer kwargs (from Lightning)
   max_epochs: 3
   log_every_n_steps: 10
   accelerator: "cpu"

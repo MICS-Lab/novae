@@ -6,7 +6,7 @@ model_kwargs:
   batch_size: 256
   scgpt_model_dir: /mnt/beegfs/userdata/q_blampey/data/checkpoints/scgpt/scGPT_human
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 50
   accelerator: "gpu"
   num_workers: 16

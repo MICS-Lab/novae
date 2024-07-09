@@ -7,7 +7,7 @@ model_kwargs:
   n_hops_view: 3
   hidden_size: 256
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 2
   accelerator: "gpu"
   profiler: "simple"

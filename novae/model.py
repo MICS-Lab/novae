@@ -50,7 +50,6 @@ class Novae(L.LightningModule):
         hidden_size: int = 64,
         num_layers: int = 10,
         batch_size: int = 512,
-        lr: float = 1e-3,
         temperature: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
@@ -73,7 +72,6 @@ class Novae(L.LightningModule):
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.
             batch_size: Mini-batch size.
-            lr: Model learning rate.
             temperature: Swav temperature.
             num_prototypes: Number of prototypes, or "leaves" niches.
             {panel_subset_size}
@@ -189,7 +187,8 @@ class Novae(L.LightningModule):
         self.datamodule.dataset.shuffle_obs_ilocs()
 
     def configure_optimizers(self):
-        return optim.Adam(self.parameters(), lr=self.hparams.lr)
+        lr = self._lr if hasattr(self, "_lr") else 1e-3
+        return optim.Adam(self.parameters(), lr=lr)
 
     @utils.format_docs
     @torch.no_grad()
@@ -408,7 +407,9 @@ class Novae(L.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
-    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, return_device: bool = False):
+    def _parse_hardware_args(
+        self, accelerator: str, num_workers: int | None, return_device: bool = False
+    ) -> torch.device | None:
         if accelerator == "cpu" and num_workers:
             log.warn(
                 f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
@@ -427,6 +428,7 @@ class Novae(L.LightningModule):
         slide_key: str | None = None,
         max_epochs: int = 20,
         accelerator: str = "cpu",
+        lr: float = 1e-3,
         num_workers: int | None = None,
         min_delta: float = 0.1,
         patience: int = 3,
@@ -442,6 +444,7 @@ class Novae(L.LightningModule):
             {slide_key}
             max_epochs: Maximum number of training epochs.
             {accelerator}
+            lr: Model learning rate.
             num_workers: Number of workers for the dataloader.
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
@@ -456,6 +459,7 @@ class Novae(L.LightningModule):
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
 
         self._datamodule = self._init_datamodule()
+        self._lr = lr
 
         early_stopping = EarlyStopping(
             monitor="train/loss_epoch",

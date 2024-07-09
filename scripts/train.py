@@ -35,7 +35,12 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
     wandb.init(project="novae", **config.get("wandb_init_kwargs", {}))
 
     if sweep:
-        config["model_kwargs"] = config.get("model_kwargs", {}) | dict(wandb.config)
+        sweep_config = dict(wandb.config)
+        if "lr" in sweep_config:
+            config["fit_kwargs"] = config.get("fit_kwargs", {}) | {"lr": wandb.config.lr}
+            del sweep_config["lr"]
+        config["model_kwargs"] = config.get("model_kwargs", {}) | sweep_config
+
     log.info(f"Full config:\n{config}")
 
     assert "slide_key" not in config.get(
@@ -54,7 +59,7 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
         log.info("Compiling the model")
         model: novae.Novae = torch.compile(model)
 
-    model.fit(logger=wandb_logger, callbacks=callbacks, **config.get("trainer_kwargs", {}))
+    model.fit(logger=wandb_logger, callbacks=callbacks, **config.get("fit_kwargs", {}))
 
     if config.get("save_result"):
         _save_result(model, config)
@@ -74,8 +79,8 @@ def _save_result(model: novae.Novae, config: dict):
 
 
 def _get_hardware_kwargs(config: dict) -> dict:
-    num_workers = config.get("trainer_kwargs", {}).get("num_workers")
-    accelerator = config.get("trainer_kwargs", {}).get("accelerator")
+    num_workers = config.get("fit_kwargs", {}).get("num_workers")
+    accelerator = config.get("fit_kwargs", {}).get("accelerator")
     return {"num_workers": num_workers, "accelerator": accelerator}
 
 

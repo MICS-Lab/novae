@@ -8,7 +8,7 @@ model_kwargs:
   heads: 4
   embedding_size: 30
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 1
   log_every_n_steps: 10
   accelerator: "cpu"

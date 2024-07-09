@@ -4,7 +4,7 @@ data:
 model_kwargs:
   scgpt_model_dir: /mnt/beegfs/userdata/q_blampey/data/checkpoints/scgpt/scGPT_human
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 10
   accelerator: "gpu"
   num_workers: 8

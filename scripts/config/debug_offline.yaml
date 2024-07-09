@@ -7,7 +7,7 @@ model_kwargs:
   n_hops_view: 3
   heads: 4
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 1
   log_every_n_steps: 10
   accelerator: "cpu"

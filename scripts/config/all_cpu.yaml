@@ -8,5 +8,5 @@ model_kwargs:
   hidden_size: 128
   scgpt_model_dir: /mnt/beegfs/userdata/q_blampey/data/checkpoints/scgpt/scGPT_human
 
-trainer_kwargs:
+fit_kwargs:
   max_epochs: 50
