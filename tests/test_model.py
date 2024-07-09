@@ -34,6 +34,10 @@ def test_train():
     )
 
     model = novae.Novae(adatas)
+
+    with pytest.raises(AssertionError):  # should raise an error because the model has not been trained
+        model.compute_representation()
+
     model.fit(max_epochs=1)
     model.compute_representation()
     obs_key = model.assign_domains(k=2)
@@ -67,6 +71,7 @@ def test_representation_single_panel(slide_key: str | None):
 
     model = novae.Novae(adata, slide_key=slide_key)
     model._datamodule = model._init_datamodule()
+    model._trained = True
 
     model.compute_representation()
 
@@ -109,6 +114,7 @@ def test_representation_multi_panel(slide_key: str | None):
 
     model = novae.Novae(adatas, slide_key=slide_key)
     model._datamodule = model._init_datamodule()
+    model._trained = True
 
     model.compute_representation()
 

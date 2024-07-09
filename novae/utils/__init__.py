@@ -9,6 +9,7 @@ from .utils import (
     wandb_log_dir,
     pretty_num_parameters,
     parse_device_args,
+    requires_fit,
 )
 from ._plot import plot_niches_hierarchy
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset

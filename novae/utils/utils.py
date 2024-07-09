@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib
 import logging
+from functools import wraps
 from pathlib import Path
+from typing import Callable
 
 import anndata
 import numpy as np
@@ -114,6 +116,17 @@ def _is_multi_panel(adatas: list[AnnData]) -> bool:
             return True
 
     return False
+
+
+def requires_fit(f: Callable) -> Callable:
+    """Make sure the model has been trained"""
+
+    @wraps(f)
+    def wrapper(model, *args, **kwargs):
+        assert model._trained, "Novae must be trained first, so consider running `model.fit()`"
+        return f(model, *args, **kwargs)
+
+    return wrapper
 
 
 def _sanity_check(adatas: list[AnnData], slide_key: str = None):

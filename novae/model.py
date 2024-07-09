@@ -102,6 +102,7 @@ class Novae(L.LightningModule):
         self._num_workers = 0
         self._checkpoint = None
         self._datamodule = None
+        self._trained = False
 
     @property
     def datamodule(self) -> NovaeDatamodule:
@@ -191,6 +192,7 @@ class Novae(L.LightningModule):
         return optim.Adam(self.parameters(), lr=lr)
 
     @utils.format_docs
+    @utils.requires_fit
     @torch.no_grad()
     def compute_representation(
         self,
@@ -341,6 +343,8 @@ class Novae(L.LightningModule):
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
         model._checkpoint = f"wandb: {name}"
+        model._trained = True
+
         return model
 
     def _get_centroids(self, adata: AnnData, domains: list[str], obs_key: str) -> tuple[np.ndarray, np.ndarray]:
@@ -453,14 +457,16 @@ class Novae(L.LightningModule):
             logger: The pytorch lightning logger.
             kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
-        self._parse_hardware_args(accelerator, num_workers)
-
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
 
-        self._datamodule = self._init_datamodule()
+        ### Misc
         self._lr = lr
+        self.swav_head.reset_clustering()  # ensure we don't re-use old clusters
+        self._parse_hardware_args(accelerator, num_workers)
+        self._datamodule = self._init_datamodule()
 
+        ### Callbacks
         early_stopping = EarlyStopping(
             monitor="train/loss_epoch",
             min_delta=min_delta,
@@ -470,6 +476,7 @@ class Novae(L.LightningModule):
         callbacks = [early_stopping] + (callbacks or [])
         enable_checkpointing = enable_checkpointing or any(isinstance(c, ModelCheckpoint) for c in callbacks)
 
+        ### Training
         trainer = L.Trainer(
             max_epochs=max_epochs,
             accelerator=accelerator,
@@ -479,3 +486,5 @@ class Novae(L.LightningModule):
             **kwargs,
         )
         trainer.fit(self, datamodule=self.datamodule)
+
+        self._trained = True

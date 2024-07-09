@@ -46,7 +46,8 @@ class SwavHead(L.LightningModule):
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
 
-        self.clusters_levels = None
+        self._clustering = None
+        self._clusters_levels = None
 
     @torch.no_grad()
     def normalize_prototypes(self):
@@ -119,17 +120,17 @@ class SwavHead(L.LightningModule):
         )
         self._clustering.fit(X)
 
-        self.clusters_levels = np.zeros((len(X), len(X)), dtype=np.uint16)
-        self.clusters_levels[0] = np.arange(len(X))
+        self._clusters_levels = np.zeros((len(X), len(X)), dtype=np.uint16)
+        self._clusters_levels[0] = np.arange(len(X))
 
         for i, (a, b) in enumerate(self._clustering.children_):
-            clusters = self.clusters_levels[i]
-            self.clusters_levels[i + 1] = clusters
-            self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
+            clusters = self._clusters_levels[i]
+            self._clusters_levels[i + 1] = clusters
+            self._clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
 
     @property
     def clustering(self) -> AgglomerativeClustering:
-        if not hasattr(self, "_clustering"):
+        if self._clustering is None:
             self.hierarchical_clustering()
         return self._clustering
 
@@ -143,10 +144,14 @@ class SwavHead(L.LightningModule):
         Returns:
             Series of classes (one among `n_classes`).
         """
-        if self.clusters_levels is None:
+        if self._clusters_levels is None:
             self.hierarchical_clustering()
 
-        return series.map(lambda x: f"N{self.clusters_levels[-n_classes, int(x[1:])]}" if isinstance(x, str) else x)
+        return series.map(lambda x: f"N{self._clusters_levels[-n_classes, int(x[1:])]}" if isinstance(x, str) else x)
+
+    def reset_clustering(self) -> None:
+        self._clustering = None
+        self._clusters_levels = None
 
     def rotations_geodesic(self, centroids: np.ndarray, centroids_reference: np.ndarray) -> np.ndarray:
         """Computes the rotation matrices that transforms the centroids to the centroids_reference along the geodesic.
