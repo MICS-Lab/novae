@@ -53,6 +53,6 @@ class GraphAugmentation(L.LightningModule):
         data.genes_indices = data.genes_indices[:, gene_subset_indices]
 
     def forward(self, data: Data) -> Data:
-        self.noise(data)
         self.panel_subset(data)
+        self.noise(data)
         return data
