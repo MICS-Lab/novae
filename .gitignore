@@ -39,6 +39,7 @@ results/*
 
 # Misc
 logs/
+test.h5ad
 wandb/
 .env
 .autoenv

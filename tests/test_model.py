@@ -52,6 +52,8 @@ def test_train():
     assert fide1 != fide2
     assert jsd1 != jsd2
 
+    adatas[0].write_h5ad("tests/test.h5ad")  # ensures the output can be saved
+
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
 def test_representation_single_panel(slide_key: str | None):
