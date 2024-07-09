@@ -110,22 +110,28 @@ class SwavHead(L.LightningModule):
         """
         X = self.prototypes.data.numpy(force=True)  # (num_prototypes, output_size)
 
-        clustering = AgglomerativeClustering(
+        self._clustering = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=0,
             compute_full_tree=True,
             metric="cosine",
             linkage="average",
         )
-        clustering.fit(X)
+        self._clustering.fit(X)
 
         self.clusters_levels = np.zeros((len(X), len(X)), dtype=np.uint16)
         self.clusters_levels[0] = np.arange(len(X))
 
-        for i, (a, b) in enumerate(clustering.children_):
+        for i, (a, b) in enumerate(self._clustering.children_):
             clusters = self.clusters_levels[i]
             self.clusters_levels[i + 1] = clusters
             self.clusters_levels[i + 1, np.where((clusters == a) | (clusters == b))] = len(X) + i
+
+    @property
+    def clustering(self) -> AgglomerativeClustering:
+        if not hasattr(self, "_clustering"):
+            self.hierarchical_clustering()
+        return self._clustering
 
     def map_leaves_domains(self, series: pd.Series, n_classes: int) -> pd.Series:
         """Map leaves to the parent domain from the corresponding level of the hierarchical tree.

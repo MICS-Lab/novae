@@ -10,4 +10,5 @@ from .utils import (
     pretty_num_parameters,
     parse_device_args,
 )
+from ._plot import plot_niches_hierarchy
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset

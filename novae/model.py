@@ -266,6 +266,28 @@ class Novae(L.LightningModule):
             return self.adatas
         return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
+    def plot_niches_hierarchy(
+        self,
+        max_level: int = 10,
+        hline_level: int | list[int] | None = None,
+        leaf_font_size: int = 8,
+        **kwargs,
+    ):
+        """Plot the niches hierarchy as a dendogram.
+
+        Args:
+            max_level: Maximum level to be plot.
+            hline_level: If not `None`, a red line will ne drawn at this/these level(s).
+            leaf_font_size: The font size for the leaf labels.
+        """
+        utils.plot_niches_hierarchy(
+            self.swav_head.clustering,
+            max_level=max_level,
+            hline_level=hline_level,
+            leaf_font_size=leaf_font_size,
+            **kwargs,
+        )
+
     @utils.format_docs
     def assign_domains(
         self, adata: AnnData | list[AnnData] | None = None, k: int = 10, key_added: str | None = None
