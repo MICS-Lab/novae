@@ -135,3 +135,35 @@ def test_representation_multi_panel(slide_key: str | None):
     niches_series2 = pd.concat([adata.obs[Keys.SWAV_CLASSES] for adata in adata_split])
 
     assert niches_series.equals(niches_series2.loc[niches_series.index])
+
+
+@pytest.mark.parametrize("slide_key", [None, "slide_key"])
+def test_saved_model_identical(slide_key: str | None):
+    adata = novae.utils.dummy_dataset(
+        n_panels=1,
+        n_slides_per_panel=2,
+        n_obs_per_domain=100,
+        n_domains=2,
+        compute_spatial_neighbors=False,
+    )[0]
+
+    model = novae.Novae(adata, slide_key=slide_key)
+
+    model._datamodule = model._init_datamodule()
+    model._trained = True
+
+    model.compute_representation()
+    model.assign_domains()
+
+    niches = adata.obs[Keys.SWAV_CLASSES].copy()
+    representations = adata.obsm[Keys.REPR].copy()
+
+    model.save_checkpoint("tests/test.ckpt")
+
+    new_model = novae.Novae.load_from_checkpoint("tests/test.ckpt")
+
+    new_model.compute_representation(adata, slide_key=slide_key)
+    new_model.assign_domains(adata)
+
+    assert (adata.obsm[Keys.REPR] == representations).all()
+    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])

@@ -40,6 +40,7 @@ results/*
 # Misc
 logs/
 test.h5ad
+test.ckpt
 wandb/
 .env
 .autoenv
