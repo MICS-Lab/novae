@@ -23,7 +23,7 @@ nav:
       - novae.module.SwavHead: api/novae.module.SwavHead.md
       - novae.module.InferenceHeadZIE: api/novae.module.InferenceHeadZIE.md
     - novae.data:
-      - novae.data.NeighborhoodDataset: api/novae.data.NeighborhoodDataset.md
+      - novae.data.NovaeDataset: api/novae.data.NovaeDataset.md
       - novae.data.NovaeDatamodule: api/novae.data.NovaeDatamodule.md
       - novae.data.AnnDataTorch: api/novae.data.AnnDataTorch.md
 

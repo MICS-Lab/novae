@@ -324,7 +324,13 @@ class Novae(L.LightningModule):
         return key_added
 
     @classmethod
-    def load_from_wandb_artifact(cls, name: str, map_location: str = "cpu", **kwargs) -> "Novae":
+    def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
+        model = super().load_from_checkpoint(*args, **kwargs)
+        model._trained = True
+        return model
+
+    @classmethod
+    def load_pretrained(cls, name: str, map_location: str = "cpu", **kwargs) -> "Novae":
         """Initialize a model from a Weights & Biases artifact.
 
         Args:
@@ -343,8 +349,7 @@ class Novae(L.LightningModule):
             ckpt_version = torch.load(artifact_path, map_location=map_location).get(Keys.NOVAE_VERSION, "unknown")
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
-        model._checkpoint = f"wandb: {name}"
-        model._trained = True
+        model._checkpoint = name
 
         return model
 
@@ -451,7 +456,7 @@ class Novae(L.LightningModule):
         callbacks: list[Callback] | None = None,
         enable_checkpointing: bool = False,
         logger: Logger | list[Logger] | bool = False,
-        **kwargs,
+        **kwargs: int,
     ):
         """Train a Novae model. The training will be stopped by early stopping.
 

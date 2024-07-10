@@ -129,6 +129,10 @@ def _load_wandb_artifact(name: str) -> Path:
     import wandb
 
     api = wandb.Api()
+
+    if not name.startswith("novae/"):
+        name = f"novae/novae/{name}"
+
     artifact = api.artifact(name)
 
     artifact_path = wandb_log_dir() / "artifacts" / artifact.name
