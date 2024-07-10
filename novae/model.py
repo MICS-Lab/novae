@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import warnings
 
 import lightning as L
 import numpy as np
@@ -424,6 +425,17 @@ class Novae(L.LightningModule):
 
         if return_device:
             return utils.parse_device_args(accelerator)
+
+    def save_checkpoint(self, path: str) -> None:
+        from lightning_utilities.core import rank_zero
+
+        rank_zero.log.disabled = True
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            trainer = L.Trainer(accelerator="cpu", logger=False, enable_model_summary=False)
+            trainer.strategy.connect(self)
+            trainer.save_checkpoint(path)
+        rank_zero.log.disabled = False
 
     @utils.format_docs
     def fit(
