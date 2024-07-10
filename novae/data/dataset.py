@@ -107,28 +107,25 @@ class NovaeDataset(Dataset):
         return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> dict[str, Data]:
-        """Gets a sample from the dataset, with one "main" graph and its corresponding "view" graph.
+        """Gets a sample from the dataset, with one "main" graph and its corresponding "view" graph (only during training).
 
         Args:
             index: Index of the sample to retrieve.
 
         Returns:
-            A dictionnary whose keys are "main" and "view", and values are PyTorch Geometric `Data` objects.
+            A dictionnary whose keys are names, and values are PyTorch Geometric `Data` objects. The `"view"` graph is only provided during training.
         """
-        if self.training:
-            adata_index, obs_index = self.shuffled_obs_ilocs[index]
-        else:
-            adata_index, obs_index = self.obs_ilocs[index]
-
-        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_PAIR]
-
-        plausible_nghs = adjacency_pair[obs_index].indices
-        ngh_index = np.random.choice(list(plausible_nghs), size=1)[0]
+        adata_index, obs_index = self.shuffled_obs_ilocs[index] if self.training else self.obs_ilocs[index]
 
         data = self.to_pyg_data(adata_index, obs_index)
-        data_ngh = self.to_pyg_data(adata_index, ngh_index)
 
-        return {"main": data, "view": data_ngh}
+        if not self.training:
+            return {"main": data}
+
+        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_PAIR]
+        cell_view_index = np.random.choice(list(adjacency_pair[obs_index].indices), size=1)[0]
+
+        return {"main": data, "view": self.to_pyg_data(adata_index, cell_view_index)}
 
     def to_pyg_data(self, adata_index: int, obs_index: int) -> Data:
         """Create a PyTorch Geometric Data object for the input cell
