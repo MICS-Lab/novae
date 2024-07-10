@@ -30,8 +30,9 @@ class ComputeSwavOutputsCallback(Callback):
 
 
 class LogDomainsCallback(Callback):
-    def __init__(self, **plot_kwargs) -> None:
+    def __init__(self, slide_name_key: str = "slide_id", **plot_kwargs) -> None:
         super().__init__()
+        self.slide_name_key = slide_name_key
         self.plot_kwargs = plot_kwargs
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
@@ -42,7 +43,8 @@ class LogDomainsCallback(Callback):
         for k in n_domains:
             obs_key = model.assign_domains(adata, k)
             sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            wandb.log({f"{obs_key}_{adata.obs[Keys.SLIDE_ID].iloc[0]}": wandb.Image(plt)})
+            slide_name_key = self.slide_name_key if self.slide_name_key in adata.obs else Keys.SLIDE_ID
+            wandb.log({f"{obs_key}_{adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
 
 
 class LogProtoCovCallback(Callback):
