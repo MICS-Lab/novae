@@ -56,10 +56,17 @@ class LogProtoCovCallback(Callback):
 
 
 class ValidationCallback(Callback):
-    def __init__(self, adatas: list[AnnData] | None, accelerator: str | None = None, num_workers: int | None = None):
+    def __init__(
+        self,
+        adatas: list[AnnData] | None,
+        accelerator: str | None = None,
+        num_workers: int | None = None,
+        slide_name_key: str = "slide_id",
+    ):
         self.adatas = adatas
         self.accelerator = accelerator
         self.num_workers = num_workers
+        self.slide_name_key = slide_name_key
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         if self.adatas is None:
@@ -74,7 +81,8 @@ class ValidationCallback(Callback):
         for adata in self.adatas:
             obs_key = model.assign_domains(adata, n_classes)
             sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            wandb.log({f"val_{obs_key}_{adata.obs[Keys.SLIDE_ID].iloc[0]}": wandb.Image(plt)})
+            slide_name_key = self.slide_name_key if self.slide_name_key in adata.obs else Keys.SLIDE_ID
+            wandb.log({f"val_{obs_key}_{adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
 
         fide = mean_fide_score(self.adatas, obs_key=obs_key, n_classes=n_classes)
         model.log("metrics/val_mean_fide_score", fide)
