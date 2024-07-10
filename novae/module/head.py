@@ -23,6 +23,7 @@ class SwavHead(L.LightningModule):
         output_size: int,
         num_prototypes: int,
         temperature: float,
+        threshold_score_ot: float | None,
         epsilon: float = 0.05,
         sinkhorn_iterations: int = 3,
     ):
@@ -39,6 +40,7 @@ class SwavHead(L.LightningModule):
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
+        self.threshold_score_ot = threshold_score_ot
         self.epsilon = epsilon
         self.sinkhorn_iterations = sinkhorn_iterations
 
@@ -88,6 +90,23 @@ class SwavHead(L.LightningModule):
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm.
         """
+        if self.threshold_score_ot is None or self.threshold_score_ot <= -1:
+            return self._sinkhorn(scores)
+
+        keep_column = scores.max(0).values > self.threshold_score_ot
+
+        if keep_column.sum() == 0:
+            log.warn("No column has a score above the threshold, using the full matrix.")
+            return self._sinkhorn(scores)
+
+        Q_subset = self._sinkhorn(scores[:, keep_column])
+        Q = torch.zeros_like(scores)
+        Q[:, keep_column] = Q_subset
+
+        return Q
+
+    @torch.no_grad()
+    def _sinkhorn(self, scores: Tensor) -> Tensor:
         Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
