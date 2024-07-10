@@ -20,6 +20,7 @@ DEFAULT_N_DOMAINS = [7, 14]
 
 class ComputeSwavOutputsCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
+        model._trained = True  # trick to assert error in compute_representation
         model.compute_representation()
         model.swav_head.hierarchical_clustering()
 
@@ -64,6 +65,7 @@ class ValidationCallback(Callback):
         if self.adatas is None:
             return
 
+        model._trained = True  # trick to assert error in compute_representation
         model.compute_representation(self.adatas, accelerator=self.accelerator, num_workers=self.num_workers)
         model.swav_head.hierarchical_clustering()
 
