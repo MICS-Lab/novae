@@ -147,7 +147,25 @@ def test_saved_model_identical(slide_key: str | None):
         compute_spatial_neighbors=False,
     )[0]
 
-    model = novae.Novae(adata, slide_key=slide_key)
+    # using weird parameters
+    model = novae.Novae(
+        adata,
+        slide_key=slide_key,
+        embedding_size=67,
+        output_size=78,
+        n_hops_local=4,
+        n_hops_view=3,
+        heads=2,
+        hidden_size=46,
+        num_layers=3,
+        batch_size=345,
+        temperature=0.13,
+        num_prototypes=212,
+        panel_subset_size=0.62,
+        background_noise_lambda=7.7,
+        sensitivity_noise_std=0.042,
+        epoch_unfreeze_prototypes=1,
+    )
 
     model._datamodule = model._init_datamodule()
     model._trained = True
