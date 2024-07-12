@@ -57,7 +57,7 @@ class Novae(L.LightningModule):
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
         epoch_unfreeze_prototypes: int = 2,
-        threshold_score_ot: float | None = None,
+        lambda_regularization: float = 0.0,
     ) -> None:
         """
 
@@ -97,7 +97,7 @@ class Novae(L.LightningModule):
 
         ### Modules
         self.encoder = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
-        self.swav_head = SwavHead(output_size, num_prototypes, temperature, threshold_score_ot=threshold_score_ot)
+        self.swav_head = SwavHead(output_size, num_prototypes, temperature, lambda_regularization=lambda_regularization)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
 
         ### Misc
