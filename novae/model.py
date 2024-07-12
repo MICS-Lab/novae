@@ -13,7 +13,7 @@ from torch import Tensor, optim
 from torch.nn import functional as F
 from torch_geometric.data import Data
 
-from . import __version__, utils
+from . import __version__, plot, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -283,7 +283,7 @@ class Novae(L.LightningModule):
             hline_level: If not `None`, a red line will ne drawn at this/these level(s).
             leaf_font_size: The font size for the leaf labels.
         """
-        utils.plot_niches_hierarchy(
+        plot._niches_hierarchy(
             self.swav_head.clustering,
             max_level=max_level,
             hline_level=hline_level,
@@ -331,13 +331,13 @@ class Novae(L.LightningModule):
         return model
 
     @classmethod
-    def load_pretrained(cls, name: str, map_location: str = "cpu", **kwargs) -> "Novae":
+    def load_pretrained(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
         """Initialize a model from a Weights & Biases artifact.
 
         Args:
             name: Name of the artifact.
             map_location: If your checkpoint saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map to the new setup. The behaviour is the same as in `torch.load()`.
-            kwargs: Optional kwargs for the Pytorch Lightning `load_from_checkpoint` method.
+            **kwargs: Optional kwargs for the Pytorch Lightning `load_from_checkpoint` method.
 
         Returns:
             A Novae model.
@@ -473,7 +473,7 @@ class Novae(L.LightningModule):
             callbacks: Optional list of Pytorch lightning callbacks.
             enable_checkpointing: Whether to enable model checkpointing.
             logger: The pytorch lightning logger.
-            kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
+            **kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)

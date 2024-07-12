@@ -8,7 +8,7 @@ from torch import Tensor
 
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
-from ..utils.utils import _sparse_std
+from ..utils import _sparse_std
 
 
 class AnnDataTorch:

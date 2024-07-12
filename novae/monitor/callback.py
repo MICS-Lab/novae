@@ -12,7 +12,7 @@ import wandb
 
 from .._constants import Keys
 from ..model import Novae
-from ..utils._plot import plot_latent
+from ..plot import plot_latent
 from .eval import jensen_shannon_divergence, mean_fide_score, mean_svg_score
 
 DEFAULT_N_DOMAINS = [7, 14]

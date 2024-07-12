@@ -8,6 +8,7 @@ from .model import Novae
 from . import utils
 from . import data
 from . import monitor
+from . import plot
 
 log = logging.getLogger("novae")
 configure_logger(log)

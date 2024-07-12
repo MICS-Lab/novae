@@ -10,7 +10,7 @@ from . import NovaeDataset
 
 class NovaeDatamodule(L.LightningDataModule):
     """
-    Datamodule used for training and inference. Small wrapper around the [novae.data.NeighborhoodDataset][]
+    Datamodule used for training and inference. Small wrapper around the [novae.data.NovaeDataset][]
     """
 
     def __init__(
