@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 import seaborn as sns
 from anndata import AnnData
+from matplotlib.lines import Line2D
 from scanpy._utils import sanitize_anndata
 
 from .._constants import Keys
@@ -23,6 +24,7 @@ def domains(
     cell_size: int | None = 10,
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
+    na_color: str = "#ccc",
     show: bool = False,
     **kwargs: int,
 ):
@@ -39,6 +41,7 @@ def domains(
         cell_size: Size of the cells or spots.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
+        na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
         show: Whether to show the plot.
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
@@ -65,28 +68,44 @@ def domains(
     colors = list(sns.color_palette("tab10" if n_colors <= 10 else "tab20", n_colors=n_colors).as_hex())
     for adata in adatas:
         adata.obs[obs_key] = adata.obs[obs_key].cat.set_categories(all_domains)
-        if len(all_domains) <= 10:
-            adata.uns[f"{obs_key}_colors"] = colors
+        adata.uns[f"{obs_key}_colors"] = colors
 
     n_slides = sum(len(adata.obs[slide_name_key].cat.categories) for adata in adatas)
     ncols = n_slides if n_slides < ncols else ncols
     nrows = (n_slides + ncols - 1) // ncols
+
     fig, axes = plt.subplots(
         nrows, ncols, figsize=(ncols * fig_size_per_slide[0], nrows * fig_size_per_slide[1]), squeeze=False
     )
 
     i = 0
     for adata in adatas:
-        for sid in adata.obs[slide_name_key].cat.categories:
+        for slide_name in adata.obs[slide_name_key].cat.categories:
             ax = axes[i // ncols, i % ncols]
-            adata_ = adata[adata.obs[slide_name_key] == sid]
+            adata_ = adata[adata.obs[slide_name_key] == slide_name]
             sc.pl.spatial(adata_, spot_size=cell_size, color=obs_key, ax=ax, show=False, **kwargs)
             sns.despine(ax=ax, offset=10, trim=True)
-            ax.set_title(sid)
+            ax.get_legend().remove()
+            ax.set_title(slide_name)
             i += 1
 
-    [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]
-    fig.suptitle(f"Novae domains ({k=})", fontsize=14)
+    [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
+
+    handles = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=8, linestyle="None")
+        for color in colors + [na_color]
+    ]
+    fig.legend(
+        handles,
+        all_domains + ["NA"],
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.1),
+        borderaxespad=0,
+        frameon=False,
+        ncol=n_colors // 3 + 1,
+    )
+
+    fig.suptitle(f"Novae domains ({k=})", fontsize=14, y=1.15)
 
     if show:
         plt.show()
