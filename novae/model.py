@@ -186,8 +186,11 @@ class Novae(L.LightningModule):
 
     def on_train_epoch_start(self):
         self.training = True
-        self.swav_head.prototypes.requires_grad_(self.current_epoch >= self.hparams.epoch_unfreeze_prototypes)
+
         self.datamodule.dataset.shuffle_obs_ilocs()
+
+        self.swav_head.prototypes.requires_grad_(self.current_epoch >= self.hparams.epoch_unfreeze_prototypes)
+        self.swav_head.lambda_regularization = self.hparams.lambda_regularization if self.current_epoch >= 2 else 0.0
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
