@@ -13,39 +13,9 @@ import wandb
 from .._constants import Keys
 from ..model import Novae
 from ..plot import plot_latent
-from .eval import jensen_shannon_divergence, mean_fide_score, mean_svg_score
+from .eval import mean_fide_score
 
-DEFAULT_N_DOMAINS = [7, 14]
-
-
-class ComputeSwavOutputsCallback(Callback):
-    def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
-        model._trained = True  # trick to assert error in compute_representation
-        model.compute_representation()
-        model.swav_head.hierarchical_clustering()
-
-        for adata in model.adatas:
-            obs_key = model.assign_domains(adata, DEFAULT_N_DOMAINS[0])
-
-        model.batch_effect_correction(None, obs_key)
-
-
-class LogDomainsCallback(Callback):
-    def __init__(self, slide_name_key: str = "slide_id", **plot_kwargs) -> None:
-        super().__init__()
-        self.slide_name_key = slide_name_key
-        self.plot_kwargs = plot_kwargs
-
-    def on_train_epoch_end(self, trainer: Trainer, model: Novae):
-        for adata in model.adatas:
-            self.log_domains_plots(model, adata, **self.plot_kwargs)
-
-    def log_domains_plots(self, model: Novae, adata: AnnData | list[AnnData], n_domains: list = DEFAULT_N_DOMAINS):
-        for k in n_domains:
-            obs_key = model.assign_domains(adata, k)
-            sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            slide_name_key = self.slide_name_key if self.slide_name_key in adata.obs else Keys.SLIDE_ID
-            wandb.log({f"{obs_key}_{adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+DEFAULT_N_DOMAINS = [7]
 
 
 class LogProtoCovCallback(Callback):
@@ -71,47 +41,34 @@ class ValidationCallback(Callback):
         num_workers: int | None = None,
         slide_name_key: str = "slide_id",
     ):
-        self.adatas = adatas
+        assert adatas is None or len(adatas) == 1, "ValidationCallback only supports single slide mode for now"
+        self.adata = adatas[0] if adatas is not None else None
         self.accelerator = accelerator
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
-        if self.adatas is None:
+        if self.adata is None:
             return
 
-        model._trained = True  # trick to assert error in compute_representation
-        model.compute_representation(self.adatas, accelerator=self.accelerator, num_workers=self.num_workers)
+        model._trained = True  # trick to avoid assert error in compute_representation
+        model.compute_representation(self.adata, accelerator=self.accelerator, num_workers=self.num_workers)
         model.swav_head.hierarchical_clustering()
 
-        n_classes = DEFAULT_N_DOMAINS[0]
+        for n_domain in DEFAULT_N_DOMAINS:
+            k = n_domain
 
-        for adata in self.adatas:
-            obs_key = model.assign_domains(adata, n_classes)
-            sc.pl.spatial(adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            slide_name_key = self.slide_name_key if self.slide_name_key in adata.obs else Keys.SLIDE_ID
-            wandb.log({f"val_{obs_key}_{adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+            obs_key = model.assign_domains(self.adata, k)
+            while len(np.unique(self.adata.obs[obs_key])) < n_domain:
+                k += 1
+                obs_key = model.assign_domains(self.adata, k)
 
-        fide = mean_fide_score(self.adatas, obs_key=obs_key, n_classes=n_classes)
-        model.log("metrics/val_mean_fide_score", fide)
+            sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
+            slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
+            wandb.log({f"val_{obs_key}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
 
-
-class EvalCallback(Callback):
-    def __init__(self, n_domains=DEFAULT_N_DOMAINS) -> None:
-        super().__init__()
-        self.n_domains = n_domains
-
-    def on_train_epoch_end(self, trainer: Trainer, model: Novae):
-        for k in self.n_domains:
-            obs_key = f"{Keys.NICHE_PREFIX}{k}"
-
-            fide = mean_fide_score(model.adatas, obs_key=obs_key, n_classes=k)
-            jsd = jensen_shannon_divergence(model.adatas, obs_key, model.slide_key)
-            svg = mean_svg_score(model.adatas, obsm_key=Keys.REPR, obs_key=obs_key)
-
-            wandb.log({f"metrics/mean_fide_score_{k}": fide})
-            wandb.log({f"metrics/jensen_shannon_divergence_{k}": jsd})
-            wandb.log({f"metrics/mean_svg_score_{k}": svg})
+            fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
+            model.log("metrics/val_mean_fide_score", fide)
 
 
 class LogLatent(Callback):
