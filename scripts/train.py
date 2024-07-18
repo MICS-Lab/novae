@@ -18,7 +18,11 @@ from lightning.pytorch.loggers import WandbLogger
 import novae
 import wandb
 from novae import log
-from novae.monitor.callback import LogProtoCovCallback, ValidationCallback
+from novae.monitor.callback import (
+    LogProtoCovCallback,
+    LogTissuePrototypeWeights,
+    ValidationCallback,
+)
 
 
 def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: list[AnnData] | None = None):
@@ -93,7 +97,7 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
     if sweep:
         return callbacks
 
-    callbacks.extend([ModelCheckpoint(monitor="train/loss_epoch"), LogProtoCovCallback()])
+    callbacks.extend([ModelCheckpoint(monitor="train/loss_epoch"), LogProtoCovCallback(), LogTissuePrototypeWeights()])
 
     return callbacks
 
