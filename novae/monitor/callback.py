@@ -59,7 +59,7 @@ class ValidationCallback(Callback):
             k = n_domain
 
             obs_key = model.assign_domains(self.adata, k)
-            while len(np.unique(self.adata.obs[obs_key])) < n_domain:
+            while len(self.adata.obs[obs_key].dropna().unique()) < n_domain:
                 k += 1
                 obs_key = model.assign_domains(self.adata, k)
 
