@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    QUEUE_SIZE = 3
+    QUEUE_SIZE = 4
 
     def __init__(
         self,
@@ -57,7 +57,8 @@ class SwavHead(L.LightningModule):
         self._clusters_levels = None
 
     def init_queue(self, tissues: list[str]) -> None:
-        self.queue = torch.zeros(len(tissues), self.QUEUE_SIZE, self.num_prototypes)
+        del self.queue
+        self.register_buffer("queue", torch.zeros(len(tissues), self.QUEUE_SIZE, self.num_prototypes))
         self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissues)}
 
     @torch.no_grad()
