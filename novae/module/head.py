@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
+    QUEUE_SIZE = 3
+
     def __init__(
         self,
         output_size: int,
@@ -48,14 +50,21 @@ class SwavHead(L.LightningModule):
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
 
+        self.queue = None
+        self.use_queue = False
+
         self._clustering = None
         self._clusters_levels = None
+
+    def init_queue(self, tissues: list[str]) -> None:
+        self.queue = torch.zeros(len(tissues), self.num_prototypes, self.QUEUE_SIZE)
+        self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissues)}
 
     @torch.no_grad()
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, out1: Tensor, out2: Tensor) -> Tensor:
+    def forward(self, out1: Tensor, out2: Tensor, tissue: str | None) -> Tensor:
         """Compute the SWAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -76,9 +85,23 @@ class SwavHead(L.LightningModule):
         q1 = self.sinkhorn(scores1)  # (B x num_prototypes)
         q2 = self.sinkhorn(scores2)  # (B x num_prototypes)
 
+        if tissue is not None:
+            q1 *= self.get_tissue_weights(scores1, tissue)
+            q2 *= self.get_tissue_weights(scores2, tissue)
+
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
         return loss, _mean_entropy_normalized(q1)
+
+    @torch.no_grad()
+    def get_tissue_weights(self, scores: Tensor, tissue: str):
+        tissue_index = self.tissue_label_encoder[tissue]
+
+        tissue_weights = F.softmax(scores.detach() / self.temperature, dim=1).mean(0) * self.num_prototypes
+        self.queue[tissue_index, :, :-1] = self.queue[tissue_index, :, 1:]
+        self.queue[tissue_index, :, -1] = tissue_weights
+
+        return self.sinkhorn(self.queue.mean(dim=-1)) if self.use_queue else 1
 
     @torch.no_grad()
     def sinkhorn(self, scores: Tensor) -> Tensor:

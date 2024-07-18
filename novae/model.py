@@ -147,7 +147,9 @@ class Novae(L.LightningModule):
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
 
-        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"])
+        loss, mean_entropy_normalized = self.swav_head(
+            out["main"], out["view"], batch["main"].get(Keys.UNS_TISSUE, [None])[0]
+        )
 
         self._log_all({"loss": loss, "entropy": mean_entropy_normalized})
 
@@ -191,6 +193,7 @@ class Novae(L.LightningModule):
 
         self.swav_head.prototypes.requires_grad_(self.current_epoch >= self.hparams.epoch_unfreeze_prototypes)
         self.swav_head.lambda_regularization = self.hparams.lambda_regularization if self.current_epoch >= 2 else 0.0
+        self.swav_head.use_queue = self.swav_head.queue is not None and self.current_epoch >= 2
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
