@@ -3,7 +3,7 @@
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
 #SBATCH --time=06:00:00
 #SBATCH --partition=gpu
-#SBATCH --mem=32gb
+#SBATCH --mem=160G
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 
