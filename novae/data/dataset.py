@@ -153,7 +153,7 @@ class NovaeDataset(Dataset):
             edge_index=edge_index,
             edge_attr=edge_attr,
             genes_indices=genes_indices,
-            tissue=adata.uns.get(Keys.UNS_TISSUE),
+            novae_tissue=adata.uns.get(Keys.UNS_TISSUE),
         )
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:

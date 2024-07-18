@@ -55,7 +55,10 @@ class LogProtoCovCallback(Callback):
         wandb.log({"prototypes_covariance": wandb.Image(plt)})
 
         if model.swav_head.queue is not None:
-            tissue_prototype_weights = model.swav_head.queue.mean(dim=-1).numpy(force=True)
+            tissue_prototype_weights = (
+                model.swav_head.sinkhorn(model.swav_head.queue.mean(dim=1)).numpy(force=True)
+                * model.swav_head.num_prototypes
+            )
             sns.heatmap(tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()))
             wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
 

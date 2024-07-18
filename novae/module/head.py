@@ -57,7 +57,7 @@ class SwavHead(L.LightningModule):
         self._clusters_levels = None
 
     def init_queue(self, tissues: list[str]) -> None:
-        self.queue = torch.zeros(len(tissues), self.num_prototypes, self.QUEUE_SIZE)
+        self.queue = torch.zeros(len(tissues), self.QUEUE_SIZE, self.num_prototypes)
         self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissues)}
 
     @torch.no_grad()
@@ -87,7 +87,9 @@ class SwavHead(L.LightningModule):
 
         if tissue is not None:
             q1 *= self.get_tissue_weights(scores1, tissue)
+            q1 /= q1.sum(dim=1, keepdim=True)
             q2 *= self.get_tissue_weights(scores2, tissue)
+            q2 /= q2.sum(dim=1, keepdim=True)
 
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
@@ -97,11 +99,11 @@ class SwavHead(L.LightningModule):
     def get_tissue_weights(self, scores: Tensor, tissue: str):
         tissue_index = self.tissue_label_encoder[tissue]
 
-        tissue_weights = F.softmax(scores.detach() / self.temperature, dim=1).mean(0) * self.num_prototypes
-        self.queue[tissue_index, :, :-1] = self.queue[tissue_index, :, 1:]
-        self.queue[tissue_index, :, -1] = tissue_weights
+        tissue_weights = F.softmax(scores.detach() / self.temperature, dim=1).mean(0)
+        self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
+        self.queue[tissue_index, -1] = tissue_weights
 
-        return self.sinkhorn(self.queue.mean(dim=-1)) if self.use_queue else 1
+        return self.sinkhorn(self.queue.mean(dim=1))[tissue_index] if self.use_queue else 1  # TODO: on init epoch?
 
     @torch.no_grad()
     def sinkhorn(self, scores: Tensor) -> Tensor:

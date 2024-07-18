@@ -100,6 +100,9 @@ class Novae(L.LightningModule):
         self.swav_head = SwavHead(output_size, num_prototypes, temperature, lambda_regularization=lambda_regularization)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
 
+        if Keys.UNS_TISSUE in self.adatas[0].uns:
+            self.swav_head.init_queue(list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas}))
+
         ### Misc
         self._num_workers = 0
         self._checkpoint = None
@@ -146,10 +149,9 @@ class Novae(L.LightningModule):
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
+        tissue = batch["main"].get(Keys.UNS_TISSUE, [None])[0]
 
-        loss, mean_entropy_normalized = self.swav_head(
-            out["main"], out["view"], batch["main"].get(Keys.UNS_TISSUE, [None])[0]
-        )
+        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"], tissue)
 
         self._log_all({"loss": loss, "entropy": mean_entropy_normalized})
 
