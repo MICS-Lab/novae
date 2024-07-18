@@ -18,5 +18,8 @@ DEFAULT_CONFIG=debug_gpu.yaml
 CONFIG=${1:-$DEFAULT_CONFIG}
 echo Running with CONFIG=$CONFIG
 
+WANDB__SERVICE_WAIT=300
+export WANDB__SERVICE_WAIT
+
 # Execute training
 CUDA_LAUNCH_BLOCKING=1 python -u train.py --config $CONFIG
