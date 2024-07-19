@@ -57,10 +57,10 @@ class SwavHead(L.LightningModule):
         self._clustering = None
         self._clusters_levels = None
 
-    def init_queue(self, tissues: list[str]) -> None:
+    def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
-        self.register_buffer("queue", torch.zeros(len(tissues), self.QUEUE_SIZE, self.num_prototypes))
-        self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissues)}
+        self.register_buffer("queue", torch.zeros(len(tissue_names), self.QUEUE_SIZE, self.num_prototypes))
+        self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
 
     @torch.no_grad()
     def normalize_prototypes(self):

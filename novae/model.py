@@ -42,7 +42,8 @@ class Novae(L.LightningModule):
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str = None,
         scgpt_model_dir: str | None = None,
-        var_names: list[str] = None,
+        var_names: list[str] | None = None,
+        tissue_names: list[str] | None = None,
         embedding_size: int = 100,
         output_size: int = 64,
         n_hops_local: int = 2,
@@ -100,8 +101,13 @@ class Novae(L.LightningModule):
         self.swav_head = SwavHead(output_size, num_prototypes, temperature, lambda_regularization=lambda_regularization)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
 
-        if Keys.UNS_TISSUE in self.adatas[0].uns:
-            self.swav_head.init_queue(list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas}))
+        ### Init tissue prototypes weights
+        if tissue_names is not None:
+            self.swav_head.init_queue(tissue_names)
+        elif Keys.UNS_TISSUE in self.adatas[0].uns:
+            tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
+            self.hparams["tissue_names"] = tissue_names
+            self.swav_head.init_queue(tissue_names)
 
         ### Misc
         self._num_workers = 0
