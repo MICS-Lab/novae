@@ -39,7 +39,7 @@ class LogTissuePrototypeWeights(Callback):
         )
 
         plt.figure(figsize=(10, 10))
-        sns.heatmap(tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()))
+        sns.clustermap(tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()))
         wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
         plt.close()
 
