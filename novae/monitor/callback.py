@@ -21,6 +21,8 @@ DEFAULT_N_DOMAINS = [7]
 class LogProtoCovCallback(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
         C = model.swav_head.prototypes.data.numpy(force=True)
+
+        plt.figure(figsize=(10, 10))
         sns.clustermap(np.cov(C))
         wandb.log({"prototypes_covariance": wandb.Image(plt)})
         plt.close()
@@ -35,6 +37,8 @@ class LogTissuePrototypeWeights(Callback):
             model.swav_head.sinkhorn(model.swav_head.queue.mean(dim=1)).numpy(force=True)
             * model.swav_head.num_prototypes
         )
+
+        plt.figure(figsize=(10, 10))
         sns.heatmap(tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()))
         wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
         plt.close()
@@ -70,9 +74,11 @@ class ValidationCallback(Callback):
                 k += 1
                 obs_key = model.assign_domains(self.adata, k)
 
+            plt.figure()
             sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
             slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
             wandb.log({f"val_{obs_key}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+            plt.close()
 
             fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
             model.log("metrics/val_mean_fide_score", fide)
