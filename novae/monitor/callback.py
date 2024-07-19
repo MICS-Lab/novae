@@ -57,13 +57,16 @@ class ValidationCallback(Callback):
         self.accelerator = accelerator
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
+        self.tissue = self.adata.uns.get(Keys.UNS_TISSUE, None)
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         if self.adata is None:
             return
 
         model._trained = True  # trick to avoid assert error in compute_representation
-        model.compute_representation(self.adata, accelerator=self.accelerator, num_workers=self.num_workers)
+        model.compute_representation(
+            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, tissue=self.tissue
+        )
         model.swav_head.hierarchical_clustering()
 
         for n_domain in DEFAULT_N_DOMAINS:

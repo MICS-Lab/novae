@@ -107,7 +107,7 @@ class SwavHead(L.LightningModule):
         return self.sinkhorn(self.queue.mean(dim=1))[tissue_index] if self.use_queue else 1  # TODO: on init epoch?
 
     @torch.no_grad()
-    def sinkhorn(self, scores: Tensor) -> Tensor:
+    def sinkhorn(self, scores: Tensor, tissue: str | None = None) -> Tensor:
         """Apply the Sinkhorn-Knopp algorithm to the scores.
 
         Args:
@@ -116,6 +116,9 @@ class SwavHead(L.LightningModule):
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm.
         """
+        if tissue:
+            tissue_weights = self.queue[self.tissue_label_encoder[tissue]].mean(dim=0)
+
         Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
@@ -126,8 +129,9 @@ class SwavHead(L.LightningModule):
             Q /= K
             Q /= torch.sum(Q, dim=0, keepdim=True) + self.lambda_regularization
             Q /= B
-        Q = Q / Q.sum(dim=0, keepdim=True)
-        return Q.t()
+        Q = (Q / Q.sum(dim=0, keepdim=True)).t()  # TODO: why changed B to sum?
+
+        return Q if not tissue else Q * tissue_weights
 
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))

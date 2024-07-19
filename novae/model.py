@@ -216,6 +216,7 @@ class Novae(L.LightningModule):
         slide_key: str | None = None,
         accelerator: str = "cpu",
         num_workers: int | None = None,
+        tissue: str | None = None,
     ) -> None:
         """Compute the latent representation of Novae for all cells neighborhoods.
 
@@ -233,14 +234,14 @@ class Novae(L.LightningModule):
         self.to(device)
 
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
-            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
+            self._compute_representation_datamodule(self.adatas[0], self.datamodule, tissue)
             return
 
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
-            self._compute_representation_datamodule(adata, datamodule)
+            self._compute_representation_datamodule(adata, datamodule, tissue)
 
-    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
+    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule, tissue: str | None):
         valid_indices = datamodule.dataset.valid_indices[0]
 
         representations = []
@@ -256,7 +257,7 @@ class Novae(L.LightningModule):
         representations = torch.cat(representations)
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
-        codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices)
+        codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices, tissue)
         codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
 
         leaves_predictions = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1))
@@ -264,17 +265,19 @@ class Novae(L.LightningModule):
 
         return representations, codes, valid_indices
 
-    def _apply_sinkhorn_per_slide(self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray) -> Tensor:
+    def _apply_sinkhorn_per_slide(
+        self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray, tissue: bool | None
+    ) -> Tensor:
         slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
 
         unique_slide_ids = np.unique(slide_ids)
 
         if len(unique_slide_ids) == 1:
-            return self.swav_head.sinkhorn(scores)
+            return self.swav_head.sinkhorn(scores, tissue=tissue)
 
         for slide_id in unique_slide_ids:
             indices = np.where(slide_ids == slide_id)[0]
-            scores[indices] = self.swav_head.sinkhorn(scores[indices])
+            scores[indices] = self.swav_head.sinkhorn(scores[indices], tissue=tissue)
 
         return scores
 
