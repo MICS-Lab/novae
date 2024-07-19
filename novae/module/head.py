@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 
 class SwavHead(L.LightningModule):
     QUEUE_SIZE = 4
+    queue: None | Tensor
 
     def __init__(
         self,
@@ -99,8 +100,8 @@ class SwavHead(L.LightningModule):
     @torch.no_grad()
     def get_tissue_weights(self, scores: Tensor, tissue: str):
         tissue_index = self.tissue_label_encoder[tissue]
-
-        tissue_weights = F.softmax(scores.detach() / self.temperature, dim=1).mean(0)
+        print(scores.device, self.queue.device)
+        tissue_weights = F.softmax(scores / self.temperature, dim=1).mean(0)
         self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
         self.queue[tissue_index, -1] = tissue_weights
 
