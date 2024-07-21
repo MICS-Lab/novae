@@ -7,6 +7,7 @@ import lightning as L
 import numpy as np
 import torch
 from anndata import AnnData
+from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
@@ -21,7 +22,7 @@ from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 log = logging.getLogger(__name__)
 
 
-class Novae(L.LightningModule):
+class Novae(L.LightningModule, PyTorchModelHubMixin):
     """Novae model class. It can be used to load a pretrained model or train a new one.
 
     !!! note "Example usage"
@@ -332,6 +333,28 @@ class Novae(L.LightningModule):
         model = super().load_from_checkpoint(*args, **kwargs)
         model._trained = True
         return model
+
+    def save_pretrained(
+        self,
+        save_directory: str,
+        *,
+        config: dict | None = None,
+        repo_id: str | None = None,
+        push_to_hub: bool = False,
+        model_card_kwargs: dict | None = None,
+        **push_to_hub_kwargs,
+    ):
+        if config is None:
+            config = dict(self.hparams)
+
+        super().save_pretrained(
+            save_directory,
+            config=config,
+            repo_id=repo_id,
+            push_to_hub=push_to_hub,
+            model_card_kwargs=model_card_kwargs,
+            **push_to_hub_kwargs,
+        )
 
     @classmethod
     def load_pretrained(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
