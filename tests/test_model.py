@@ -164,7 +164,6 @@ def test_saved_model_identical(slide_key: str | None):
         panel_subset_size=0.62,
         background_noise_lambda=7.7,
         sensitivity_noise_std=0.042,
-        epoch_unfreeze_prototypes=1,
     )
 
     model._datamodule = model._init_datamodule()
