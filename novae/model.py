@@ -103,7 +103,7 @@ class Novae(L.LightningModule):
         ### Init tissue prototypes weights
         if tissue_names is not None:
             self.swav_head.init_queue(tissue_names)
-        elif Keys.UNS_TISSUE in self.adatas[0].uns:
+        elif self.adatas is not None and Keys.UNS_TISSUE in self.adatas[0].uns:
             tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
