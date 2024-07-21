@@ -50,8 +50,8 @@ class ValidationCallback(Callback):
     def __init__(
         self,
         adatas: list[AnnData] | None,
-        accelerator: str | None = None,
-        num_workers: int | None = None,
+        accelerator: str = "cpu",
+        num_workers: int = 0,
         slide_name_key: str = "slide_id",
     ):
         assert adatas is None or len(adatas) == 1, "ValidationCallback only supports single slide mode for now"
@@ -82,7 +82,7 @@ class ValidationCallback(Callback):
             plt.figure()
             sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
             slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-            wandb.log({f"val_{obs_key}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+            wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
             plt.close()
 
             fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)

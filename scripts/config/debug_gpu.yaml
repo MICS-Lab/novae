@@ -1,14 +1,13 @@
 data:
-  train_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
-  val_dataset: igr/202309261341_breast-santiago-slide2_VMSC09302
+  train_dataset: dummy_train
+  val_dataset: dummy_val
 
 model_kwargs:
-  n_hops_local: 2
-  n_hops_view: 3
-  hidden_size: 256
+  embedding_size: 50
 
 fit_kwargs:
-  max_epochs: 2
+  max_epochs: 5
   accelerator: "gpu"
-  profiler: "simple"
   num_workers: 8
+
+project: novae_tests

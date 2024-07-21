@@ -6,6 +6,7 @@ This is **not** the actual Novae source code. Instead, see the `novae` directory
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict
 
 import lightning as L
 import pandas as pd
@@ -25,7 +26,9 @@ from novae.monitor.callback import (
 )
 
 
-def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: list[AnnData] | None = None):
+def train(
+    adatas: list[AnnData], config: dict[str, str | dict], sweep: bool = False, adatas_val: list[AnnData] | None = None
+):
     """Train Novae on adata. This function can be used inside wandb sweeps.
 
     If `sweep is True`, the sweep parameters will update the `model_kwargs` from the YAML config.
@@ -36,34 +39,36 @@ def train(adatas: list[AnnData], config: dict, sweep: bool = False, adatas_val: 
         sweep: Whether we are running wandb sweeps or not
         adatas_val: List of AnnData objects used for validation
     """
-    wandb.init(project="novae", **config.get("wandb_init_kwargs", {}))
+    wandb.init(project=config.get("project", "novae"), **config["wandb_init_kwargs"])
 
     if sweep:
         sweep_config = dict(wandb.config)
         if "lr" in sweep_config:
-            config["fit_kwargs"] = config.get("fit_kwargs", {}) | {"lr": wandb.config.lr}
+            config["fit_kwargs"] = config["fit_kwargs"] | {"lr": wandb.config.lr}
             del sweep_config["lr"]
-        config["model_kwargs"] = config.get("model_kwargs", {}) | sweep_config
+        config["model_kwargs"] = config["model_kwargs"] | sweep_config
 
     log.info(f"Full config:\n{config}")
 
-    assert "slide_key" not in config.get(
-        "model_kwargs", {}
-    ), "'slide_key' not supported in model_kwargs yet. Provide one adata per file."
+    assert "slide_key" not in config["model_kwargs"], "For now, please provide one adata per file."
 
-    wandb_logger = WandbLogger(save_dir=novae.utils.wandb_log_dir(), log_model="all", project="novae")
+    wandb_logger = WandbLogger(
+        save_dir=novae.utils.wandb_log_dir(),
+        log_model="all",
+        project=config.get("project", "novae"),
+    )
 
     config_flat = pd.json_normalize(config, sep=".").to_dict(orient="records")[0]
     wandb_logger.experiment.config.update(config_flat)
     callbacks = _get_callbacks(config, sweep, adatas_val)
 
-    model = novae.Novae(adatas, **config.get("model_kwargs", {}))
+    model = novae.Novae(adatas, **config["model_kwargs"])
 
     if config.get("compile"):
         log.info("Compiling the model")
         model: novae.Novae = torch.compile(model)
 
-    model.fit(logger=wandb_logger, callbacks=callbacks, **config.get("fit_kwargs", {}))
+    model.fit(logger=wandb_logger, callbacks=callbacks, **config["fit_kwargs"])
 
     if config.get("save_result"):
         _save_result(model, config)
@@ -83,13 +88,14 @@ def _save_result(model: novae.Novae, config: dict):
 
 
 def _get_hardware_kwargs(config: dict) -> dict:
-    num_workers = config.get("fit_kwargs", {}).get("num_workers")
-    accelerator = config.get("fit_kwargs", {}).get("accelerator")
-    return {"num_workers": num_workers, "accelerator": accelerator}
+    return {
+        "num_workers": config["fit_kwargs"].get("num_workers", 0),
+        "accelerator": config["fit_kwargs"].get("accelerator", "cpu"),
+    }
 
 
 def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) -> list[L.Callback] | None:
-    if config.get("wandb_init_kwargs", {}).get("mode") == "disabled":
+    if config["wandb_init_kwargs"].get("mode") == "disabled":
         return None
 
     callbacks = [ValidationCallback(adatas_val, **_get_hardware_kwargs(config))]
@@ -104,7 +110,7 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
 
 def _read_config(name: str) -> dict:
     with open(novae.utils.repository_root() / "scripts" / "config" / name, "r") as f:
-        return yaml.safe_load(f)
+        return defaultdict(dict, yaml.safe_load(f))
 
 
 def main(args: argparse.Namespace) -> None:
