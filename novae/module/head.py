@@ -116,7 +116,11 @@ class SwavHead(L.LightningModule):
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm.
         """
-        if tissue and self.queue is not None:
+        if tissue is not None and self.queue is None:
+            log.warn("Queue is not initialized. Tissue weights will not be applied.")
+            tissue = None
+
+        if tissue:
             tissue_weights = self.queue[self.tissue_label_encoder[tissue]].mean(dim=0)
 
         Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
