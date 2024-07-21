@@ -1,6 +1,6 @@
 data:
   train_dataset: dummy_train
-  val_dataset: dummy_val
+  val_dataset: igr/202305031337_hBreast-slide-B-4h-photobleach_VMSC09302
 
 model_kwargs:
   embedding_size: 50
