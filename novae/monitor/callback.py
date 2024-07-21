@@ -36,10 +36,12 @@ class LogTissuePrototypeWeights(Callback):
         tissue_prototype_weights = (
             model.swav_head.sinkhorn(model.swav_head.queue.mean(dim=1)).numpy(force=True)
             * model.swav_head.num_prototypes
-        ).clip(0.5, 1.5)
+        )
 
         plt.figure(figsize=(10, 10))
-        sns.clustermap(tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()))
+        sns.clustermap(
+            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmax=1.2, vmin=0.8
+        )
         wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
         plt.close()
 
