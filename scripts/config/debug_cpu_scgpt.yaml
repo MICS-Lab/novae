@@ -1,0 +1,13 @@
+data:
+  train_dataset: dummy_train
+  val_dataset: igr/202305031337_hBreast-slide-B-4h-photobleach_VMSC09302
+
+model_kwargs:
+  embedding_size: 50
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
+
+fit_kwargs:
+  max_epochs: 5
+  accelerator: "cpu"
+
+project: novae_tests
