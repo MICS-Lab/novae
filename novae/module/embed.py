@@ -163,7 +163,7 @@ class CellEmbedder(L.LightningModule):
 
             tree = KDTree(X)
             _, ind = tree.query(Y, k=1)
-            neighbor_indices = self.genes_to_indices(other_adata[:, where_in].var_names[ind])
+            neighbor_indices = self.genes_to_indices(other_adata[:, where_in].var_names[ind[:, 0]])
 
             indices = self.genes_to_indices(other_adata[:, ~where_in].var_names)
             self.embedding.weight.data[indices] = self.embedding.weight.data[neighbor_indices].clone()
