@@ -4,6 +4,7 @@ data:
 
 model_kwargs:
   embedding_size: 50
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
 
 fit_kwargs:
   max_epochs: 5

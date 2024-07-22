@@ -1,10 +1,14 @@
+import json
+
 import anndata
 import numpy as np
 import pandas as pd
 import pytest
+import torch
 
 import novae
 from novae._constants import Keys
+from novae.utils._data import TRUE_GENE_NAMES
 
 adatas = novae.utils.dummy_dataset(
     n_panels=2,
@@ -15,10 +19,19 @@ adatas = novae.utils.dummy_dataset(
 adata = adatas[0]
 
 
-def test_load_old_model():
-    # should tell the model from the checkpoint was trained with an old novae version
-    with pytest.raises(ValueError):
-        novae.Novae.load_pretrained("novae/novae_swav/model-w9xjvjjy:v29")
+def _generate_fake_scgpt_inputs():
+    gene_names = TRUE_GENE_NAMES[:40]
+    indices = [7, 4, 3, 0, 1, 2, 9, 5, 6, 8] + list(range(10, 40))
+
+    vocab = dict(zip(gene_names, indices))
+
+    with open("tests/vocab.json", "w") as f:
+        json.dump(vocab, f, indent=4)
+
+    torch.save({"encoder.embedding.weight": torch.randn(len(vocab), 16)}, "tests/best_model.pt")
+
+
+_generate_fake_scgpt_inputs()
 
 
 def test_load_model():
@@ -138,7 +151,8 @@ def test_representation_multi_panel(slide_key: str | None):
 
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
-def test_saved_model_identical(slide_key: str | None):
+@pytest.mark.parametrize("scgpt_model_dir", [None, "tests"])
+def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | None):
     adata = novae.utils.dummy_dataset(
         n_panels=1,
         n_slides_per_panel=2,
@@ -164,7 +178,7 @@ def test_saved_model_identical(slide_key: str | None):
         panel_subset_size=0.62,
         background_noise_lambda=7.7,
         sensitivity_noise_std=0.042,
-        epoch_unfreeze_prototypes=1,
+        scgpt_model_dir=scgpt_model_dir,
     )
 
     model._datamodule = model._init_datamodule()

@@ -75,7 +75,7 @@ def prepare_adatas(
         ), f"Too few genes ({n_used}) are both (i) known by the model and (ii) highly variable."
 
     if var_names is None:
-        var_names = list(genes_union(adatas, among_used=True))
+        var_names = genes_union(adatas, among_used=True)
 
     return adatas, var_names
 
@@ -209,7 +209,7 @@ def genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:
     else:
         var_names_list = [adata.var_names for adata in adatas]
 
-    return set.union(*[set(lower_var_names(var_names)) for var_names in var_names_list])
+    return list(set.union(*[set(lower_var_names(var_names)) for var_names in var_names_list]))
 
 
 def _sparse_std(a: csr_matrix, axis=None) -> np.matrix:

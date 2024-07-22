@@ -18,6 +18,9 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
+    QUEUE_SIZE = 4
+    queue: None | Tensor
+
     def __init__(
         self,
         output_size: int,
@@ -48,14 +51,22 @@ class SwavHead(L.LightningModule):
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
 
+        self.queue = None
+        self.use_queue = False
+
         self._clustering = None
         self._clusters_levels = None
+
+    def init_queue(self, tissue_names: list[str]) -> None:
+        del self.queue
+        self.register_buffer("queue", torch.zeros(len(tissue_names), self.QUEUE_SIZE, self.num_prototypes))
+        self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
 
     @torch.no_grad()
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, out1: Tensor, out2: Tensor) -> Tensor:
+    def forward(self, out1: Tensor, out2: Tensor, tissue: str | None) -> Tensor:
         """Compute the SWAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -76,12 +87,27 @@ class SwavHead(L.LightningModule):
         q1 = self.sinkhorn(scores1)  # (B x num_prototypes)
         q2 = self.sinkhorn(scores2)  # (B x num_prototypes)
 
+        if tissue is not None:
+            q1 *= self.get_tissue_weights(scores1, tissue)
+            q1 /= q1.sum(dim=1, keepdim=True)
+            q2 *= self.get_tissue_weights(scores2, tissue)
+            q2 /= q2.sum(dim=1, keepdim=True)
+
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
         return loss, _mean_entropy_normalized(q1)
 
     @torch.no_grad()
-    def sinkhorn(self, scores: Tensor) -> Tensor:
+    def get_tissue_weights(self, scores: Tensor, tissue: str):
+        tissue_index = self.tissue_label_encoder[tissue]
+        tissue_weights = F.softmax(scores / (self.temperature / 4), dim=1).mean(0)
+        self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
+        self.queue[tissue_index, -1] = tissue_weights
+
+        return self.sinkhorn(self.queue.mean(dim=1))[tissue_index] if self.use_queue else 1  # TODO: on init epoch?
+
+    @torch.no_grad()
+    def sinkhorn(self, scores: Tensor, tissue: str | None = None) -> Tensor:
         """Apply the Sinkhorn-Knopp algorithm to the scores.
 
         Args:
@@ -90,6 +116,13 @@ class SwavHead(L.LightningModule):
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm.
         """
+        if tissue is not None and self.queue is None:
+            log.warn("Queue is not initialized. Tissue weights will not be applied.")
+            tissue = None
+
+        if tissue:
+            tissue_weights = self.queue[self.tissue_label_encoder[tissue]].mean(dim=0)
+
         Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
         Q /= torch.sum(Q)
 
@@ -100,8 +133,9 @@ class SwavHead(L.LightningModule):
             Q /= K
             Q /= torch.sum(Q, dim=0, keepdim=True) + self.lambda_regularization
             Q /= B
-        Q = Q / Q.sum(dim=0, keepdim=True)
-        return Q.t()
+        Q = (Q / Q.sum(dim=0, keepdim=True)).t()  # TODO: why changed B to sum?
+
+        return Q if not tissue else Q * tissue_weights
 
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))

@@ -4,6 +4,10 @@
 # Ruche related
 jobs/
 
+# Tests related
+tests/*
+!tests/*.py
+
 # IDE related
 .vscode/*
 !.vscode/settings.json

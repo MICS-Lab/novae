@@ -25,6 +25,7 @@ class Keys:
     COUNTS_LAYER: str = "counts"
 
     # misc keys
+    UNS_TISSUE: str = "novae_tissue"
     ADATA_INDEX: str = "adata_index"
     N_BATCHES: str = "n_batches"
     NOVAE_VERSION: str = "novae_version"

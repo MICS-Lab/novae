@@ -1,13 +1,12 @@
 data:
-  train_dataset: sdm_bench
-  val_dataset: sdm_bench
+  train_dataset: dummy_train
+  val_dataset: dummy_val
 
 model_kwargs:
-  n_hops_local: 2
-  n_hops_view: 3
-  heads: 4
+  embedding_size: 50
 
 fit_kwargs:
-  max_epochs: 4
-  log_every_n_steps: 10
+  max_epochs: 5
   accelerator: "cpu"
+
+project: novae_tests

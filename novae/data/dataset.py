@@ -137,17 +137,24 @@ class NovaeDataset(Dataset):
         Returns:
             A Data object
         """
-        adjacency_local: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_LOCAL]
+        adata = self.adatas[adata_index]
+        adjacency_local: csr_matrix = adata.obsp[Keys.ADJ_LOCAL]
         obs_indices = adjacency_local[obs_index].indices
 
         x, genes_indices = self.anndata_torch[adata_index, obs_indices]
 
-        adjacency: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ]
+        adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
-        return Data(x=x, genes_indices=genes_indices, edge_index=edge_index, edge_attr=edge_attr)
+        return Data(
+            x=x,
+            edge_index=edge_index,
+            edge_attr=edge_attr,
+            genes_indices=genes_indices,
+            novae_tissue=adata.uns.get(Keys.UNS_TISSUE),
+        )
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
         obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
