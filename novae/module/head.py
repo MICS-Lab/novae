@@ -100,7 +100,7 @@ class SwavHead(L.LightningModule):
     @torch.no_grad()
     def get_tissue_weights(self, scores: Tensor, tissue: str):
         tissue_index = self.tissue_label_encoder[tissue]
-        tissue_weights = F.softmax(scores / (self.temperature / 2), dim=1).mean(0)
+        tissue_weights = F.softmax(scores / (self.temperature / 4), dim=1).mean(0)
         self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
         self.queue[tissue_index, -1] = tissue_weights
 
