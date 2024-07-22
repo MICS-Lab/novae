@@ -43,7 +43,8 @@ class CellEmbedder(L.LightningModule):
 
         if isinstance(gene_names, dict):
             self.gene_to_index = {gene.lower(): index for gene, index in gene_names.items()}
-            self.gene_names = list(self.gene_to_index.keys())
+            self.gene_names = sorted(self.gene_to_index, key=self.gene_to_index.get)
+            _check_gene_to_index(self.gene_to_index)
         else:
             self.gene_names = [gene.lower() for gene in gene_names]
             self.gene_to_index = {gene: i for i, gene in enumerate(self.gene_names)}
@@ -167,3 +168,13 @@ class CellEmbedder(L.LightningModule):
 
             indices = self.genes_to_indices(other_adata[:, ~where_in].var_names)
             self.embedding.weight.data[indices] = self.embedding.weight.data[neighbor_indices].clone()
+
+
+def _check_gene_to_index(gene_to_index: dict[str, int]):
+    values = list(set(gene_to_index.values()))
+
+    assert len(values) == len(gene_to_index), "gene_to_index should be a dictionnary with unique values"
+
+    assert (
+        min(values) == 0 and max(values) == len(values) - 1
+    ), "gene_to_index should be a dictionnary with continuous indices starting from 0"
