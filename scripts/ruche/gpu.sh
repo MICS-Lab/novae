@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=novae
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
-#SBATCH --time=06:00:00
+#SBATCH --time=16:00:00
 #SBATCH --partition=gpu
 #SBATCH --mem=160G
 #SBATCH --cpus-per-task=8
