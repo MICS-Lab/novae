@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import warnings
 
 import lightning as L
 import numpy as np
@@ -342,45 +341,55 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         return key_added
 
     @classmethod
-    def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
-        model = super().load_from_checkpoint(*args, **kwargs)
+    def from_pretrained(self, model_name_or_path: str, **kwargs: int) -> "Novae":
+        """Load a pretrained `Novae` model from HuggingFace Hub.
+
+        Args:
+            model_name_or_path: Name of the model (or path to the local model).
+            **kwargs: Optional kwargs for Hugging Face [`from_pretrained`](https://huggingface.co/docs/huggingface_hub/v0.24.0/en/package_reference/mixins#huggingface_hub.ModelHubMixin.from_pretrained) method.
+
+        Returns:
+            A pretrained `Novae` model.
+        """
+        model = super().from_pretrained(model_name_or_path, **kwargs)
         model._trained = True
+        model._checkpoint = model_name_or_path
         return model
 
     def save_pretrained(
         self,
         save_directory: str,
         *,
-        config: dict | None = None,
         repo_id: str | None = None,
         push_to_hub: bool = False,
-        model_card_kwargs: dict | None = None,
-        **push_to_hub_kwargs,
+        **kwargs,
     ):
-        if config is None:
-            config = dict(self.hparams)
+        """Save a pretrained `Novae` model to a directory.
+
+        Args:
+            save_directory: Path to the directory where the model will be saved.
+            **kwargs: Do not use. These are used to push a new model on HuggingFace Hub.
+        """
 
         super().save_pretrained(
             save_directory,
-            config=config,
+            config=dict(self.hparams),
             repo_id=repo_id,
             push_to_hub=push_to_hub,
-            model_card_kwargs=model_card_kwargs,
-            **push_to_hub_kwargs,
+            **kwargs,
         )
 
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint[Keys.NOVAE_VERSION] = __version__
+
     @classmethod
-    def load_pretrained(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
-        """Initialize a model from a Weights & Biases artifact.
+    def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
+        model = super().load_from_checkpoint(*args, **kwargs)
+        model._trained = True
+        return model
 
-        Args:
-            name: Name of the artifact.
-            map_location: If your checkpoint saved a GPU model and you now load on CPUs or a different number of GPUs, use this to map to the new setup. The behaviour is the same as in `torch.load()`.
-            **kwargs: Optional kwargs for the Pytorch Lightning `load_from_checkpoint` method.
-
-        Returns:
-            A Novae model.
-        """
+    @classmethod
+    def _load_wandb_artifact(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
         artifact_path = utils._load_wandb_artifact(name) / "model.ckpt"
 
         try:
@@ -390,7 +399,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
         model._checkpoint = name
-
         return model
 
     def _get_centroids(self, adata: AnnData, domains: list[str], obs_key: str) -> tuple[np.ndarray, np.ndarray]:
@@ -454,9 +462,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
                 adata.obsm[Keys.REPR_CORRECTED][where] = coords
 
-    def on_save_checkpoint(self, checkpoint):
-        checkpoint[Keys.NOVAE_VERSION] = __version__
-
     def _parse_hardware_args(
         self, accelerator: str, num_workers: int | None, return_device: bool = False
     ) -> torch.device | None:
@@ -470,17 +475,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         if return_device:
             return utils.parse_device_args(accelerator)
-
-    def save_checkpoint(self, path: str) -> None:
-        from lightning_utilities.core import rank_zero
-
-        rank_zero.log.disabled = True
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            trainer = L.Trainer(accelerator="cpu", logger=False, enable_model_summary=False)
-            trainer.strategy.connect(self)
-            trainer.save_checkpoint(path)
-        rank_zero.log.disabled = False
 
     @utils.format_docs
     def fit(
