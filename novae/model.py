@@ -198,9 +198,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        self.swav_head.prototypes.requires_grad_(self.current_epoch >= 1)
-        self.swav_head.lambda_regularization = self.hparams.lambda_regularization if self.current_epoch >= 1 else 0.0
-        self.swav_head.use_queue = self.swav_head.queue is not None and self.current_epoch >= 1
+        self.swav_head.prototypes.requires_grad_(self.current_epoch >= 2)
+        self.swav_head.lambda_regularization = self.hparams.lambda_regularization if self.current_epoch >= 2 else 0.0
+        self.swav_head.use_queue = self.swav_head.queue is not None and self.current_epoch >= 2
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
