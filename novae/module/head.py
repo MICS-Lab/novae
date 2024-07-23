@@ -89,9 +89,9 @@ class SwavHead(L.LightningModule):
         q2 = self.sinkhorn(scores2)  # (B x num_prototypes)
 
         if tissue is not None:
-            q1 *= self.get_tissue_weights(scores1, tissue)
+            q1 *= self.get_tissue_weights(scores1, tissue) > 1
             q1 /= q1.sum(dim=1, keepdim=True)
-            q2 *= self.get_tissue_weights(scores2, tissue)
+            q2 *= self.get_tissue_weights(scores2, tissue) > 1
             q2 /= q2.sum(dim=1, keepdim=True)
 
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
