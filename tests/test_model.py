@@ -35,7 +35,7 @@ _generate_fake_scgpt_inputs()
 
 
 def test_load_model():
-    novae.Novae.load_pretrained("novae/novae/model-4i8e9g2v:v17")
+    novae.Novae._load_wandb_artifact("novae/novae/model-4i8e9g2v:v17")
 
 
 def test_train():
@@ -190,9 +190,9 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     niches = adata.obs[Keys.SWAV_CLASSES].copy()
     representations = adata.obsm[Keys.REPR].copy()
 
-    model.save_checkpoint("tests/test.ckpt")
+    model.save_pretrained("tests/test_model")
 
-    new_model = novae.Novae.load_from_checkpoint("tests/test.ckpt")
+    new_model = novae.Novae.from_pretrained("tests/test_model")
 
     new_model.compute_representation(adata, slide_key=slide_key)
     new_model.assign_domains(adata)

@@ -18,7 +18,10 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    QUEUE_SIZE = 4
+    sinkhorn_iterations: int = 3
+    epsilon: float = 0.05
+    queue_size: int = 4
+
     queue: None | Tensor
 
     def __init__(
@@ -26,9 +29,8 @@ class SwavHead(L.LightningModule):
         output_size: int,
         num_prototypes: int,
         temperature: float,
+        temperature_weight_proto: float,
         lambda_regularization: float,
-        epsilon: float = 0.05,
-        sinkhorn_iterations: int = 3,
     ):
         """SwavHead module, adapted from in the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
 
@@ -43,9 +45,8 @@ class SwavHead(L.LightningModule):
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
+        self.temperature_weight_proto = temperature_weight_proto
         self.lambda_regularization = lambda_regularization
-        self.epsilon = epsilon
-        self.sinkhorn_iterations = sinkhorn_iterations
 
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
@@ -59,7 +60,7 @@ class SwavHead(L.LightningModule):
 
     def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
-        self.register_buffer("queue", torch.zeros(len(tissue_names), self.QUEUE_SIZE, self.num_prototypes))
+        self.register_buffer("queue", torch.zeros(len(tissue_names), self.queue_size, self.num_prototypes))
         self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
 
     @torch.no_grad()
@@ -100,7 +101,7 @@ class SwavHead(L.LightningModule):
     @torch.no_grad()
     def get_tissue_weights(self, scores: Tensor, tissue: str):
         tissue_index = self.tissue_label_encoder[tissue]
-        tissue_weights = F.softmax(scores / (self.temperature / 4), dim=1).mean(0)
+        tissue_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
         self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
         self.queue[tissue_index, -1] = tissue_weights
 
