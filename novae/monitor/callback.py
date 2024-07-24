@@ -92,7 +92,7 @@ class ValidationCallback(Callback):
             plt.close()
 
             fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
-            model.log("metrics/val_mean_fide_score", fide)
+            model.log(f"metrics/val_{tissue or ''}mean_fide_score", fide)
 
 
 class LogLatent(Callback):
