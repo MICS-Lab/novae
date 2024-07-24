@@ -18,11 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    sinkhorn_iterations: int = 3
-    epsilon: float = 0.05
-    queue_size: int = 4
-
-    queue: None | Tensor
+    queue: None | Tensor  # (n_tissues, queue_size, num_prototypes)
 
     def __init__(
         self,
@@ -51,6 +47,7 @@ class SwavHead(L.LightningModule):
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
+        self.min_prototypes = int(num_prototypes * Nums.MIN_PROTOTYPES_RATIO)
 
         self.queue = None
         self.use_queue = False
@@ -60,7 +57,10 @@ class SwavHead(L.LightningModule):
 
     def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
-        self.register_buffer("queue", torch.zeros(len(tissue_names), self.queue_size, self.num_prototypes))
+
+        queue_shape = (len(tissue_names), Nums.QUEUE_SIZE, self.num_prototypes)
+        self.register_buffer("queue", torch.full(queue_shape, 1 / self.num_prototypes))
+
         self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
 
     @torch.no_grad()
@@ -79,33 +79,40 @@ class SwavHead(L.LightningModule):
         """
         self.normalize_prototypes()
 
-        out1 = F.normalize(out1, dim=1, p=2)
-        out2 = F.normalize(out2, dim=1, p=2)
+        out1 = F.normalize(out1, dim=1, p=2)  # (B, output_size)
+        out2 = F.normalize(out2, dim=1, p=2)  # (B, output_size)
 
-        scores1 = out1 @ self.prototypes.T  # (B x num_prototypes)
-        scores2 = out2 @ self.prototypes.T  # (B x num_prototypes)
+        scores1 = out1 @ self.prototypes.T  # (B, num_prototypes)
+        scores2 = out2 @ self.prototypes.T  # (B, num_prototypes)
 
-        q1 = self.sinkhorn(scores1)  # (B x num_prototypes)
-        q2 = self.sinkhorn(scores2)  # (B x num_prototypes)
+        ilocs = self.get_prototype_ilocs(scores1, tissue)
+        scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
 
-        if tissue is not None:
-            q1 *= self.get_tissue_weights(scores1, tissue) > 1
-            q1 /= q1.sum(dim=1, keepdim=True)
-            q2 *= self.get_tissue_weights(scores2, tissue) > 1
-            q2 /= q2.sum(dim=1, keepdim=True)
+        q1 = self.sinkhorn(scores1)  # (B, num_prototypes) or (B, len(ilocs))
+        q2 = self.sinkhorn(scores2)  # (B, num_prototypes) or (B, len(ilocs))
 
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
         return loss, _mean_entropy_normalized(q1)
 
     @torch.no_grad()
-    def get_tissue_weights(self, scores: Tensor, tissue: str):
+    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None) -> Tensor:
+        if tissue is None:
+            return ...
+
         tissue_index = self.tissue_label_encoder[tissue]
         tissue_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
-        self.queue[tissue_index, :-1] = self.queue[tissue_index, 1:].clone()
-        self.queue[tissue_index, -1] = tissue_weights
 
-        return self.sinkhorn(self.queue.mean(dim=1))[tissue_index] if self.use_queue else 1  # TODO: on init epoch?
+        self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
+        self.queue[tissue_index, 0] = tissue_weights
+
+        if not self.use_queue:
+            return ...
+
+        weights = self.sinkhorn(self.queue.mean(dim=1))[tissue_index]
+        ilocs = torch.where(weights > 1 / self.num_prototypes)[0]
+
+        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
 
     @torch.no_grad()
     def sinkhorn(self, scores: Tensor, tissue: str | None = None) -> Tensor:
@@ -124,17 +131,17 @@ class SwavHead(L.LightningModule):
         if tissue:
             tissue_weights = self.queue[self.tissue_label_encoder[tissue]].mean(dim=0)
 
-        Q = torch.exp(scores / self.epsilon).t()  # (num_prototypes x B) for consistency with notations from the paper
+        Q = torch.exp(scores / Nums.SWAV_EPSILON).t()  # (num_prototypes, B) for consistency with the paper
         Q /= torch.sum(Q)
 
         K, B = Q.shape
 
-        for _ in range(self.sinkhorn_iterations):
+        for _ in range(Nums.SINKHORN_ITERATIONS):
             Q /= torch.sum(Q, dim=1, keepdim=True) + self.lambda_regularization
             Q /= K
             Q /= torch.sum(Q, dim=0, keepdim=True) + self.lambda_regularization
             Q /= B
-        Q = (Q / Q.sum(dim=0, keepdim=True)).t()  # TODO: why changed B to sum?
+        Q = (Q / Q.sum(dim=0, keepdim=True)).t()
 
         return Q if not tissue else Q * tissue_weights
 

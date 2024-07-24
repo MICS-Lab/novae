@@ -47,6 +47,12 @@ class Nums:
     MAX_GENES: int = 3_000
     MIN_GENES: int = 20
 
+    # swav head constants
+    SWAV_EPSILON: float = 0.05
+    SINKHORN_ITERATIONS: int = 3
+    QUEUE_SIZE: int = 5
+    MIN_PROTOTYPES_RATIO: float = 0.1
+
     # misc nums
     MEAN_NGH_TH_WARNING: float = 3.5
     N_OBS_THRESHOLD: int = 2_000_000  # above this number, lazy loading is used
