@@ -85,7 +85,7 @@ class SwavHead(L.LightningModule):
         scores1 = out1 @ self.prototypes.T  # (B, num_prototypes)
         scores2 = out2 @ self.prototypes.T  # (B, num_prototypes)
 
-        ilocs = self.get_prototype_ilocs(scores1, tissue)
+        ilocs = self.get_prototype_ilocs(scores1, tissue, update_queue=True)
         scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
 
         q1 = self.sinkhorn(scores1)  # (B, num_prototypes) or (B, len(ilocs))
@@ -96,15 +96,16 @@ class SwavHead(L.LightningModule):
         return loss, _mean_entropy_normalized(q1)
 
     @torch.no_grad()
-    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None) -> Tensor:
+    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None, update_queue: bool = False) -> Tensor:
         if tissue is None:
             return ...
 
         tissue_index = self.tissue_label_encoder[tissue]
         tissue_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
 
-        self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
-        self.queue[tissue_index, 0] = tissue_weights
+        if update_queue:
+            self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
+            self.queue[tissue_index, 0] = tissue_weights
 
         if not self.use_queue:
             return ...

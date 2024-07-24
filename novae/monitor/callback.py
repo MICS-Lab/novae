@@ -66,8 +66,14 @@ class ValidationCallback(Callback):
             return
 
         model._trained = True  # trick to avoid assert error in compute_representation
+
+        self.plot_domains(model, None)
+        if self.tissue is not None:
+            self.plot_domains(model, self.tissue)
+
+    def plot_domains(self, model: Novae, tissue: str | None):
         model.compute_representation(
-            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, tissue=self.tissue
+            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, tissue=tissue
         )
         model.swav_head.hierarchical_clustering()
 
@@ -82,7 +88,7 @@ class ValidationCallback(Callback):
             plt.figure()
             sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
             slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-            wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+            wandb.log({f"val_{tissue or ''}{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
             plt.close()
 
             fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
