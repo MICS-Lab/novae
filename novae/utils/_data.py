@@ -37,42 +37,45 @@ def _load_dataset(relative_path: str) -> list[AnnData]:
 
 
 def dummy_dataset(
-    n_obs_per_domain: int = 1000,
+    n_panels: int = 3,
+    n_domains: int = 4,
+    n_slides_per_panel: int = 1,
+    xmax: int = 500,
     n_vars: int = 100,
     n_drop: int = 20,
-    n_domains: int = 4,
-    n_panels: int = 3,
-    n_slides_per_panel: int = 1,
-    panel_shift_factor: float = 0.5,
-    batch_shift_factor: float = 0.2,
-    class_shift_factor: float = 2,
+    step: int = 20,
+    panel_shift_lambda: float = 0.25,
+    slide_shift_lambda: float = 0.5,
+    domain_shift_lambda: float = 0.25,
     slide_ids_unique: bool = True,
-    compute_spatial_neighbors: bool = True,
+    compute_spatial_neighbors: bool = False,
 ) -> list[AnnData]:
     """Creates a dummy dataset, useful for debugging or testing.
 
     Args:
-        n_obs_per_domain: Number of obs per domain or niche.
-        n_vars: Number of genes.
-        n_drop: Number of genes that are removed for each `AnnData` object. It will create non-identical panels.
-        n_domains: Number of domains, or niches.
         n_panels: Number of panels. Each panel will correspond to one output `AnnData` object.
+        n_domains: Number of domains, or niches.
         n_slides_per_panel: Number of slides per panel.
-        panel_shift_factor: Shift factor for each panel.
-        batch_shift_factor: Shift factor for each batch.
-        class_shift_factor: Shift factor for each niche.
+        xmax: Maximum value for the spatial coordinates (the larger, the more cells).
+        n_vars: Maxmium number of genes per panel.
+        n_drop: Number of genes that are randomly removed for each `AnnData` object. It will create non-identical panels.
+        step: Step between cells in their spatial coordinates.
+        panel_shift_lambda: Lambda used in the exponential law for each panel.
+        slide_shift_lambda: Lambda used in the exponential law for each slide.
+        domain_shift_lambda: Lambda used in the exponential law for each domain or niche.
         slide_ids_unique: Whether to ensure that slide ids are unique.
-        compute_spatial_neighbors: Whether to compute the spatial neighbors graph.
+        compute_spatial_neighbors: Whether to compute the spatial neighbors graph. We remove some the edges of one node for testing purposes.
 
     Returns:
         A list of `AnnData` objects representing a valid `Novae` dataset.
     """
-    assert n_obs_per_domain > 10
     assert n_vars - n_drop - n_panels > 2
 
-    panels_shift = [panel_shift_factor * np.random.randn(n_vars) for _ in range(n_panels)]
-    domains_shift = [class_shift_factor * np.random.randn(n_vars) for _ in range(n_domains)]
-    loc_shift = [np.array([0, 10 * i]) for i in range(n_domains)]
+    spatial = np.mgrid[-xmax:xmax:step, -xmax:xmax:step].reshape(2, -1).T
+    spatial = spatial[(spatial**2).sum(1) <= xmax**2]
+    n_obs = len(spatial)
+
+    domain = "domain_" + (np.sqrt((spatial**2).sum(1)) // (xmax / n_domains + 1e-8)).astype(int).astype(str)
 
     adatas = []
 
@@ -80,52 +83,61 @@ def dummy_dataset(
         TRUE_GENE_NAMES[:n_vars] if n_vars <= len(TRUE_GENE_NAMES) else [f"g{i}" for i in range(n_vars)]
     )
 
+    lambdas_per_domain = np.random.exponential(1, size=(n_domains, n_vars))
+
     for panel_index in range(n_panels):
-        X_, spatial_, domains_, slide_ids_ = [], [], [], []
+        adatas_panel = []
+        panel_shift = np.random.exponential(panel_shift_lambda, size=n_vars)
 
-        slide_key = f"slide_{panel_index}_" if slide_ids_unique else "slide_"
-        if n_slides_per_panel > 1:
-            slides_shift = np.array([batch_shift_factor * np.random.randn(n_vars) for _ in range(n_slides_per_panel)])
+        for slide_index in range(n_slides_per_panel):
+            slide_shift = np.random.exponential(slide_shift_lambda, size=n_vars)
 
-        for domain_index in range(n_domains):
-            n_obs = n_obs_per_domain + panel_index  # ensure n_obs different
-            cell_shift = np.random.randn(n_obs, n_vars)
-            slide_ids_domain_ = np.random.randint(0, n_slides_per_panel, n_obs)
-            X_domain_ = cell_shift + domains_shift[domain_index] + panels_shift[panel_index]
+            adata = AnnData(
+                np.zeros((n_obs, n_vars)),
+                obsm={"spatial": spatial + panel_index + slide_index},  # ensure the locs are different
+                obs=pd.DataFrame({"domain": domain}, index=[f"cell_{i}" for i in range(spatial.shape[0])]),
+            )
 
-            if n_slides_per_panel > 1:
-                X_domain_ += slides_shift[slide_ids_domain_]
+            adata.var_names = var_names
+            adata.obs_names = [f"c_{panel_index}_{slide_index}_{i}" for i in range(adata.n_obs)]
 
-            X_.append(X_domain_)
-            spatial_.append(np.random.randn(n_obs, 2) + loc_shift[domain_index])
-            domains_.append(np.array([f"domain_{domain_index}"] * n_obs))
-            slide_ids_.append(slide_ids_domain_)
+            slide_key = f"slide_{panel_index}_{slide_index}" if slide_ids_unique else f"slide_{slide_index}"
+            adata.obs["slide_key"] = slide_key
 
-        X = np.concatenate(X_, axis=0).clip(0)
+            for i in range(n_domains):
+                condition = adata.obs["domain"] == "domain_" + str(i)
+                n_obs_domain = condition.sum()
 
-        if n_drop > 0:
-            size = n_vars - n_drop - panel_index  # ensure n_vars different
-            var_indices = np.random.choice(n_vars, size=size, replace=False)
-            X = X[:, var_indices]
-            var_names_ = var_names[var_indices]
+                domain_shift = np.random.exponential(domain_shift_lambda, size=n_vars)
+                lambdas = lambdas_per_domain[i] + domain_shift + slide_shift + panel_shift
+                X_domain = np.random.exponential(lambdas, size=(n_obs_domain, n_vars))
+                adata.X[condition] = X_domain.clip(0, 9)  # values should look like log1p values
 
-        adata = AnnData(X=X)
+            if n_drop:
+                size = n_vars - n_drop - panel_index  # different number of genes
+                var_indices = np.random.choice(n_vars, size=size, replace=False)
+                adata = adata[:, var_indices].copy()
 
-        adata.obs_names = [f"c_{panel_index}_{i}" for i in range(adata.n_obs)]
-        adata.var_names = var_names_
-        adata.obs["domain"] = np.concatenate(domains_)
-        adata.obs["slide_key"] = (slide_key + pd.Series(np.concatenate(slide_ids_)).astype(str)).values
-        adata.obsm["spatial"] = np.concatenate(spatial_, axis=0)
+            adatas_panel.append(adata[: -1 - panel_index - slide_index].copy())  # different number of cells
 
-        adata.obsm["spatial"][[1, 2]] += 100  # ensure at least two indices are connected to only one node
-        adata.obsm["spatial"][4] += 1000  # ensure at least one index is non-connected
+        adata_panel = anndata.concat(adatas_panel)
 
         if compute_spatial_neighbors:
-            spatial_neighbors(adata, radius=[0, 3])
+            spatial_neighbors(adata_panel, slide_key="slide_key")
+            _drop_neighbors(adata_panel, index=3)  # ensure one node is not connected to any other
 
-        adatas.append(adata)
+        adatas.append(adata_panel)
 
     return adatas
+
+
+def _drop_neighbors(adata: AnnData, index: int):
+    for key in ["spatial_connectivities", "spatial_distances"]:
+        adata.obsp[key] = adata.obsp[key].tolil()
+        adata.obsp[key][index] = 0
+        adata.obsp[key][:, index] = 0
+        adata.obsp[key] = adata.obsp[key].tocsr()
+        adata.obsp[key].eliminate_zeros()
 
 
 def _load_wandb_artifact(name: str) -> Path:

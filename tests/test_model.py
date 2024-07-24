@@ -13,7 +13,7 @@ from novae.utils._data import TRUE_GENE_NAMES
 adatas = novae.utils.dummy_dataset(
     n_panels=2,
     n_slides_per_panel=2,
-    n_obs_per_domain=100,
+    xmax=100,
     n_domains=2,
 )
 adata = adatas[0]
@@ -42,7 +42,7 @@ def test_train():
     adatas = novae.utils.dummy_dataset(
         n_panels=2,
         n_slides_per_panel=2,
-        n_obs_per_domain=100,
+        xmax=100,
         n_domains=2,
     )
 
@@ -77,9 +77,8 @@ def test_representation_single_panel(slide_key: str | None):
     adata = novae.utils.dummy_dataset(
         n_panels=1,
         n_slides_per_panel=2,
-        n_obs_per_domain=100,
+        xmax=100,
         n_domains=2,
-        compute_spatial_neighbors=False,
     )[0]
 
     model = novae.Novae(adata, slide_key=slide_key)
@@ -120,9 +119,8 @@ def test_representation_multi_panel(slide_key: str | None):
     adatas = novae.utils.dummy_dataset(
         n_panels=3,
         n_slides_per_panel=2,
-        n_obs_per_domain=100,
+        xmax=100,
         n_domains=2,
-        compute_spatial_neighbors=False,
     )
 
     model = novae.Novae(adatas, slide_key=slide_key)
@@ -156,9 +154,8 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     adata = novae.utils.dummy_dataset(
         n_panels=1,
         n_slides_per_panel=2,
-        n_obs_per_domain=100,
+        xmax=100,
         n_domains=2,
-        compute_spatial_neighbors=False,
     )[0]
 
     # using weird parameters

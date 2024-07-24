@@ -58,9 +58,8 @@ def test_build_slide_key_disjoint_indices():
     adata = novae.utils.dummy_dataset(
         n_panels=1,
         n_slides_per_panel=1,
-        n_obs_per_domain=100,
+        xmax=100,
         n_domains=2,
-        compute_spatial_neighbors=False,
     )[0]
 
     adata2 = adata.copy()
