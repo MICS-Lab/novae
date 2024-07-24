@@ -15,6 +15,7 @@ adatas = novae.utils.dummy_dataset(
     n_slides_per_panel=2,
     xmax=100,
     n_domains=2,
+    compute_spatial_neighbors=True,
 )
 adata = adatas[0]
 

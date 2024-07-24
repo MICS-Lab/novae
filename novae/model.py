@@ -247,41 +247,45 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         valid_indices = datamodule.dataset.valid_indices[0]
 
         representations = []
-        codes = []
+        scores = []
         for batch in utils.tqdm(datamodule.predict_dataloader()):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
             representation = self.encoder(self._embed_pyg_data(batch["main"]))
 
             representations.append(representation)
             repr_normalized = F.normalize(representation, dim=1, p=2)
-            codes.append(repr_normalized @ self.swav_head.prototypes.T)
+            scores.append(repr_normalized @ self.swav_head.prototypes.T)
 
         representations = torch.cat(representations)
+        scores = torch.cat(scores)
+
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
-        codes = self._apply_sinkhorn_per_slide(torch.cat(codes), adata, valid_indices, tissue)
-        codes = utils.fill_invalid_indices(codes, adata.n_obs, valid_indices)
-
-        leaves_predictions = np.where(np.isnan(codes).any(1), np.nan, np.argmax(codes, 1))
+        leaves_predictions = self._codes_argmax_per_slide(scores, adata, valid_indices, tissue)
+        leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
         adata.obs[Keys.SWAV_CLASSES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
 
-        return representations, codes, valid_indices
-
-    def _apply_sinkhorn_per_slide(
+    def _codes_argmax_per_slide(
         self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray, tissue: bool | None
     ) -> Tensor:
         slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
 
         unique_slide_ids = np.unique(slide_ids)
 
+        ilocs = self.swav_head.get_prototype_ilocs(scores, tissue)  # TODO: shared ilocs?
+
         if len(unique_slide_ids) == 1:
-            return self.swav_head.sinkhorn(scores, tissue=tissue)
+            q = self.swav_head.sinkhorn(scores[:, ilocs])
+            return q.argmax(dim=1) if ilocs is Ellipsis else ilocs[q.argmax(dim=1)]
+
+        res = torch.zeros(len(scores), dtype=torch.long)
 
         for slide_id in unique_slide_ids:
             indices = np.where(slide_ids == slide_id)[0]
-            scores[indices] = self.swav_head.sinkhorn(scores[indices], tissue=tissue)
+            q = self.swav_head.sinkhorn(scores[indices, ilocs])
+            res[indices] = q.argmax(dim=1) if ilocs is Ellipsis else ilocs[q.argmax(dim=1)]
 
-        return scores
+        return res
 
     def _get_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
         if adata is None:
