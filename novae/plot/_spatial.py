@@ -91,6 +91,13 @@ def domains(
 
     [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
 
+    title = f"Novae domains ({k=})"
+
+    if i == 1:
+        axes[0, 0].set_title(title)
+    else:
+        fig.suptitle(title, fontsize=14, y=1.15)
+
     handles = [
         Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=8, linestyle="None")
         for color in colors + [na_color]
@@ -98,14 +105,12 @@ def domains(
     fig.legend(
         handles,
         all_domains + ["NA"],
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.1),
+        loc="upper center" if i > 1 else "center left",
+        bbox_to_anchor=(0.5, 1.1) if i > 1 else (1.04, 0.5),
         borderaxespad=0,
         frameon=False,
-        ncol=n_colors // 3 + 1,
+        ncol=n_colors // (3 if i > 1 else 10) + 1,
     )
-
-    fig.suptitle(f"Novae domains ({k=})", fontsize=14, y=1.15)
 
     if show:
         plt.show()
