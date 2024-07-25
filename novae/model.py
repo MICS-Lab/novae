@@ -84,6 +84,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         super().__init__()
         self.slide_key = slide_key
 
+        ### Initialize cell embedder and prepare adata(s) object(s)
         if scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=var_names)
             self.cell_embedder = CellEmbedder(var_names, embedding_size)
@@ -96,20 +97,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
 
-        ### Modules
-        self.encoder = GraphEncoder(self.cell_embedder.embedding_size, hidden_size, num_layers, output_size, heads)
-        self.swav_head = SwavHead(
-            output_size, num_prototypes, temperature, temperature_weight_proto, lambda_regularization
-        )
+        ### Initialize modules
+        self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-
-        ### Init tissue prototypes weights
-        if tissue_names is not None:
-            self.swav_head.init_queue(tissue_names)
-        elif self.adatas is not None and Keys.UNS_TISSUE in self.adatas[0].uns:
-            tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
-            self.hparams["tissue_names"] = tissue_names
-            self.swav_head.init_queue(tissue_names)
+        self.swav_head = SwavHead(output_size, num_prototypes, temperature, temperature_weight_proto)
+        self._init_tissue_queue(tissue_names)
 
         ### Misc
         self._num_workers = 0
@@ -177,6 +169,19 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 **kwargs,
             )
 
+    def _init_tissue_queue(self, tissue_names: list[str] | None):
+        if tissue_names is not None:
+            self.swav_head.init_queue(tissue_names)
+            return
+
+        if self.adatas is None or Keys.UNS_TISSUE not in self.adatas[0].uns:
+            return
+
+        tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
+        if tissue_names > 1:
+            self.hparams["tissue_names"] = tissue_names
+            self.swav_head.init_queue(tissue_names)
+
     def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
         if adata is None:
             adatas = self.adatas
@@ -201,9 +206,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        self.swav_head.prototypes.requires_grad_(self.current_epoch >= 2)
-        self.swav_head.lambda_regularization = self.hparams.lambda_regularization if self.current_epoch >= 2 else 0.0
-        self.swav_head.use_queue = self.swav_head.queue is not None and self.current_epoch >= 2
+        unfreeze = self.current_epoch >= Nums.EPOCH_UNFREEZE
+
+        self.swav_head.prototypes.requires_grad_(unfreeze)
+        if unfreeze:
+            self.swav_head.use_queue = self.swav_head.queue is not None
+            self.swav_head.lambda_regularization = self.hparams.lambda_regularization
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
@@ -218,7 +226,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         slide_key: str | None = None,
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        tissue: str | None = None,
     ) -> None:
         """Compute the latent representation of Novae for all cells neighborhoods.
 
@@ -236,14 +243,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.to(device)
 
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
-            self._compute_representation_datamodule(self.adatas[0], self.datamodule, tissue)
+            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
             return
 
         for adata in self._get_adatas(adata, slide_key=slide_key):
             datamodule = self._init_datamodule(adata)
-            self._compute_representation_datamodule(adata, datamodule, tissue)
+            self._compute_representation_datamodule(adata, datamodule)
 
-    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule, tissue: str | None):
+    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
         valid_indices = datamodule.dataset.valid_indices[0]
 
         representations = []
@@ -261,18 +268,16 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
-        leaves_predictions = self._codes_argmax_per_slide(scores, adata, valid_indices, tissue)
+        leaves_predictions = self._codes_argmax_per_slide(scores, adata, valid_indices)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
         adata.obs[Keys.SWAV_CLASSES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
 
-    def _codes_argmax_per_slide(
-        self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray, tissue: bool | None
-    ) -> Tensor:
+    def _codes_argmax_per_slide(self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray) -> Tensor:
         slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
 
         unique_slide_ids = np.unique(slide_ids)
 
-        ilocs = self.swav_head.get_prototype_ilocs(scores, tissue)  # TODO: shared ilocs?
+        ilocs = self.swav_head.get_prototype_ilocs(scores)  # TODO: shared ilocs?
 
         if len(unique_slide_ids) == 1:
             q = self.swav_head.sinkhorn(scores[:, ilocs])

@@ -12,7 +12,6 @@ from sklearn.cluster import AgglomerativeClustering
 from torch import Tensor, nn
 
 from .._constants import Nums
-from . import CellEmbedder
 
 log = logging.getLogger(__name__)
 
@@ -26,9 +25,8 @@ class SwavHead(L.LightningModule):
         num_prototypes: int,
         temperature: float,
         temperature_weight_proto: float,
-        lambda_regularization: float,
     ):
-        """SwavHead module, adapted from in the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
+        """SwavHead module, adapted from the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
 
         Args:
             output_size: Size of the encoder embeddings.
@@ -42,7 +40,8 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
         self.temperature_weight_proto = temperature_weight_proto
-        self.lambda_regularization = lambda_regularization
+
+        self.lambda_regularization = 0.0  # may be updated on_epoch_start
 
         self.prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self.prototypes = nn.init.kaiming_uniform_(self.prototypes, a=math.sqrt(5), mode="fan_out")
@@ -58,10 +57,11 @@ class SwavHead(L.LightningModule):
     def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
 
-        queue_shape = (len(tissue_names), Nums.QUEUE_SIZE, self.num_prototypes)
-        self.register_buffer("queue", torch.full(queue_shape, 1 / self.num_prototypes))
+        shape = (len(tissue_names) + 1, Nums.QUEUE_SIZE, self.num_prototypes)
+        self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
 
         self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
+        self.tissue_label_encoder[None] = len(tissue_names)
 
     @torch.no_grad()
     def normalize_prototypes(self):
@@ -85,7 +85,7 @@ class SwavHead(L.LightningModule):
         scores1 = out1 @ self.prototypes.T  # (B, num_prototypes)
         scores2 = out2 @ self.prototypes.T  # (B, num_prototypes)
 
-        ilocs = self.get_prototype_ilocs(scores1, tissue, update_queue=True)
+        ilocs = self.get_prototype_ilocs(scores1, tissue)
         scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
 
         q1 = self.sinkhorn(scores1)  # (B, num_prototypes) or (B, len(ilocs))
@@ -96,16 +96,15 @@ class SwavHead(L.LightningModule):
         return loss, _mean_entropy_normalized(q1)
 
     @torch.no_grad()
-    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None, update_queue: bool = False) -> Tensor:
-        if tissue is None:
+    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None = None) -> Tensor:
+        if self.queue is None:
             return ...
 
         tissue_index = self.tissue_label_encoder[tissue]
         tissue_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
 
-        if update_queue:
-            self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
-            self.queue[tissue_index, 0] = tissue_weights
+        self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
+        self.queue[tissue_index, 0] = tissue_weights
 
         if not self.use_queue:
             return ...
@@ -223,81 +222,3 @@ def _mean_entropy_normalized(q: Tensor) -> Tensor:
     entropy = -(q * torch.log2(q + Nums.EPS)).sum(-1)
     max_entropy = torch.log2(torch.tensor(q.shape[-1]))
     return (entropy / max_entropy).mean()
-
-
-def _mlp(input_size: int, hidden_size: int, n_layers: int, output_size: int) -> nn.Sequential:
-    layers = [nn.Linear(input_size, hidden_size), nn.ReLU()]
-    for _ in range(n_layers):
-        layers.extend([nn.Linear(hidden_size, hidden_size), nn.ReLU()])
-    layers.append(nn.Linear(hidden_size, output_size))
-
-    return nn.Sequential(*layers)
-
-
-def _combine_embeddings(z: Tensor, genes_embeddings: Tensor) -> Tensor:
-    n_obs, n_genes = len(z), len(genes_embeddings)
-
-    return torch.cat(
-        [z.unsqueeze(1).expand(-1, n_genes, -1), genes_embeddings.unsqueeze(0).expand(n_obs, -1, -1)], dim=-1
-    )  # (B x G x (C + E))
-
-
-class InferenceHeadZIE(L.LightningModule):
-    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
-        super().__init__()
-        self.cell_embedder = cell_embedder
-        self.mlp = _mlp(input_size, hidden_size, n_layers, 2)
-
-    def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        """
-        z: (B x C)
-        genes_embeddings: (G x E)
-        """
-        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B x G x (C + E)
-
-        logits = self.mlp(combined_embeddings)  # (B x G x 2)
-
-        return logits[..., 0], logits[..., 1]  # pi_logits (B x G), lambda_logits (B x G)
-
-    def loss(self, x: Tensor, z: Tensor, var_names: str | list[str]) -> Tensor:
-        """Negative log-likelihood of the zero-inflated exponential distribution
-
-        Args:
-            x: Expressions of genes (B x G)
-            z: Latent space (B x C)
-
-        Returns:
-            The mean negative log-likelihood
-        """
-        var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(var_names).to(self.device))
-
-        pi_logits, lambda_logits = self(z, genes_embeddings)
-
-        case_zero = -pi_logits
-        case_non_zero = -lambda_logits + x * torch.exp(lambda_logits)
-        return torch.where(x > 0, case_non_zero, case_zero).mean()
-
-
-class InferenceHeadBaseline(L.LightningModule):
-    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
-        super().__init__()
-        self.cell_embedder = cell_embedder
-        self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
-
-    def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        """
-        z: (B x C)
-        genes_embeddings: (G x E)
-        """
-        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B x G x (C + E)
-
-        return self.mlp(combined_embeddings).squeeze(-1)  # predictions (B x G)
-
-    def loss(self, x: Tensor, z: Tensor, var_names: str | list[str]) -> Tensor:
-        var_names = [var_names] if isinstance(var_names, str) else var_names
-        genes_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(var_names).to(self.device))
-
-        predictions = self(z, genes_embeddings)
-
-        return F.mse_loss(x, predictions)
