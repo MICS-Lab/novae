@@ -208,7 +208,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         unfreeze = self.current_epoch >= Nums.EPOCH_UNFREEZE
 
-        self.swav_head.prototypes.requires_grad_(unfreeze)
+        self.swav_head.prototypes.requires_grad_(unfreeze or self._checkpoint is not None)
         if unfreeze:
             self.swav_head.use_queue = self.swav_head.queue is not None
             self.swav_head.lambda_regularization = self.hparams.lambda_regularization
@@ -261,7 +261,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
             representations.append(representation)
             repr_normalized = F.normalize(representation, dim=1, p=2)
+
             scores.append(repr_normalized @ self.swav_head.prototypes.T)
+            self.swav_head.get_prototype_ilocs(scores[-1])
 
         representations = torch.cat(representations)
         scores = torch.cat(scores)
