@@ -178,7 +178,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             return
 
         tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
-        if tissue_names > 1:
+        if len(tissue_names) > 1:
             self.mode.queue_mode = True
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
