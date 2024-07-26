@@ -8,6 +8,7 @@ from ._utils import (
     lower_var_names,
     wandb_log_dir,
     pretty_num_parameters,
+    pretty_model_repr,
     parse_device_args,
     requires_fit,
     _sparse_std,

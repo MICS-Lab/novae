@@ -275,6 +275,11 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
     return f"{n_params / 1_000_000:.1f}M"
 
 
+def pretty_model_repr(info_dict: dict[str, str], model_name: str = "Novae") -> str:
+    rows = [f"{model_name} model"] + [f"[{k}]: {v}" for k, v in info_dict.items()]
+    return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
+
+
 def parse_device_args(accelerator: str = "cpu") -> torch.device:
     """Updated from scvi-tools"""
     connector = _AcceleratorConnector(accelerator=accelerator)
