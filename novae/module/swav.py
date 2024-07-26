@@ -96,7 +96,7 @@ class SwavHead(L.LightningModule):
 
     @torch.no_grad()
     def get_prototype_ilocs(self, scores: Tensor, tissue: str | None = None) -> Tensor:
-        if tissue is None or not self.mode.queue_mode:
+        if tissue is None or self.mode.zero_shot or not self.mode.queue_mode:
             return ...
 
         tissue_index = self.tissue_label_encoder[tissue]
