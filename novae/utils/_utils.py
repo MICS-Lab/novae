@@ -118,12 +118,16 @@ def _is_multi_panel(adatas: list[AnnData]) -> bool:
     return False
 
 
+def get_valid_indices(adata: AnnData) -> np.ndarray:
+    return np.where(adata.obs[Keys.IS_VALID_OBS])[0]
+
+
 def requires_fit(f: Callable) -> Callable:
     """Make sure the model has been trained"""
 
     @wraps(f)
     def wrapper(model, *args, **kwargs):
-        assert model._trained, "Novae must be trained first, so consider running `model.fit()`"
+        assert model.mode.trained, "Novae must be trained first, so consider running `model.fit()`"
         return f(model, *args, **kwargs)
 
     return wrapper

@@ -59,21 +59,15 @@ class ValidationCallback(Callback):
         self.accelerator = accelerator
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
-        self.tissue = self.adata.uns.get(Keys.UNS_TISSUE, None)
 
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         if self.adata is None:
             return
 
-        model._trained = True  # trick to avoid assert error in compute_representation
+        model.mode.trained = True  # trick to avoid assert error in compute_representation
 
-        self.plot_domains(model, None)
-        if self.tissue is not None:
-            self.plot_domains(model, self.tissue)
-
-    def plot_domains(self, model: Novae, tissue: str | None):
         model.compute_representation(
-            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, tissue=tissue
+            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, zero_shot=True
         )
         model.swav_head.hierarchical_clustering()
 
@@ -88,11 +82,13 @@ class ValidationCallback(Callback):
             plt.figure()
             sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
             slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-            wandb.log({f"val_{tissue or ''}{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+            wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
             plt.close()
 
             fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
-            model.log(f"metrics/val_{tissue or ''}mean_fide_score", fide)
+            model.log("metrics/val_mean_fide_score", fide)
+
+        model.mode.zero_shot = False
 
 
 class LogLatent(Callback):

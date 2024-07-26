@@ -12,5 +12,7 @@ from ._utils import (
     parse_device_args,
     requires_fit,
     _sparse_std,
+    get_valid_indices,
 )
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset
+from ._mode import Mode

@@ -81,7 +81,7 @@ class NovaeDataset(Dataset):
             if Keys.IS_VALID_OBS not in adata.obs:
                 adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
-        self.valid_indices = [np.where(adata.obs[Keys.IS_VALID_OBS])[0] for adata in self.adatas]
+        self.valid_indices = [utils.get_valid_indices(adata) for adata in self.adatas]
 
         self.obs_ilocs = None
         if self.single_adata:

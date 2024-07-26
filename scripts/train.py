@@ -68,7 +68,9 @@ def train(
         log.info("Compiling the model")
         model: novae.Novae = torch.compile(model)
 
+    log.info(f"Model mode: {model.mode}")
     model.fit(logger=wandb_logger, callbacks=callbacks, **config["fit_kwargs"])
+    log.info(f"Model mode: {model.mode}")
 
     if config.get("save_result"):
         _save_result(model, config)

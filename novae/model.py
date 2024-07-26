@@ -10,7 +10,6 @@ from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
-from torch.nn import functional as F
 from torch_geometric.data import Data
 
 from . import __version__, plot, utils
@@ -96,18 +95,20 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=_scgpt_var_names)
 
         self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
+        self.mode = utils.Mode()
 
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-        self.swav_head = SwavHead(output_size, num_prototypes, temperature, temperature_weight_proto)
+        self.swav_head = SwavHead(
+            self.mode, output_size, num_prototypes, temperature, temperature_weight_proto, lambda_regularization
+        )
         self._init_tissue_queue(tissue_names)
 
         ### Misc
         self._num_workers = 0
         self._checkpoint = None
         self._datamodule = None
-        self._trained = False
 
     @property
     def datamodule(self) -> NovaeDatamodule:
@@ -136,8 +137,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             "parameters": utils.pretty_num_parameters(self),
             "checkpoint": self._checkpoint,
         }
-        rows = ["Novae model"] + [f"[{k}]: {v}" for k, v in info_dict.items()]
-        return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
+        return utils.pretty_model_repr(info_dict)
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:
@@ -179,6 +179,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
         if tissue_names > 1:
+            self.mode.queue_mode = True
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
 
@@ -206,12 +207,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        unfreeze = self.current_epoch >= Nums.EPOCH_UNFREEZE
+        after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
-        self.swav_head.prototypes.requires_grad_(unfreeze or self._checkpoint is not None)
-        if unfreeze:
-            self.swav_head.use_queue = self.swav_head.queue is not None
-            self.swav_head.lambda_regularization = self.hparams.lambda_regularization
+        self.swav_head.prototypes.requires_grad_(after_warm_up or not self.mode.freeze_mode)
+        self.mode.use_queue = after_warm_up and self.mode.queue_mode
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
@@ -224,6 +223,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
+        zero_shot: bool = False,
         accelerator: str = "cpu",
         num_workers: int | None = None,
     ) -> None:
@@ -238,37 +238,55 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {accelerator}
             num_workers: Number of workers for the dataloader.
         """
+        self.mode.zero_shot = zero_shot
         self.training = False
         device = self._parse_hardware_args(accelerator, num_workers, return_device=True)
         self.to(device)
 
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
+            adatas = self.adatas
             self._compute_representation_datamodule(self.adatas[0], self.datamodule)
-            return
+        else:
+            adatas = self._get_adatas(adata, slide_key=slide_key)
+            for adata in adatas:
+                datamodule = self._init_datamodule(adata)
+                self._compute_representation_datamodule(adata, datamodule)
 
-        for adata in self._get_adatas(adata, slide_key=slide_key):
-            datamodule = self._init_datamodule(adata)
-            self._compute_representation_datamodule(adata, datamodule)
+        if self.mode.zero_shot:
+            latent = np.concatenate([adata.obsm[Keys.REPR][utils.get_valid_indices(adata)] for adata in adatas])
+            self.swav_head.set_kmeans_prototypes(latent)
+
+            for adata in adatas:
+                self._compute_leaves(adata, None, None)
 
     def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
         valid_indices = datamodule.dataset.valid_indices[0]
+        representations, scores = [], []
 
-        representations = []
-        scores = []
         for batch in utils.tqdm(datamodule.predict_dataloader()):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            representation = self.encoder(self._embed_pyg_data(batch["main"]))
+            batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
 
-            representations.append(representation)
-            repr_normalized = F.normalize(representation, dim=1, p=2)
+            representations.append(batch_repr)
 
-            scores.append(repr_normalized @ self.swav_head.prototypes.T)
-            self.swav_head.get_prototype_ilocs(scores[-1])
+            if not self.mode.zero_shot:
+                batch_scores = self.swav_head.compute_scores(batch_repr)
+                scores.append(batch_scores)
 
         representations = torch.cat(representations)
-        scores = torch.cat(scores)
-
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
+
+        if not self.mode.zero_shot:
+            scores = torch.cat(scores)
+            self._compute_leaves(adata, scores, valid_indices)
+
+    def _compute_leaves(self, adata: AnnData, scores: Tensor | None, valid_indices: np.ndarray | None):
+        assert (scores is None) is (valid_indices is None)
+
+        if scores is None:
+            valid_indices = utils.get_valid_indices(adata)
+            representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
+            scores = self.swav_head.compute_scores(representations)
 
         leaves_predictions = self._codes_argmax_per_slide(scores, adata, valid_indices)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
@@ -279,7 +297,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         unique_slide_ids = np.unique(slide_ids)
 
-        ilocs = self.swav_head.get_prototype_ilocs(scores)  # TODO: shared ilocs?
+        ilocs = self.swav_head.get_prototype_ilocs(scores, tissue=adata.uns.get(Keys.UNS_TISSUE, None))
 
         if len(unique_slide_ids) == 1:
             q = self.swav_head.sinkhorn(scores[:, ilocs])
@@ -366,7 +384,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             A pretrained `Novae` model.
         """
         model = super().from_pretrained(model_name_or_path, **kwargs)
-        model._trained = True
+        model.mode.pretrained()
         model._checkpoint = model_name_or_path
         return model
 
@@ -399,7 +417,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     @classmethod
     def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
         model = super().load_from_checkpoint(*args, **kwargs)
-        model._trained = True
+        model.mode.pretrained()
         return model
 
     @classmethod
@@ -491,6 +509,36 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             return utils.parse_device_args(accelerator)
 
     @utils.format_docs
+    def fine_tune(
+        self,
+        adata: AnnData | list[AnnData],
+        slide_key: str | None = None,
+        accelerator: str = "cpu",
+        max_epochs: int = 1,
+        **fit_kwargs: int,
+    ):
+        """Fine tune a Novae model.
+
+        Args:
+            {adata}
+            {slide_key}
+            max_epochs: Maximum number of training epochs.
+            {accelerator}
+            **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
+        """
+        if not hasattr(self.swav_head, "_kmeans_prototypes"):
+            # TODO: no need to compute all repr, make it faster
+            # TODO: what happens if run twice?
+            self.compute_representation(adata=adata, zero_shot=True)
+
+        self.swav_head._prototypes = self.swav_head._kmeans_prototypes
+        del self.swav_head._kmeans_prototypes
+
+        self.mode.fine_tune()
+
+        self.fit(adata=adata, slide_key=slide_key, max_epochs=max_epochs, accelerator=accelerator, **fit_kwargs)
+
+    @utils.format_docs
     def fit(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -522,6 +570,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             logger: The pytorch lightning logger.
             **kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
+        self.mode.fit()
+
         if adata is not None:
             self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
 
@@ -552,4 +602,4 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
         trainer.fit(self, datamodule=self.datamodule)
 
-        self._trained = True
+        self.mode.trained = True

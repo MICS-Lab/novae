@@ -84,7 +84,7 @@ def test_representation_single_panel(slide_key: str | None):
 
     model = novae.Novae(adata, slide_key=slide_key)
     model._datamodule = model._init_datamodule()
-    model._trained = True
+    model.mode.trained = True
 
     model.compute_representation()
 
@@ -126,7 +126,7 @@ def test_representation_multi_panel(slide_key: str | None):
 
     model = novae.Novae(adatas, slide_key=slide_key)
     model._datamodule = model._init_datamodule()
-    model._trained = True
+    model.mode.trained = True
 
     model.compute_representation()
 
@@ -180,7 +180,7 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     )
 
     model._datamodule = model._init_datamodule()
-    model._trained = True
+    model.mode.trained = True
 
     model.compute_representation()
     model.assign_domains()
