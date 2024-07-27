@@ -44,4 +44,4 @@ wandb agent <SWEEP_ID> --count 1
 In the `slurm` directory:
 - `train.sh` / `train_cpu.sh` for training
 - `download.sh` to download public data
-- `agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae sweep/<NAME>.yaml`)
+- `sh agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae sweep/<NAME>.yaml`)
