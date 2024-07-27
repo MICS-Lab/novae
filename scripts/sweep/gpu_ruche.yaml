@@ -1,0 +1,44 @@
+method: random
+metric:
+  goal: maximize
+  name: metrics/val_mean_fide_score
+parameters:
+  n_hops_view:
+    values: [2, 3]
+  heads:
+    values: [8, 16]
+  num_prototypes:
+    values: [256, 512, 1024]
+  output_size:
+    values: [128, 256, 512]
+  num_layers:
+    values: [8, 12, 16]
+  hidden_size:
+    values: [128, 256, 512]
+  panel_subset_size:
+    min: 0.4
+    max: 0.9
+  background_noise_lambda:
+    min: 5
+    max: 8
+  sensitivity_noise_std:
+    min: 0.05
+    max: 0.1
+  lr:
+    min: 0.0001
+    max: 0.001
+  temperature:
+    min: 0.05
+    max: 0.15
+  temperature_weight_proto:
+    min: 0.05
+    max: 0.15
+  lambda_regularization:
+    values: [0, 0.005, 0.01, 0.05]
+
+command:
+  - python
+  - train.py
+  - --config
+  - all_ruche.yaml
+  - --sweep
