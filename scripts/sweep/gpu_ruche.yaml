@@ -3,38 +3,25 @@ metric:
   goal: maximize
   name: metrics/val_mean_fide_score
 parameters:
-  n_hops_view:
-    values: [2, 3]
-  heads:
-    values: [8, 16]
-  num_prototypes:
-    values: [256, 512, 1024]
   output_size:
-    values: [128, 256, 512]
+    values: [64, 128]
   num_layers:
-    values: [8, 12, 16]
+    values: [10, 14, 18]
   hidden_size:
-    values: [128, 256, 512]
-  panel_subset_size:
-    min: 0.4
-    max: 0.9
+    values: [64, 128]
   background_noise_lambda:
-    min: 5
-    max: 8
+    min: 3
+    max: 5
   sensitivity_noise_std:
-    min: 0.05
-    max: 0.1
+    min: 0.08
+    max: 0.16
   lr:
-    min: 0.0001
-    max: 0.001
-  temperature:
-    min: 0.05
-    max: 0.15
+    values: [0.00005, 0.0001, 0.0002, 0.0004]
   temperature_weight_proto:
-    min: 0.05
-    max: 0.15
+    min: 0.04
+    max: 0.12
   lambda_regularization:
-    values: [0, 0.005, 0.01, 0.05]
+    values: [0, 0.005, 0.01]
 
 command:
   - python
