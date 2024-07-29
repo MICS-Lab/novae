@@ -44,4 +44,13 @@ wandb agent <SWEEP_ID> --count 1
 In the `slurm` directory:
 - `train.sh` / `train_cpu.sh` for training
 - `download.sh` to download public data
-- `sh agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae sweep/<NAME>.yaml`)
+- `sbatch agent.sh SWEEP_ID COUNT` to run agents (where SWEEP_ID comes from `wandb sweep --project novae sweep/<NAME>.yaml`)
+
+E.g., on ruche:
+```sh
+module load anaconda3/2024.06/gcc-13.2.0 && source activate novae
+wandb sweep --project novae sweep/gpu_ruche.yaml
+
+cd ruche
+sbatch agent.sh SWEEP_ID
+```
