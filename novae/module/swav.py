@@ -65,7 +65,7 @@ class SwavHead(L.LightningModule):
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, out1: Tensor, out2: Tensor, tissue: str | None) -> Tensor:
+    def forward(self, out1: Tensor, out2: Tensor, tissue: str | None) -> tuple[Tensor, Tensor]:
         """Compute the SWAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -73,7 +73,7 @@ class SwavHead(L.LightningModule):
             out2: Batch containing graphs representations `(B, output_size)`
 
         Returns:
-            The SWAV loss
+            The SWAV loss, and the mean entropy normalized (for monitoring).
         """
         self.normalize_prototypes()
 
@@ -127,24 +127,23 @@ class SwavHead(L.LightningModule):
         """Apply the Sinkhorn-Knopp algorithm to the scores.
 
         Args:
-            scores: The normalized embeddings projected into the prototypes
+            scores: The normalized embeddings projected into the prototypes, denoted Z@C.T in the paper.
 
         Returns:
-            The soft codes from the Sinkhorn-Knopp algorithm.
+            The soft codes from the Sinkhorn-Knopp algorithm, with shape `(B, num_prototypes)`.
         """
-        Q = torch.exp(scores / Nums.SWAV_EPSILON).t()  # (num_prototypes, B) for consistency with the paper
+        Q = torch.exp(scores / Nums.SWAV_EPSILON)  # (B, num_prototypes)
         Q /= torch.sum(Q)
 
-        K, B = Q.shape
+        B, num_prototypes = Q.shape
 
         for _ in range(Nums.SINKHORN_ITERATIONS):
-            Q /= torch.sum(Q, dim=1, keepdim=True) + self.lambda_regularization
-            Q /= K
             Q /= torch.sum(Q, dim=0, keepdim=True) + self.lambda_regularization
+            Q /= num_prototypes
+            Q /= torch.sum(Q, dim=1, keepdim=True) + self.lambda_regularization
             Q /= B
-        Q = (Q / Q.sum(dim=0, keepdim=True)).t()
 
-        return Q
+        return Q / Q.sum(dim=1, keepdim=True)  # ensure rows sum to 1 (for cross-entropy loss)
 
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
