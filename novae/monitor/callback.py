@@ -13,7 +13,7 @@ import wandb
 from .._constants import Keys
 from ..model import Novae
 from ..plot import plot_latent
-from .eval import mean_fide_score
+from .eval import heuristic, mean_fide_score
 
 DEFAULT_N_DOMAINS = [7]
 
@@ -60,6 +60,8 @@ class ValidationCallback(Callback):
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
 
+        self._max_heuristic = 0.0
+
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         if self.adata is None:
             return
@@ -71,22 +73,28 @@ class ValidationCallback(Callback):
         )
         model.swav_head.hierarchical_clustering()
 
-        for n_domain in DEFAULT_N_DOMAINS:
-            k = n_domain
+        n_domain = DEFAULT_N_DOMAINS[0]
+        k = n_domain
 
+        obs_key = model.assign_domains(self.adata, k)
+        while len(self.adata.obs[obs_key].dropna().unique()) < n_domain:
+            k += 1
             obs_key = model.assign_domains(self.adata, k)
-            while len(self.adata.obs[obs_key].dropna().unique()) < n_domain:
-                k += 1
-                obs_key = model.assign_domains(self.adata, k)
 
-            plt.figure()
-            sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
-            slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-            wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
-            plt.close()
+        plt.figure()
+        sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
+        slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
+        wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
+        plt.close()
 
-            fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
-            model.log("metrics/val_mean_fide_score", fide)
+        fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
+        model.log("metrics/val_mean_fide_score", fide)
+
+        heuristic_ = heuristic(self.adata, obs_key=obs_key, n_classes=n_domain)
+        model.log("metrics/val_heuristic", heuristic_)
+
+        self._max_heuristic = max(self._max_heuristic, heuristic_)
+        model.log("metrics/val_max_heuristic", self._max_heuristic)
 
         model.mode.zero_shot = False
 

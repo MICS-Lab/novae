@@ -151,6 +151,33 @@ def entropy(distribution: np.ndarray) -> float:
     return -(distribution * np.log2(distribution + Nums.EPS)).sum()
 
 
+def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slide_key: str = None) -> float:
+    """Heuristic score to evaluate the quality of the clustering.
+
+    Args:
+        adata: An `AnnData` object
+        obs_key: The key in `adata.obs` that contains the domain or niche id.
+        n_classes: The number of classes.
+        slide_key: The key in `adata.obs` that contains the slide id.
+
+    Returns:
+        The heuristic score.
+    """
+    return np.mean(
+        [_heuristic(adata, obs_key, n_classes) for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)]
+    )
+
+
+def _heuristic(adata: AnnData, obs_key: str, n_classes: int) -> float:
+    fide_ = fide_score(adata, obs_key, n_classes=n_classes)
+
+    distribution = adata.obs[obs_key].value_counts(normalize=True).values
+    distribution = np.pad(distribution, (0, n_classes - len(distribution)), mode="constant")
+    entropy_ = entropy(distribution)
+
+    return fide_ * entropy_ / np.log2(n_classes)
+
+
 def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs_key: str | None = None):
     """Iterate over all slides, and make sure `adata.obs[obs_key]` is categorical.
 
