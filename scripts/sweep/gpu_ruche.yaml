@@ -1,7 +1,7 @@
 method: random
 metric:
   goal: maximize
-  name: metrics/val_mean_fide_score
+  name: metrics/val_heuristic
 parameters:
   output_size:
     values: [64, 128]
