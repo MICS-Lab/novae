@@ -3,7 +3,7 @@
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=4
-#SBATCH --partition=cpu_short
+#SBATCH --partition=cpu_med
 
 module purge
 cd /gpfs/workdir/blampeyq/novae/data
@@ -19,9 +19,9 @@ ZIP_REMOTE_PATHS=(\
     "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.9.0/Xenium_V1_hTonsil_follicular_lymphoid_hyperplasia_section_FFPE/Xenium_V1_hTonsil_follicular_lymphoid_hyperplasia_section_FFPE_outs.zip"\
     "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hSkin_nondiseased_section_2_FFPE/Xenium_V1_hSkin_nondiseased_section_2_FFPE_outs.zip"\
     "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hLiver_cancer_section_FFPE/Xenium_V1_hLiver_cancer_section_FFPE_outs.zip"\
-    "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.6.0/Xenium_V1_hColon_Cancer_Add_on_FFPE/Xenium_V1_hColon_Cancer_Add_on_FFPE_outs.zip"\
-    "https://cf.10xgenomics.com/samples/xenium/1.6.0/Xenium_V1_hColon_Non_diseased_Add_on_FFPE/Xenium_V1_hColon_Non_diseased_Add_on_FFPE_outs.zip"\
-    "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.6.0/Xenium_V1_hColon_Cancer_Base_FFPE/Xenium_V1_hColon_Cancer_Base_FFPE_outs.zip"\
+    # "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.6.0/Xenium_V1_hColon_Cancer_Add_on_FFPE/Xenium_V1_hColon_Cancer_Add_on_FFPE_outs.zip"\
+    # "https://cf.10xgenomics.com/samples/xenium/1.6.0/Xenium_V1_hColon_Non_diseased_Add_on_FFPE/Xenium_V1_hColon_Non_diseased_Add_on_FFPE_outs.zip"\
+    # "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.6.0/Xenium_V1_hColon_Cancer_Base_FFPE/Xenium_V1_hColon_Cancer_Base_FFPE_outs.zip"\
     # "https://cf.10xgenomics.com/samples/xenium/1.5.0/Xenium_V1_hKidney_cancer_section/Xenium_V1_hKidney_cancer_section_outs.zip"\
     # "https://cf.10xgenomics.com/samples/xenium/1.4.0/Xenium_V1_FFPE_wildtype_5_7_months/Xenium_V1_FFPE_wildtype_5_7_months_outs.zip"\
     # "https://cf.10xgenomics.com/samples/xenium/1.4.0/Xenium_V1_FFPE_wildtype_2_5_months/Xenium_V1_FFPE_wildtype_2_5_months_outs.zip"\
