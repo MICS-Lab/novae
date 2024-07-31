@@ -7,6 +7,6 @@
 
 #module purge
 #module load anaconda3/2022.10/gcc-11.2.0 && source activate novae
-#cd /gpfs/workdir/blampeyq/novae/data
+cd /gpfs/workdir/blampeyq/novae/data
 
 sh xenium_download.sh
