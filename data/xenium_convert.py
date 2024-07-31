@@ -19,7 +19,7 @@ def convert_to_h5ad(dataset_dir: Path):
     )
 
     slide_id = dataset_dir.name
-    adata.obs.index = adata.obs["cell_id"].values + f"_{slide_id}"
+    adata.obs.index = adata.obs["cell_id"].astype(str).values + f"_{slide_id}"
 
     adata.obs["slide_id"] = pd.Series(slide_id, index=adata.obs_names, dtype="category")
 
