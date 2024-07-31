@@ -56,7 +56,7 @@ do
         fi
         echo "Unzipping in $OUTPUT_DATASET_DIR"
         mkdir -p $OUTPUT_DATASET_DIR
-        unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
+        /gpfs/workdir/blampeyq/unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
         echo "Successfully unzipped files"
         rm $OUTPUT_DATASET_ZIP
     fi

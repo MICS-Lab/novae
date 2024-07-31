@@ -3,7 +3,7 @@
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=4
-#SBATCH --partition=cpu_short
+#SBATCH --partition=cpu_med
 
 module purge
 cd /gpfs/workdir/blampeyq/novae/data
@@ -16,6 +16,7 @@ mkdir -p $OUTPUT_DIR
 # Last dataset release date: 2024-05-28
 ZIP_REMOTE_PATHS=(\
     "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hBone_nondiseased_section/Xenium_V1_hBone_nondiseased_section_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hBoneMarrow_nondiseased_section/Xenium_V1_hBoneMarrow_nondiseased_section_outs.zip"\
     # "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hBoneMarrow_nondiseased_section/Xenium_V1_hBoneMarrow_nondiseased_section_outs.zip"\
     # "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/1.9.0/Xenium_V1_hTonsil_follicular_lymphoid_hyperplasia_section_FFPE/Xenium_V1_hTonsil_follicular_lymphoid_hyperplasia_section_FFPE_outs.zip"\
     # "https://cf.10xgenomics.com/samples/xenium/1.9.0/Xenium_V1_hSkin_nondiseased_section_2_FFPE/Xenium_V1_hSkin_nondiseased_section_2_FFPE_outs.zip"\
@@ -64,7 +65,7 @@ do
         fi
         echo "Unzipping in $OUTPUT_DATASET_DIR"
         mkdir -p $OUTPUT_DATASET_DIR
-        unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
+        /gpfs/workdir/blampeyq/unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
         echo "Successfully unzipped files"
         rm $OUTPUT_DATASET_ZIP
     fi
