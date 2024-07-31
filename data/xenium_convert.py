@@ -14,7 +14,9 @@ def convert_to_h5ad(dataset_dir: Path):
         return
 
     adata: anndata.AnnData = _get_tables_and_circles(dataset_dir, False, {"region": "region_0"})
-    adata.obs["cell_id"] = adata.obs["cell_id"].apply(lambda x: x if isinstance(x, str) else x.decode("utf-8"))
+    adata.obs["cell_id"] = adata.obs["cell_id"].apply(
+        lambda x: x if (isinstance(x, str) or isinstance(x, int)) else x.decode("utf-8")
+    )
 
     slide_id = dataset_dir.name
     adata.obs.index = adata.obs["cell_id"].values + f"_{slide_id}"
