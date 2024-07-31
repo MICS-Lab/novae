@@ -105,7 +105,9 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
     if sweep:
         return callbacks
 
-    callbacks.extend([ModelCheckpoint(monitor="train/loss_epoch"), LogProtoCovCallback(), LogTissuePrototypeWeights()])
+    callbacks.extend(
+        [ModelCheckpoint(monitor="metrics/val_heuristic"), LogProtoCovCallback(), LogTissuePrototypeWeights()]
+    )
 
     return callbacks
 
