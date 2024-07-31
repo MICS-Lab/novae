@@ -10,4 +10,4 @@ module load anaconda3/2022.10/gcc-11.2.0 && source activate novae
 
 cd /gpfs/workdir/blampeyq/novae/data
 
-python -u prepare.py -n all2 -d xenium -u
+python -u 2_prepare.py -n all2 -d xenium -u
