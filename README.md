@@ -3,7 +3,7 @@
 </p>
 <!-- TODO: when it becomes public: https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png -->
 
-Graph-based foundation model for spatial transcriptomics data.
+***<p style="text-align: center;">💫 Graph-based foundation model for spatial transcriptomics data</p>***
 
 ## Documentation
 
@@ -12,6 +12,7 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 ## Overview
 
 TODO
+<!-- TODO: when it becomes public: update image link -->
 
 ## Installation
 
