@@ -183,18 +183,24 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
 
-    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
+    def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
         if adata is None:
-            adatas = self.adatas
+            return self.adatas
         elif isinstance(adata, AnnData):
-            adatas = [adata]
+            return [adata]
         elif isinstance(adata, list):
-            adatas = adata
+            return adata
         else:
             raise ValueError(f"Invalid type {type(adata)} for argument adata")
 
+    def _get_prepared_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
+        if adata is None:
+            return self.adatas
+        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
+
+    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
         return NovaeDatamodule(
-            adatas,
+            self._to_anndata_list(adata),
             cell_embedder=self.cell_embedder,
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
@@ -247,7 +253,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adatas = self.adatas
             self._compute_representation_datamodule(self.adatas[0], self.datamodule)
         else:
-            adatas = self._get_adatas(adata, slide_key=slide_key)
+            adatas = self._get_prepared_adatas(adata, slide_key=slide_key)
             for adata in adatas:
                 datamodule = self._init_datamodule(adata)
                 self._compute_representation_datamodule(adata, datamodule)
@@ -311,11 +317,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             res[indices] = q.argmax(dim=1) if ilocs is Ellipsis else ilocs[q.argmax(dim=1)]
 
         return res
-
-    def _get_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
-        if adata is None:
-            return self.adatas
-        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
     def plot_niches_hierarchy(
         self,
@@ -433,66 +434,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         model._checkpoint = name
         return model
 
-    def _get_centroids(self, adata: AnnData, domains: list[str], obs_key: str) -> tuple[np.ndarray, np.ndarray]:
-        centroids, is_valid = [], []
-
-        for d in domains:
-            where = adata.obs[obs_key] == d
-            if where.any():
-                centroids.append(np.mean(adata.obsm[Keys.REPR][where], axis=0))
-                is_valid.append(True)
-            else:
-                centroids.append(np.ones(adata.obsm[Keys.REPR].shape[1]))
-                is_valid.append(False)
-
-        centroids = np.stack(centroids)
-        is_valid = np.array(is_valid)
-        centroids /= np.linalg.norm(centroids, ord=2, axis=-1, keepdims=True) + Nums.EPS
-
-        return centroids, is_valid
-
-    def batch_effect_correction(
-        self,
-        adata: AnnData | list[AnnData] | None,
-        obs_key: str,
-        slide_key: str | None = None,
-        index_reference: int | None = None,
-    ):
-        adatas = self._get_adatas(adata, slide_key=slide_key)
-
-        if index_reference is None:
-            index_reference = max(range(len(adatas)), key=lambda i: adatas[i].n_obs)
-
-        adata_ref = adatas[index_reference]
-        adata_ref.obsm[Keys.REPR_CORRECTED] = adata_ref.obsm[Keys.REPR]
-
-        ref_domains = adata_ref.obs[obs_key]
-        domains = list(np.unique(ref_domains))
-        centroids_reference, is_valid_ref = self._get_centroids(adata_ref, domains, obs_key)
-
-        if not is_valid_ref.all():
-            log.warn("Not all domains found in the reference, which may lead to a bad batch effect correction.")
-
-        for i, adata in enumerate(adatas):
-            if i == index_reference:
-                continue
-
-            centroids, is_valid = self._get_centroids(adata, domains, obs_key)
-            rotations = self.swav_head.rotations_geodesic(centroids, centroids_reference)
-
-            adata.obsm[Keys.REPR_CORRECTED] = np.zeros_like(adata.obsm[Keys.REPR])
-
-            for j, d in enumerate(domains):
-                if not (is_valid[j] and is_valid_ref[j]):
-                    continue
-
-                where = adata.obs[obs_key] == d
-
-                coords = adata.obsm[Keys.REPR][where]
-                coords = (rotations[j] @ coords.T).T
-                coords /= np.linalg.norm(coords, ord=2, axis=-1, keepdims=True) + Nums.EPS
-
-                adata.obsm[Keys.REPR_CORRECTED][where] = coords
+    def batch_effect_correction(self, adata: AnnData | list[AnnData] | None, obs_key: str):
+        adatas = self._to_anndata_list(adata)
+        utils.batch_effect_correction(adatas, obs_key)
 
     def _parse_hardware_args(
         self, accelerator: str, num_workers: int | None, return_device: bool = False

@@ -16,3 +16,4 @@ from ._utils import (
 )
 from ._data import _load_dataset, _load_wandb_artifact, dummy_dataset
 from ._mode import Mode
+from ._correction import batch_effect_correction
