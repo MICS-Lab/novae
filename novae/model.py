@@ -52,7 +52,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         num_layers: int = 10,
         batch_size: int = 512,
         temperature: float = 0.1,
-        temperature_weight_proto: float = 0.05,
+        temperature_weight_proto: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
