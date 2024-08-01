@@ -66,5 +66,8 @@ def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
                 continue  # reference for this domain
 
             indices_domain = obs_indices[adata.obs.iloc[obs_indices][obs_key] == domain]
+            if len(indices_domain) == 0:
+                continue
+
             centroid = adata.obsm[Keys.REPR][indices_domain].mean(0)
             adata.obsm[Keys.REPR_CORRECTED][indices_domain] += centroids_reference[domain].values - centroid
