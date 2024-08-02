@@ -139,7 +139,11 @@ def _get_callbacks(config: dict, sweep: bool, adatas_val: list[AnnData] | None) 
         return callbacks
 
     callbacks.extend(
-        [ModelCheckpoint(monitor="metrics/val_heuristic"), LogProtoCovCallback(), LogTissuePrototypeWeights()]
+        [
+            ModelCheckpoint(monitor="metrics/val_heuristic", mode="max"),
+            LogProtoCovCallback(),
+            LogTissuePrototypeWeights(),
+        ]
     )
 
     return callbacks

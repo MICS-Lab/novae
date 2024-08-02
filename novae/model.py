@@ -214,13 +214,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        # after_warm_up =
-        self.current_epoch >= Nums.WARMUP_EPOCHS
+        after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
-        self.swav_head.prototypes.requires_grad_(
-            not self.mode.freeze_mode
-        )  # self.current_epoch % 2 == 0 or not self.mode.freeze_mode)
-        self.mode.use_queue = self.mode.queue_mode  # after_warm_up and self.mode.queue_mode
+        self.swav_head.prototypes.requires_grad_(self.current_epoch % 2 == 0 or not self.mode.freeze_mode)
+        self.mode.use_queue = after_warm_up and self.mode.queue_mode
 
     def configure_optimizers(self):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
