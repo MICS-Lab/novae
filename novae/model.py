@@ -185,6 +185,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
         if adata is None:
+            assert self.adatas is not None, "No AnnData object found. Please provide an AnnData object."
             return self.adatas
         elif isinstance(adata, AnnData):
             return [adata]
@@ -434,8 +435,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         model._checkpoint = name
         return model
 
-    def batch_effect_correction(self, adata: AnnData | list[AnnData] | None, obs_key: str):
+    def batch_effect_correction(self, adata: AnnData | list[AnnData] | None = None, obs_key: str | None = None):
         adatas = self._to_anndata_list(adata)
+        obs_key = utils._check_available_obs_key(adatas, obs_key)
+
         utils.batch_effect_correction(adatas, obs_key)
 
     def _parse_hardware_args(

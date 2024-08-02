@@ -301,3 +301,33 @@ def parse_device_args(accelerator: str = "cpu") -> torch.device:
         device_idx = _devices
 
     return torch.device(f"{_accelerator}:{device_idx}")
+
+
+ERROR_ADVICE_OBS_KEY = "Please run `model.assign_domains(...)` first"
+
+
+def _available_niche_key(adata: AnnData) -> set[int]:
+    return set(adata.obs.columns[adata.obs.columns.str.startswith(Keys.NICHE_PREFIX)])
+
+
+def _shared_niche_keys(adatas: list[AnnData]) -> set[int]:
+    available_keys = [_available_niche_key(adata) for adata in adatas]
+    assert any(available_keys), f"No Novae niches available. {ERROR_ADVICE_OBS_KEY}"
+
+    available_keys = set.intersection(*available_keys)
+    assert available_keys, f"No common Novae niches available. {ERROR_ADVICE_OBS_KEY}"
+
+    return available_keys
+
+
+def _check_available_obs_key(adatas: list[AnnData], obs_key: str | None) -> str:
+    available_obs_keys = _shared_niche_keys(adatas)
+    if obs_key is not None:
+        assert all(
+            obs_key in adata.obs for adata in adatas
+        ), f"Novae niches '{obs_key}' not available in all AnnData objects. {ERROR_ADVICE_OBS_KEY}. Or consider using one of {available_obs_keys} instead."
+        return obs_key
+
+    obs_key = list(available_obs_keys)[-1]
+    log.info(f"Showing {obs_key=} as default.")
+    return obs_key

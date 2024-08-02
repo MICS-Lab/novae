@@ -215,33 +215,6 @@ class SwavHead(L.LightningModule):
         setattr(self, self.mode.clustering_attr, clustering)
         setattr(self, self.mode.clusters_levels_attr, clusters_levels)
 
-    def rotations_geodesic(self, centroids: np.ndarray, centroids_reference: np.ndarray) -> np.ndarray:
-        """Computes the rotation matrices that transforms the centroids to the centroids_reference along the geodesic.
-
-        Args:
-            centroids: An array of size (..., output_size) of centroids of size `output_size`
-            centroids_reference: An array of size (..., output_size) of centroids of size `output_size`
-
-        Returns:
-            An array of shape (..., output_size, output_size) of rotations matrices.
-        """
-        *left_shape, output_size = centroids.shape
-
-        cos = (centroids * centroids_reference).sum(-1)
-        sin = np.sin(np.arccos(cos))
-        gamma = (cos - 1) / (sin + Nums.EPS) ** 2
-
-        sum_centroids = centroids_reference + centroids
-
-        identities = np.zeros((*left_shape, output_size, output_size))
-        identities[..., np.arange(output_size), np.arange(output_size)] = 1
-
-        return (
-            identities
-            + gamma[..., None, None] * sum_centroids[..., None, :] * sum_centroids[..., None]
-            + 2 * centroids_reference[..., None] * centroids[..., None, :]
-        )
-
 
 @torch.no_grad()
 def _mean_entropy_normalized(q: Tensor) -> Tensor:

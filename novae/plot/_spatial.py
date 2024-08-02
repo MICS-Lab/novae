@@ -9,17 +9,15 @@ from anndata import AnnData
 from matplotlib.lines import Line2D
 from scanpy._utils import sanitize_anndata
 
+from .. import utils
 from .._constants import Keys
 
 log = logging.getLogger(__name__)
 
 
-ERROR_ADVICE = "Please run `model.assign_domains(...)` first"
-
-
 def domains(
     adata: AnnData | list[AnnData],
-    k: int | None = None,
+    obs_key: str | None = None,
     slide_name_key: str | None = None,
     cell_size: int | None = 10,
     ncols: int = 4,
@@ -36,7 +34,7 @@ def domains(
 
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
-        k: Number of niches to show (argument from `model.assign_domains(...)`). By default, the last available niche key is shown.
+        obs_key: Name of the key from `adata.obs` containing the Novae niches. By default, the last available niche key is shown.
         slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
         cell_size: Size of the cells or spots.
         ncols: Number of columns to be shown.
@@ -47,17 +45,7 @@ def domains(
     """
     adatas = adata if isinstance(adata, list) else [adata]
     slide_name_key = slide_name_key if slide_name_key is not None else Keys.SLIDE_ID
-
-    available_k = _shared_k(adatas)
-    if k is None:
-        k = list(available_k)[-1]
-        obs_key = f"{Keys.NICHE_PREFIX}{k}"
-        log.info(f"Showing {obs_key=} as default.")
-    else:
-        obs_key = f"{Keys.NICHE_PREFIX}{k}"
-        assert all(
-            obs_key in adata.obs for adata in adatas
-        ), f"Novae niches with {k=} not available in all AnnData objects. {ERROR_ADVICE}. Or consider using one of {available_k} instead."
+    obs_key = utils._check_available_obs_key(adatas, obs_key)
 
     for adata in adatas:
         sanitize_anndata(adata)
@@ -91,7 +79,7 @@ def domains(
 
     [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
 
-    title = f"Novae domains ({k=})"
+    title = f"Novae domains ({obs_key})"
 
     if i == 1:
         axes[0, 0].set_title(title)
@@ -114,20 +102,3 @@ def domains(
 
     if show:
         plt.show()
-
-
-def _available_k(adata: AnnData) -> set[int]:
-    return {
-        int(key[len(Keys.NICHE_PREFIX) :])
-        for key in adata.obs.columns[adata.obs.columns.str.startswith(Keys.NICHE_PREFIX)]
-    }
-
-
-def _shared_k(adatas: list[AnnData]) -> set[int]:
-    available_ks = [_available_k(adata) for adata in adatas]
-    assert any(available_ks), f"No Novae niches available. {ERROR_ADVICE}"
-
-    available_k = set.intersection(*available_ks)
-    assert available_k, f"No common Novae niches available. {ERROR_ADVICE}"
-
-    return available_k
