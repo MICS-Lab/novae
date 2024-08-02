@@ -216,7 +216,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
-        self.swav_head.prototypes.requires_grad_(self.current_epoch % 2 == 0 or not self.mode.freeze_mode)
+        for name, parameter in self.named_parameters():
+            if name != "swav_head._prototypes":
+                parameter.requires_grad_(after_warm_up or not self.mode.freeze_mode)
+
         self.mode.use_queue = after_warm_up and self.mode.queue_mode
 
     def configure_optimizers(self):

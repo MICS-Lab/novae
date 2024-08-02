@@ -81,10 +81,14 @@ class SwavHead(L.LightningModule):
         scores2 = self.compute_scores(out2)  # (B, num_prototypes)
 
         ilocs = self.get_prototype_ilocs(scores1, tissue)
-        scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
 
-        q1 = self.sinkhorn(scores1)  # (B, num_prototypes) or (B, len(ilocs))
-        q2 = self.sinkhorn(scores2)  # (B, num_prototypes) or (B, len(ilocs))
+        q1 = self.sinkhorn(scores1[:, ilocs])  # (B, num_prototypes) or (B, len(ilocs))
+        q2 = self.sinkhorn(scores2[:, ilocs])  # (B, num_prototypes) or (B, len(ilocs))
+
+        if ilocs is not Ellipsis:
+            index_tensor = ilocs.unsqueeze(0).expand(len(scores1), -1)
+            q1 = torch.zeros_like(scores1).scatter(1, index_tensor, q1)
+            q2 = torch.zeros_like(scores2).scatter(1, index_tensor, q2)
 
         loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
 
