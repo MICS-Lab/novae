@@ -40,9 +40,17 @@ class LogTissuePrototypeWeights(Callback):
 
         plt.figure(figsize=(10, 10))
         sns.clustermap(
-            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmax=1.2, vmin=0.8
+            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.8, vmax=1.2
         )
         wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
+        plt.close()
+
+        tissue_prototype_weights[tissue_prototype_weights < 1] = 0
+        plt.figure(figsize=(10, 10))
+        sns.clustermap(
+            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.9, vmax=1.2
+        )
+        wandb.log({"tissue_prototype_weights_bin": wandb.Image(plt)})
         plt.close()
 
 

@@ -6,7 +6,9 @@ model_kwargs:
   embedding_size: 50
 
 fit_kwargs:
-  max_epochs: 5
+  max_epochs: 1
   accelerator: "cpu"
 
 project: novae_tests
+
+save_umap: 7

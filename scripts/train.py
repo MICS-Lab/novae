@@ -9,7 +9,10 @@ import argparse
 from collections import defaultdict
 
 import lightning as L
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import scanpy as sc
 import torch
 import yaml
 from anndata import AnnData
@@ -19,6 +22,7 @@ from lightning.pytorch.loggers import WandbLogger
 import novae
 import wandb
 from novae import log
+from novae._constants import Keys
 from novae.monitor.callback import (
     LogProtoCovCallback,
     LogTissuePrototypeWeights,
@@ -74,6 +78,28 @@ def train(
 
     if config.get("save_result"):
         _save_result(model, config)
+
+    if config.get("save_umap"):
+        _save_umap(model, config)
+
+
+def _save_umap(model: novae.Novae, config: dict):
+    model.compute_representation(**_get_hardware_kwargs(config))
+    obs_key = model.assign_domains(k=config["save_umap"])
+    model.batch_effect_correction()
+
+    latent_conc = np.concat([adata.obsm[Keys.REPR_CORRECTED] for adata in model.adatas], axis=0)
+    obs_conc = pd.concat([adata.obs for adata in model.adatas], axis=0)
+    adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
+    n_obs_th = 500_000
+    if adata_conc.n_obs > n_obs_th:
+        sc.pp.subsample(adata_conc, n_obs=n_obs_th)
+    sc.pp.neighbors(adata_conc, use_rep=Keys.REPR_CORRECTED)
+    sc.tl.umap(adata_conc)
+    colors = [obs_key, "technology"] if "technology" in adata_conc.obs else [obs_key]
+    sc.pl.umap(adata_conc, color=colors, show=False)
+    wandb.log({"umap": wandb.Image(plt)})
+    plt.close()
 
 
 def _save_result(model: novae.Novae, config: dict):
