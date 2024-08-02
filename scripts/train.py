@@ -88,6 +88,10 @@ def _save_umap(model: novae.Novae, config: dict):
     obs_key = model.assign_domains(k=config["save_umap"])
     model.batch_effect_correction()
 
+    for adata in model.adatas:
+        if "novae_tissue" in adata.uns:
+            adata.obs["tissue"] = adata.uns["novae_tissue"]
+
     latent_conc = np.concat([adata.obsm[Keys.REPR_CORRECTED] for adata in model.adatas], axis=0)
     obs_conc = pd.concat([adata.obs for adata in model.adatas], axis=0)
     adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
@@ -96,7 +100,10 @@ def _save_umap(model: novae.Novae, config: dict):
         sc.pp.subsample(adata_conc, n_obs=n_obs_th)
     sc.pp.neighbors(adata_conc, use_rep=Keys.REPR_CORRECTED)
     sc.tl.umap(adata_conc)
-    colors = [obs_key, "technology"] if "technology" in adata_conc.obs else [obs_key]
+    colors = [obs_key]
+    for key in ["tissue", "technology"]:
+        if key in adata_conc.obs:
+            colors.append(key)
     sc.pl.umap(adata_conc, color=colors, show=False)
     wandb.log({"umap": wandb.Image(plt)})
     plt.close()
