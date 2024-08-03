@@ -8,6 +8,7 @@ model_kwargs:
   heads: 16
   hidden_size: 128
   temperature: 0.1
+  temperature_weight_proto: 0.05
   num_prototypes: 512
   background_noise_lambda: 5
   panel_subset_size: 0.8
@@ -20,3 +21,5 @@ fit_kwargs:
   num_workers: 8
   patience: 6
   min_delta: 0.025
+
+save_umap: 7
