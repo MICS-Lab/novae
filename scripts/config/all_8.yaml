@@ -22,4 +22,4 @@ fit_kwargs:
   patience: 6
   min_delta: 0.025
 
-save_umap: 7
+save_umap: 20
