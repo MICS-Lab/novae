@@ -102,7 +102,7 @@ class NovaeDataset(Dataset):
 
     def __len__(self) -> int:
         if self.sample_cells is not None:
-            return self.sample_cells
+            return min(self.sample_cells, len(self.shuffled_obs_ilocs))
 
         if self.training:
             n_obs = len(self.shuffled_obs_ilocs)

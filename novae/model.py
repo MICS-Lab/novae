@@ -9,6 +9,7 @@ from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
+from sklearn.cluster import KMeans
 from torch import Tensor, optim
 from torch_geometric.data import Data
 
@@ -103,12 +104,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.swav_head = SwavHead(
             self.mode, output_size, num_prototypes, temperature, temperature_weight_proto, lambda_regularization
         )
-        self._init_tissue_queue(tissue_names)
 
         ### Misc
         self._num_workers = 0
         self._checkpoint = None
         self._datamodule = None
+        self._init_tissue_queue(tissue_names)
 
     @property
     def datamodule(self) -> NovaeDatamodule:
@@ -182,6 +183,30 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.mode.queue_mode = True
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
+            self.init_diagonal_prototypes(tissue_names)
+
+    def init_diagonal_prototypes(self, tissue_names: list[str], sample_cells: int = 100_000):
+        k_per_tissue, remainder = divmod(self.swav_head.num_prototypes, len(tissue_names))
+        k_per_tissue = k_per_tissue + (torch.arange(len(tissue_names)) < remainder).to(int)
+        pointers = torch.cat([torch.tensor([0]), torch.cumsum(k_per_tissue, dim=0)])
+
+        queue = torch.zeros(len(tissue_names), self.swav_head.num_prototypes)
+        for t in range(len(tissue_names)):
+            start, stop = pointers[t], pointers[t + 1]
+            queue[t, start:stop] += 1 / (stop - start)
+        queue = queue.unsqueeze(1).repeat(1, Nums.QUEUE_SIZE, 1)
+
+        del self.swav_head.queue
+        self.swav_head.register_buffer("queue", queue)
+
+        for t, tissue in enumerate(tissue_names):
+            adatas_ = [adata for adata in self.adatas if adata.uns[Keys.UNS_TISSUE] == tissue]
+            datamodule = self._init_datamodule(adatas_, sample_cells=sample_cells)
+            X = self._compute_representation_datamodule(adatas_, datamodule, return_representations=True)
+
+            kmeans = KMeans(n_clusters=int(k_per_tissue[t]), random_state=0, n_init="auto")
+            kmeans_prototypes = torch.tensor(kmeans.fit(X.numpy(force=True)).cluster_centers_)
+            self.swav_head._prototypes.data[pointers[t] : pointers[t + 1]] = kmeans_prototypes
 
     def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
         if adata is None:
