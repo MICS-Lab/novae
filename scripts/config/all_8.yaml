@@ -15,7 +15,7 @@ model_kwargs:
   lambda_regularization: 0
 
 fit_kwargs:
-  max_epochs: 50
+  max_epochs: 30
   lr: 0.0001
   accelerator: "gpu"
   num_workers: 8
