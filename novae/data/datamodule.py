@@ -21,9 +21,17 @@ class NovaeDatamodule(L.LightningDataModule):
         n_hops_local: int,
         n_hops_view: int,
         num_workers: int = 0,
+        sample_cells: int | None = None,
     ) -> None:
         super().__init__()
-        self.dataset = NovaeDataset(adatas, cell_embedder, batch_size, n_hops_local, n_hops_view)
+        self.dataset = NovaeDataset(
+            adatas,
+            cell_embedder=cell_embedder,
+            batch_size=batch_size,
+            n_hops_local=n_hops_local,
+            n_hops_view=n_hops_view,
+            sample_cells=sample_cells,
+        )
         self.batch_size = batch_size
         self.num_workers = num_workers
 

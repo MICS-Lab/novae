@@ -199,7 +199,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             return self.adatas
         return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
-    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None):
+    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None):
         return NovaeDatamodule(
             self._to_anndata_list(adata),
             cell_embedder=self.cell_embedder,
@@ -207,6 +207,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             n_hops_local=self.hparams.n_hops_local,
             n_hops_view=self.hparams.n_hops_view,
             num_workers=self._num_workers,
+            sample_cells=sample_cells,
         )
 
     def on_train_epoch_start(self):
@@ -250,8 +251,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         self.mode.zero_shot = zero_shot
         self.training = False
-        device = self._parse_hardware_args(accelerator, num_workers, return_device=True)
-        self.to(device)
+        self._parse_hardware_args(accelerator, num_workers, use_device=True)
 
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
             adatas = self.adatas
@@ -269,7 +269,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             for adata in adatas:
                 self._compute_leaves(adata, None, None)
 
-    def _compute_representation_datamodule(self, adata: AnnData, datamodule: NovaeDatamodule):
+    def _compute_representation_datamodule(
+        self, adata: AnnData, datamodule: NovaeDatamodule, return_representations: bool = False
+    ):
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, scores = [], []
 
@@ -284,6 +286,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 scores.append(batch_scores)
 
         representations = torch.cat(representations)
+
+        if return_representations:
+            return representations
+
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
         if not self.mode.zero_shot:
@@ -444,19 +450,16 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         utils.batch_effect_correction(adatas, obs_key)
 
-    def _parse_hardware_args(
-        self, accelerator: str, num_workers: int | None, return_device: bool = False
-    ) -> torch.device | None:
+    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, use_device: bool = False) -> None:
         if accelerator == "cpu" and num_workers:
-            log.warn(
-                f"Setting `num_workers != 0` with {accelerator=} can be very slow. Consider using a GPU, or setting `num_workers=0`."
-            )
+            log.warn("On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`.")
 
         if num_workers is not None:
             self.num_workers = num_workers
 
-        if return_device:
-            return utils.parse_device_args(accelerator)
+        if use_device:
+            device = utils.parse_device_args(accelerator)
+            self.to(device)
 
     @utils.format_docs
     def fine_tune(
