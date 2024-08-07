@@ -25,11 +25,13 @@ def _combine_embeddings(z: Tensor, genes_embeddings: Tensor) -> Tensor:
     )  # (B x G x (C + E))
 
 
-class InferenceHeadZIE(L.LightningModule):
+class InferenceHeadPoisson(L.LightningModule):
     def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
         super().__init__()
         self.cell_embedder = cell_embedder
-        self.mlp = _mlp(input_size, hidden_size, n_layers, 2)
+        self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
+
+        self.poisson_nllloss = nn.PoissonNLLLoss(log_input=True)
 
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
         """
@@ -38,15 +40,13 @@ class InferenceHeadZIE(L.LightningModule):
         """
         combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B x G x (C + E)
 
-        logits = self.mlp(combined_embeddings)  # (B x G x 2)
-
-        return logits[..., 0], logits[..., 1]  # pi_logits (B x G), lambda_logits (B x G)
+        return self.mlp(combined_embeddings).squeeze(-1)  # (B x G)
 
     def loss(self, x: Tensor, z: Tensor, var_names: str | list[str]) -> Tensor:
         """Negative log-likelihood of the zero-inflated exponential distribution
 
         Args:
-            x: Expressions of genes (B x G)
+            x: Expressions of genes (B x G) as counts
             z: Latent space (B x C)
 
         Returns:
@@ -55,11 +55,9 @@ class InferenceHeadZIE(L.LightningModule):
         var_names = [var_names] if isinstance(var_names, str) else var_names
         genes_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(var_names).to(self.device))
 
-        pi_logits, lambda_logits = self(z, genes_embeddings)
+        logits = self(z, genes_embeddings)
 
-        case_zero = -pi_logits
-        case_non_zero = -lambda_logits + x * torch.exp(lambda_logits)
-        return torch.where(x > 0, case_non_zero, case_zero).mean()
+        return self.poisson_nllloss(logits, x)
 
 
 class InferenceHeadBaseline(L.LightningModule):
@@ -84,3 +82,9 @@ class InferenceHeadBaseline(L.LightningModule):
         predictions = self(z, genes_embeddings)
 
         return F.mse_loss(x, predictions)
+
+
+class InferenceModel(L.LightningModule):
+    def __init__(self, novae_model, head: InferenceHeadPoisson | InferenceHeadBaseline):
+        self.novae_model = novae_model
+        self.head = head
