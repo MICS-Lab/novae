@@ -4,7 +4,6 @@ import argparse
 from collections import defaultdict
 
 import lightning as L
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -23,6 +22,7 @@ from novae.monitor.callback import (
     LogTissuePrototypeWeights,
     ValidationCallback,
 )
+from novae.monitor.log import log_plt_figure
 
 
 def init_wandb_logger(config: dict[str, str | dict]) -> WandbLogger:
@@ -62,20 +62,19 @@ def get_callbacks(config: dict, adatas_val: list[AnnData] | None) -> list[L.Call
     if config["wandb_init_kwargs"].get("mode") == "disabled":
         return None
 
-    validation_callback = ValidationCallback(adatas_val, **_get_hardware_kwargs(config))
+    callbacks = [ValidationCallback(adatas_val, **_get_hardware_kwargs(config))] if adatas_val else []
 
     if config["sweep"]:
-        return [validation_callback]
+        return callbacks
 
-    return [
-        validation_callback,
+    return callbacks + [
         ModelCheckpoint(monitor="metrics/val_heuristic", mode="max"),
         LogProtoCovCallback(),
         LogTissuePrototypeWeights(),
     ]
 
 
-def read_config(args: argparse.Namespace) -> dict:
+def read_config(args: argparse.Namespace) -> defaultdict:
     with open(novae.utils.repository_root() / "scripts" / "config" / args.config, "r") as f:
         config = defaultdict(dict, yaml.safe_load(f))
         config["sweep"] = args.sweep
@@ -83,11 +82,17 @@ def read_config(args: argparse.Namespace) -> dict:
 
 
 def post_training(model: novae.Novae, adatas: list[AnnData], config: dict):
-    if config["post_training"].get("save_umap") or config["post_training"].get("save_metrics"):
+    keys_repr = ["save_umap", "save_metrics", "log_domains"]
+    if any(config["post_training"].get(key) for key in keys_repr):
         model.compute_representation(**_get_hardware_kwargs(config))
 
     if config["post_training"].get("save_umap"):
         _save_umap(model, config)
+
+    if config["post_training"].get("log_domains"):
+        obs_key = model.assign_domains(k=7)
+        novae.plot.domains(adatas, obs_key)
+        log_plt_figure("domains")
 
     if config["post_training"].get("save_result"):
         _save_result(model, config)
@@ -122,15 +127,14 @@ def _save_umap(model: novae.Novae, config: dict):
         if key in adata_conc.obs:
             colors.append(key)
     sc.pl.umap(adata_conc, color=colors, show=False)
-    wandb.log({"umap": wandb.Image(plt)})
-    plt.close()
+    log_plt_figure("umap")
 
 
 def _save_result(model: novae.Novae, config: dict):
     model.compute_representation(**_get_hardware_kwargs(config))
     for k in [5, 7, 10, 15]:
         model.assign_domains(k=k)
-    res_dir = novae.utils.repository_root() / "data" / "results" / config["post_training"]["save_result"]
+    res_dir = novae.utils.repository_root() / "data" / "results" / wandb.run.name
     res_dir.mkdir(parents=True, exist_ok=True)
 
     for adata in model.adatas:

@@ -1,0 +1,18 @@
+project: novae_eval
+wandb_artefact: novae/novae/model-i1l9s8cc:v5
+
+data:
+  train_dataset: colon
+
+fit_kwargs:
+  max_epochs: 10
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 3
+  min_delta: 0.05
+
+post_training:
+  save_metrics: true
+  save_result: true
+  save_umap: 10
+  log_domains: true

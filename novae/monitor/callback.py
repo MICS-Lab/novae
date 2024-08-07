@@ -8,12 +8,11 @@ from anndata import AnnData
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback
 
-import wandb
-
 from .._constants import Keys
 from ..model import Novae
 from ..plot import plot_latent
 from .eval import heuristic, mean_fide_score
+from .log import log_plt_figure
 
 DEFAULT_N_DOMAINS = [7]
 
@@ -24,8 +23,7 @@ class LogProtoCovCallback(Callback):
 
         plt.figure(figsize=(10, 10))
         sns.clustermap(np.cov(C))
-        wandb.log({"prototypes_covariance": wandb.Image(plt)})
-        plt.close()
+        log_plt_figure("prototypes_covariance")
 
 
 class LogTissuePrototypeWeights(Callback):
@@ -42,16 +40,14 @@ class LogTissuePrototypeWeights(Callback):
         sns.clustermap(
             tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.8, vmax=1.2
         )
-        wandb.log({"tissue_prototype_weights": wandb.Image(plt)})
-        plt.close()
+        log_plt_figure("tissue_prototype_weights")
 
         tissue_prototype_weights[tissue_prototype_weights < 1] = 0
         plt.figure(figsize=(10, 10))
         sns.clustermap(
             tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.9, vmax=1.2
         )
-        wandb.log({"tissue_prototype_weights_bin": wandb.Image(plt)})
-        plt.close()
+        log_plt_figure("tissue_prototype_weights_bin")
 
 
 class ValidationCallback(Callback):
@@ -92,8 +88,7 @@ class ValidationCallback(Callback):
         plt.figure()
         sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
         slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-        wandb.log({f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}": wandb.Image(plt)})
-        plt.close()
+        log_plt_figure(f"val_{n_domain}_{self.adata.obs[slide_name_key].iloc[0]}")
 
         fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=n_domain)
         model.log("metrics/val_mean_fide_score", fide)
@@ -115,7 +110,7 @@ class LogLatent(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae):
         colors = [f"{Keys.NICHE_PREFIX}{k}" for k in DEFAULT_N_DOMAINS] + [Keys.SLIDE_ID]
         plot_latent(model.adatas, colors, **self.plot_kwargs)
-        wandb.log({"latent": wandb.Image(plt)})
+        log_plt_figure("latent")
 
         plot_latent(model.adatas, colors, obsm=Keys.REPR_CORRECTED, **self.plot_kwargs)
-        wandb.log({"latent_corrected": wandb.Image(plt)})
+        log_plt_figure("latent_corrected")

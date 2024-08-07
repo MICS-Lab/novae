@@ -14,3 +14,4 @@ project: novae_tests
 post_training:
   save_umap: 7
   save_metrics: true
+  log_domains: true
