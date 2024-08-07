@@ -22,4 +22,5 @@ fit_kwargs:
   patience: 6
   min_delta: 0.025
 
-save_umap: 20
+post_training:
+  save_umap: 20

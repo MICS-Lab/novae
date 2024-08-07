@@ -20,7 +20,7 @@ The corresponding `AnnData` object should contain raw counts, or preprocessed wi
 Choose a config inside the `config` directory.
 
 ```sh
-python train.py --config <NAME>.yaml
+python -m scripts.train --config <NAME>.yaml
 ```
 
 ### Sweep training

@@ -11,4 +11,6 @@ fit_kwargs:
 
 project: novae_tests
 
-save_umap: 7
+post_training:
+  save_umap: 7
+  save_metrics: true

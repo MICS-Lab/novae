@@ -11,7 +11,8 @@ parameters:
 
 command:
   - python
-  - train.py
+  - -m
+  - scripts.train
   - --config
   - debug_online.yaml
   - --sweep

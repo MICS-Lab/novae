@@ -33,7 +33,8 @@ parameters:
 
 command:
   - python
-  - train.py
+  - -m
+  - scripts.train
   - --config
   - all.yaml
   - --sweep

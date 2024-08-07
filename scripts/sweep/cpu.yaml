@@ -35,7 +35,8 @@ parameters:
 
 command:
   - python
-  - train.py
+  - -m
+  - scripts.train
   - --config
   - swav_cpu_0.yaml
   - --sweep

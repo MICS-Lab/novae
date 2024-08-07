@@ -1,0 +1,25 @@
+project: novae
+wandb_artefact: novae/novae/xxx
+
+post_training:
+  save_umap: 20
+  save_result: ../results
+
+data:
+  train_dataset: all
+  val_dataset: false
+
+model_kwargs:
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
+  n_hops_view: 3
+  heads: 16
+  hidden_size: 128
+
+fit_kwargs:
+  max_epochs: 30
+  lr: 0.0001
+  accelerator: gpu
+  num_workers: 8
+
+wandb_init_kwargs:
+  disabled: true

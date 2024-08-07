@@ -25,7 +25,8 @@ parameters:
 
 command:
   - python
-  - train.py
+  - -m
+  - scripts.train
   - --config
   - all_ruche.yaml
   - --sweep
