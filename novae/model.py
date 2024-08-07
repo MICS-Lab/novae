@@ -494,6 +494,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata: AnnData | list[AnnData],
         slide_key: str | None = None,
         accelerator: str = "cpu",
+        num_workers: int | None = None,
         max_epochs: int = 1,
         **fit_kwargs: int,
     ):
@@ -509,14 +510,21 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if not hasattr(self.swav_head, "_kmeans_prototypes"):
             # TODO: no need to compute all repr, make it faster
             # TODO: what happens if run twice?
-            self.compute_representation(adata=adata, zero_shot=True)
+            self.compute_representation(adata=adata, zero_shot=True, accelerator=accelerator, num_workers=num_workers)
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes
 
         self.mode.fine_tune()
 
-        self.fit(adata=adata, slide_key=slide_key, max_epochs=max_epochs, accelerator=accelerator, **fit_kwargs)
+        self.fit(
+            adata=adata,
+            slide_key=slide_key,
+            max_epochs=max_epochs,
+            accelerator=accelerator,
+            num_workers=num_workers,
+            **fit_kwargs,
+        )
 
     @utils.format_docs
     def fit(
