@@ -57,4 +57,4 @@ class Nums:
 
     # misc nums
     MEAN_NGH_TH_WARNING: float = 3.5
-    N_OBS_THRESHOLD: int = 1_000  # above this number, lazy loading is used TODO: update
+    N_OBS_THRESHOLD: int = 2_000_000  # above this number, lazy loading is used
