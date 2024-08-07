@@ -186,6 +186,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.init_diagonal_prototypes(tissue_names)
 
     def init_diagonal_prototypes(self, tissue_names: list[str], sample_cells: int = 50_000):
+        self._parse_hardware_args("gpu", num_workers=8, use_device=True)  # TODO: remove
+
         k_per_tissue, remainder = divmod(self.swav_head.num_prototypes, len(tissue_names))
         k_per_tissue = k_per_tissue + (torch.arange(len(tissue_names)) < remainder).to(int)
         pointers = torch.cat([torch.tensor([0]), torch.cumsum(k_per_tissue, dim=0)])
