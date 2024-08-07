@@ -183,7 +183,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.mode.queue_mode = True
             self.hparams["tissue_names"] = tissue_names
             self.swav_head.init_queue(tissue_names)
-            self.init_diagonal_prototypes(tissue_names)
+            # self.init_diagonal_prototypes(tissue_names)
 
     def init_diagonal_prototypes(self, tissue_names: list[str], sample_cells: int = 50_000):
         self._parse_hardware_args("gpu", num_workers=8, use_device=True)  # TODO: remove
