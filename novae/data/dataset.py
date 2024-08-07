@@ -40,6 +40,7 @@ class NovaeDataset(Dataset):
         n_hops_local: int,
         n_hops_view: int,
         sample_cells: int | None = None,
+        counts_ratio: float | None = None,
     ) -> None:
         """_summary_
 
@@ -62,6 +63,7 @@ class NovaeDataset(Dataset):
         self.n_hops_local = n_hops_local
         self.n_hops_view = n_hops_view
         self.sample_cells = sample_cells
+        self.counts_ratio = counts_ratio
 
         self.single_adata = len(self.adatas) == 1
         self.single_slide_mode = self.single_adata and len(np.unique(self.adatas[0].obs[Keys.SLIDE_ID])) == 1
@@ -150,12 +152,17 @@ class NovaeDataset(Dataset):
         adjacency_local: csr_matrix = adata.obsp[Keys.ADJ_LOCAL]
         obs_indices = adjacency_local[obs_index].indices
 
-        x, genes_indices = self.anndata_torch[adata_index, obs_indices]
-
         adjacency: csr_matrix = adata.obsp[Keys.ADJ]
-
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
+
+        if self.counts_ratio is None:
+            x, genes_indices = self.anndata_torch[adata_index, obs_indices]
+            counts, counts_genes_indices = None, None
+        else:
+            x, counts, genes_indices, counts_genes_indices = self.anndata_torch.item_with_counts(
+                adata_index, obs_indices, self.counts_ratio
+            )
 
         return Data(
             x=x,
@@ -163,6 +170,8 @@ class NovaeDataset(Dataset):
             edge_attr=edge_attr,
             genes_indices=genes_indices,
             novae_tissue=adata.uns.get(Keys.UNS_TISSUE),
+            counts=counts,
+            counts_genes_indices=counts_genes_indices,
         )
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
