@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 
 import novae
+from novae import log
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 
@@ -15,20 +16,20 @@ from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.utils._load_dataset(config["data"]["train_dataset"])
-
-    _val_dataset = config["data"].get("val_dataset")
-    adatas_val = novae.utils._load_dataset(_val_dataset) if _val_dataset else None
+    adatas = novae.utils._load_dataset(config.data.train_dataset)
+    adatas_val = novae.utils._load_dataset(config.data.val_dataset) if config.data.val_dataset else None
 
     logger = init_wandb_logger(config)
     callbacks = get_callbacks(config, adatas_val)
 
-    if config.get("wandb_artifact"):
-        model = novae.Novae._load_wandb_artifact(config["wandb_artifact"])
-        model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config["fit_kwargs"])
+    if config.wandb_artefact is not None:
+        log.info(f"Loading model from WandB artifact {config.wandb_artefact}")
+        model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
+        model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
-        model = novae.Novae(adatas, **config["model_kwargs"])
-        model.fit(logger=logger, callbacks=callbacks, **config["fit_kwargs"])
+        log.info("Training model from scratch")
+        model = novae.Novae(adatas, **config.model_kwargs)
+        model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)
 
     post_training(model, adatas, config)
 
