@@ -297,7 +297,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 self._compute_leaves(adata, None, None)
 
     def _compute_representation_datamodule(
-        self, adata: AnnData, datamodule: NovaeDatamodule, return_representations: bool = False
+        self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
     ):
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, scores = [], []
@@ -507,15 +507,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {accelerator}
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """
+        self.mode.fine_tune()
+        self._parse_hardware_args(accelerator, num_workers, use_device=True)
+
+        assert adata is not None, "Please provide an AnnData object to fine-tune the model."
+
         if not hasattr(self.swav_head, "_kmeans_prototypes"):
-            # TODO: no need to compute all repr, make it faster
-            # TODO: what happens if run twice?
-            self.compute_representation(adata=adata, zero_shot=True, accelerator=accelerator, num_workers=num_workers)
+            datamodule = self._init_datamodule(self._get_prepared_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
+            latent = self._compute_representation_datamodule(None, datamodule, return_representations=True)
+            self.swav_head.set_kmeans_prototypes(latent)
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes
-
-        self.mode.fine_tune()
 
         self.fit(
             adata=adata,
