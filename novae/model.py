@@ -297,6 +297,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             for adata in adatas:
                 self._compute_leaves(adata, None, None)
 
+    @torch.no_grad()
     def _compute_representation_datamodule(
         self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
     ):
