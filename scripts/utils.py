@@ -88,9 +88,6 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
     if any(getattr(config.post_training, key) for key in keys_repr):
         model.compute_representation(**_get_hardware_kwargs(config))
 
-    if config.post_training.save_umap:
-        _save_umap(model, config)
-
     if config.post_training.log_domains:
         obs_key = model.assign_domains(k=7)
         novae.plot.domains(adatas, obs_key)
@@ -106,6 +103,9 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
             fide = mean_fide_score(adatas, obs_key, n_classes=k)
             svg = mean_svg_score(adatas, obs_key)
             log.info(f"[{k=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}")
+
+    if config.post_training.save_umap:
+        _save_umap(model, config)
 
 
 def _save_umap(model: novae.Novae, config: Config):
