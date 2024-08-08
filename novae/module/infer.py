@@ -11,7 +11,6 @@ from torch_geometric.data import Data
 from torch_geometric.nn.aggr import MeanAggregation
 
 from .. import utils
-from ..data import NovaeDatamodule
 from . import CellEmbedder
 
 
@@ -136,17 +135,6 @@ class InferenceModel(L.LightningModule):
         lr = self._lr if hasattr(self, "_lr") else 1e-3
         return optim.Adam(self.parameters(), lr=lr)
 
-    def _init_datamodule(self, adatas: list[AnnData]):
-        return NovaeDatamodule(
-            adatas,
-            cell_embedder=self.novae_model.cell_embedder,
-            batch_size=self.novae_model.hparams.batch_size,
-            n_hops_local=self.novae_model.hparams.n_hops_local,
-            n_hops_view=self.novae_model.hparams.n_hops_view,
-            num_workers=self._num_workers,
-            counts_ratio=self.hparams.counts_ratio,
-        )
-
     def fit(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -187,4 +175,4 @@ class InferenceModel(L.LightningModule):
             enable_checkpointing=enable_checkpointing,
             **kwargs,
         )
-        trainer.fit(self, datamodule=self._init_datamodule(adatas))
+        trainer.fit(self, datamodule=self._init_datamodule(adatas))  # TODO: fix this
