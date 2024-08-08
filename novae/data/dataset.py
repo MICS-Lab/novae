@@ -130,7 +130,7 @@ class NovaeDataset(Dataset):
 
         data = self.to_pyg_data(adata_index, obs_index)
 
-        if not self.training:
+        if not self.training or self.counts_ratio is not None:
             return {"main": data}
 
         adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_PAIR]
@@ -156,7 +156,7 @@ class NovaeDataset(Dataset):
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
-        if self.counts_ratio is None:
+        if self.counts_ratio is None or not self.training:
             x, genes_indices = self.anndata_torch[adata_index, obs_indices]
             counts, counts_genes_indices = None, None
         else:
