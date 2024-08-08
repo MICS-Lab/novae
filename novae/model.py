@@ -132,6 +132,15 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if self._datamodule is not None:
             self._datamodule.num_workers = value
 
+    @property
+    def lambda_regularization(self) -> float:
+        return self.hparams.lambda_regularization
+
+    @lambda_regularization.setter
+    def lambda_regularization(self, value: float) -> None:
+        self.hparams.lambda_regularization = value
+        self.swav_head.lambda_regularization = value
+
     def __repr__(self) -> str:
         info_dict = {
             "known genes": self.cell_embedder.voc_size,

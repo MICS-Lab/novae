@@ -23,11 +23,12 @@ def main(args: argparse.Namespace) -> None:
     callbacks = get_callbacks(config, adatas_val)
 
     if config.wandb_artefact is not None:
-        log.info(f"Loading model from WandB artifact {config.wandb_artefact}")
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
+        if "lambda_regularization" in config.model_kwargs:
+            model.lambda_regularization = config.model_kwargs["lambda_regularization"]
+            log.info(f"Set {model.lambda_regularization=}")
         model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
-        log.info("Training model from scratch")
         model = novae.Novae(adatas, **config.model_kwargs)
         model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)
 
