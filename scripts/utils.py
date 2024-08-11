@@ -89,27 +89,28 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
         model.compute_representation(**_get_hardware_kwargs(config))
 
     if config.post_training.log_domains:
-        obs_key = model.assign_domains(k=7)
-        novae.plot.domains(adatas, obs_key)
-        log_plt_figure("domains")
+        for n_domains in config.post_training.n_domains:
+            obs_key = model.assign_domains(n_domains=n_domains)
+            novae.plot.domains(adatas, obs_key)
+            log_plt_figure(f"domains_{n_domains=}")
 
     if config.post_training.save_result:
         _save_result(model, config)
 
     if config.post_training.save_metrics:
-        for k in [5, 7, 10, 15]:
-            obs_key = model.assign_domains(k=k)
+        for n_domains in config.post_training.n_domains:
+            obs_key = model.assign_domains(n_domains=n_domains)
             jsd = jensen_shannon_divergence(adatas, obs_key)
-            fide = mean_fide_score(adatas, obs_key, n_classes=k)
+            fide = mean_fide_score(adatas, obs_key, n_classes=n_domains)
             svg = mean_svg_score(adatas, obs_key)
-            log.info(f"[{k=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}")
+            log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}")
 
     if config.post_training.save_umap:
         _save_umap(model, config)
 
 
-def _save_umap(model: novae.Novae, config: Config):
-    obs_key = model.assign_domains(k=config.post_training.save_umap)
+def _save_umap(model: novae.Novae, config: Config, n_obs_th: int = 500_000):
+    obs_key = model.assign_domains(level=config.post_training.save_umap)
     model.batch_effect_correction()
 
     for adata in model.adatas:
@@ -119,23 +120,26 @@ def _save_umap(model: novae.Novae, config: Config):
     latent_conc = np.concat([adata.obsm[Keys.REPR_CORRECTED] for adata in model.adatas], axis=0)
     obs_conc = pd.concat([adata.obs for adata in model.adatas], axis=0)
     adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
-    n_obs_th = 500_000
+
     if adata_conc.n_obs > n_obs_th:
         sc.pp.subsample(adata_conc, n_obs=n_obs_th)
+
     sc.pp.neighbors(adata_conc, use_rep=Keys.REPR_CORRECTED)
     sc.tl.umap(adata_conc)
+
     colors = [obs_key]
     for key in ["tissue", "technology"]:
         if key in adata_conc.obs:
             colors.append(key)
+
     sc.pl.umap(adata_conc, color=colors, show=False)
     log_plt_figure("umap")
 
 
 def _save_result(model: novae.Novae, config: Config):
-    model.compute_representation(**_get_hardware_kwargs(config))
-    for k in [5, 7, 10, 15]:
-        model.assign_domains(k=k)
+    for n_domains in config.post_training.n_domains:
+        model.assign_domains(n_domains=n_domains)
+
     res_dir = novae.utils.repository_root() / "data" / "results" / wandb.run.name
     res_dir.mkdir(parents=True, exist_ok=True)
 

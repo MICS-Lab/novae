@@ -11,6 +11,7 @@ class PostTrainingConfig(BaseModel):
     save_result: bool = False
     save_metrics: bool = False
     log_domains: bool = False
+    n_domains: list[int] = [7, 10]
 
 
 class Config(BaseModel):

@@ -54,7 +54,7 @@ def test_train():
 
     model.fit(max_epochs=1)
     model.compute_representation()
-    obs_key = model.assign_domains(k=2)
+    obs_key = model.assign_domains(level=2)
 
     adatas[0].obs.iloc[0][obs_key] = np.nan
 

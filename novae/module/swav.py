@@ -53,6 +53,16 @@ class SwavHead(L.LightningModule):
 
         self.reset_clustering()
 
+    @property
+    def lambda_regularization(self) -> float:
+        if self.training:
+            return 0.0
+        return self._lambda_regularization
+
+    @lambda_regularization.setter
+    def lambda_regularization(self, value: float) -> None:
+        self._lambda_regularization = value
+
     def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
 
@@ -196,17 +206,25 @@ class SwavHead(L.LightningModule):
 
         return getattr(self, clusters_levels_attr)
 
-    def map_leaves_domains(self, series: pd.Series, n_classes: int) -> pd.Series:
+    def map_leaves_domains(self, series: pd.Series, level: int) -> pd.Series:
         """Map leaves to the parent domain from the corresponding level of the hierarchical tree.
 
         Args:
             series: Leaves classes
-            n_classes: Number of classes after mapping
+            level: Level of the hierarchical clustering tree (or, number of clusters)
 
         Returns:
             Series of classes (one among `n_classes`).
         """
-        return series.map(lambda x: f"N{self.clusters_levels[-n_classes, int(x[1:])]}" if isinstance(x, str) else x)
+        return series.map(lambda x: f"N{self.clusters_levels[-level, int(x[1:])]}" if isinstance(x, str) else x)
+
+    def find_level(self, leaves_indices: np.ndarray, n_domains: int):
+        sub_clusters_levels = self.clusters_levels[:, leaves_indices]
+        for level in range(1, self.num_prototypes):
+            _n_domains = len(np.unique(sub_clusters_levels[-level]))
+            if _n_domains == n_domains:
+                return level
+        raise ValueError(f"Could not find a level with {n_domains=}")
 
     def reset_clustering(self) -> None:
         for attr in self.mode.all_clustering_attrs:

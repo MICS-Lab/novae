@@ -390,7 +390,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @utils.format_docs
     def assign_domains(
-        self, adata: AnnData | list[AnnData] | None = None, k: int = 10, key_added: str | None = None
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        level: int = 10,
+        n_domains: int | None = None,
+        key_added: str | None = None,
     ) -> str:
         """Assign a domain (or niche) to each cell based on the "leaves" classes.
 
@@ -401,24 +405,28 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             {adata}
-            k: Number of domains (or niches) to assign.
+            level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
+            n_domains: Usually,
             key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `"novae_niche_k"`.
 
         Returns:
             The name of the key added to `adata.obs`.
         """
-        if key_added is None:
-            key_added = f"{Keys.NICHE_PREFIX}{k}"
+        adatas = self._to_anndata_list(adata)
 
-        adatas = [adata] if isinstance(adata, AnnData) else (adata if isinstance(adata, list) else self.adatas)
+        if n_domains is not None:
+            leaves_indices = np.array(list(utils.unique_leaves(adatas)))
+            level = self.swav_head.find_level(leaves_indices, n_domains)
+            return self.assign_domains(adatas, level=level, key_added=key_added)
+
+        key_added = f"{Keys.NICHE_PREFIX}{level}" if key_added is None else key_added
 
         for adata in adatas:
             assert (
                 Keys.SWAV_CLASSES in adata.obs
             ), f"Did not found `adata.obs['{Keys.SWAV_CLASSES}']`. Please run `model.compute_representation(...)` first"
-            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], k)
+            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], level)
 
-        log.info(f"Spatial domains saved in `adata.obs['{key_added}']`")
         return key_added
 
     @classmethod

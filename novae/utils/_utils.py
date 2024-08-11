@@ -331,3 +331,9 @@ def _check_available_obs_key(adatas: list[AnnData], obs_key: str | None) -> str:
     obs_key = list(available_obs_keys)[-1]
     log.info(f"Showing {obs_key=} as default.")
     return obs_key
+
+
+def unique_leaves(adata: AnnData | list[AnnData]) -> set:
+    if isinstance(adata, list):
+        return set.union(*[unique_leaves(adata_) for adata_ in adata])
+    return {int(x[1:]) for x in adata.obs[Keys.SWAV_CLASSES].dropna().unique()}
