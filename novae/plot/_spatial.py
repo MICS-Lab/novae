@@ -43,6 +43,8 @@ def domains(
         show: Whether to show the plot.
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
+    assert str(obs_key).startswith(Keys.NICHE_PREFIX), f"Received {obs_key=}, which is not a valid Novae obs_key"
+
     adatas = adata if isinstance(adata, list) else [adata]
     slide_name_key = slide_name_key if slide_name_key is not None else Keys.SLIDE_ID
     obs_key = utils._check_available_obs_key(adatas, obs_key)
