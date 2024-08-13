@@ -37,7 +37,7 @@ class Nums:
     MIN_DATASET_LENGTH: int = 50_000
     MAX_DATASET_LENGTH_RATIO: float = 0.02
     DEFAULT_SAMPLE_CELLS: int = 100_000
-    WARMUP_EPOCHS: int = 0
+    WARMUP_EPOCHS: int = 2
 
     # distances constants and thresholds (in microns)
     CELLS_CHARACTERISTIC_DISTANCE: int = 20  # characteristic distance between two cells, in microns
