@@ -36,7 +36,7 @@ class Nums:
     EPS: float = 1e-8
     MIN_DATASET_LENGTH: int = 50_000
     MAX_DATASET_LENGTH_RATIO: float = 0.02
-    DEFAULT_SAMPLE_CELLS: int = 500_000
+    DEFAULT_SAMPLE_CELLS: int = 100_000
     WARMUP_EPOCHS: int = 0
 
     # distances constants and thresholds (in microns)
