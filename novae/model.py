@@ -531,10 +531,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        if not hasattr(self.swav_head, "_kmeans_prototypes"):
-            datamodule = self._init_datamodule(self._get_prepared_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
-            latent = self._compute_representation_datamodule(None, datamodule, return_representations=True)
-            self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
+        datamodule = self._init_datamodule(self._get_prepared_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
+        latent = self._compute_representation_datamodule(None, datamodule, return_representations=True)
+        self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes
