@@ -53,16 +53,6 @@ class SwavHead(L.LightningModule):
 
         self.reset_clustering()
 
-    @property
-    def lambda_regularization(self) -> float:
-        if self.training:
-            return 0.0
-        return self._lambda_regularization
-
-    @lambda_regularization.setter
-    def lambda_regularization(self, value: float) -> None:
-        self._lambda_regularization = value
-
     def init_queue(self, tissue_names: list[str]) -> None:
         del self.queue
 
