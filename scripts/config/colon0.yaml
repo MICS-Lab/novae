@@ -1,0 +1,29 @@
+project: novae_eval
+
+model_kwargs:
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
+  n_hops_view: 3
+  heads: 16
+  hidden_size: 128
+  temperature: 0.1
+  temperature_weight_proto: 0.05
+  num_prototypes: 512
+  background_noise_lambda: 5
+  panel_subset_size: 0.8
+  lambda_regularization: 0.01
+
+data:
+  train_dataset: colon
+
+fit_kwargs:
+  max_epochs: 10
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 3
+  min_delta: 0.05
+
+post_training:
+  save_metrics: true
+  save_result: true
+  save_umap: 10
+  log_domains: true
