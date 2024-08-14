@@ -23,28 +23,13 @@ class LogProtoCovCallback(Callback):
         log_plt_figure("prototypes_covariance")
 
 
-class LogTissuePrototypeWeights(Callback):  # TODO: update
+class LogTissuePrototypeWeights(Callback):
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
         if model.swav_head.queue is None:
             return
 
-        tissue_prototype_weights = (
-            model.swav_head.sinkhorn(model.swav_head.queue.mean(dim=1)).numpy(force=True)
-            * model.swav_head.num_prototypes
-        )
-
-        plt.figure(figsize=(10, 10))
-        sns.clustermap(
-            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.8, vmax=1.2
-        )
+        model.plot_prototype_weights()
         log_plt_figure("tissue_prototype_weights")
-
-        tissue_prototype_weights[tissue_prototype_weights < 1] = 0
-        plt.figure(figsize=(10, 10))
-        sns.clustermap(
-            tissue_prototype_weights, yticklabels=list(model.swav_head.tissue_label_encoder.keys()), vmin=0.9, vmax=1.2
-        )
-        log_plt_figure("tissue_prototype_weights_bin")
 
 
 class ValidationCallback(Callback):

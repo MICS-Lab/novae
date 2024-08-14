@@ -108,10 +108,13 @@ class SwavHead(L.LightningModule):
         if not self.mode.use_queue:
             return ...
 
-        weights = self.sinkhorn(self.queue.mean(dim=1))[slide_index]
-        ilocs = torch.where(weights > 1 / self.num_prototypes)[0]
+        weights = self.get_queue_weights()[slide_index]
+        ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]
 
         return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
+
+    def get_queue_weights(self):
+        return self.sinkhorn(self.queue.mean(dim=1)) * self.num_prototypes
 
     def set_kmeans_prototypes(self, latent: np.ndarray):
         kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0, n_init="auto")

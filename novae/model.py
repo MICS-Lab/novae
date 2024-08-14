@@ -4,7 +4,6 @@ import logging
 
 import lightning as L
 import numpy as np
-import seaborn as sns
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
@@ -323,26 +322,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **kwargs,
         )
 
-    def plot_prototype_weights(self, figsize: tuple[int] = (6, 4), vmin: float = 0.8, vmax: float = 1.2, **kwargs):
-        weights = (
-            self.swav_head.sinkhorn(self.swav_head.queue.mean(dim=1)).numpy(force=True) * self.swav_head.num_prototypes
-        )
+    def plot_prototype_weights(self, **kwargs: int):
+        weights = self.swav_head.get_queue_weights().numpy(force=True)
 
-        where_enough_prototypes = (weights >= 1).sum(1) >= self.swav_head.min_prototypes
+        where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
         for i in np.where(where_enough_prototypes)[0]:
-            weights[i, weights[i] < 1] = 0
+            weights[i, weights[i] < Nums.QUEUE_WEIGHT_THRESHOLD] = 0
         for i in np.where(~where_enough_prototypes)[0]:
             indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
             weights[i, indices_0] = 0
 
-        sns.clustermap(
-            weights,
-            yticklabels=list(self.swav_head.slide_label_encoder.keys()),
-            vmin=vmin,
-            vmax=vmax,
-            figsize=figsize,
-            **kwargs,
-        )
+        plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
 
     @utils.format_docs
     def assign_domains(
