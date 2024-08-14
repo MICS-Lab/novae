@@ -333,7 +333,12 @@ def _check_available_obs_key(adatas: list[AnnData], obs_key: str | None) -> str:
     return obs_key
 
 
-def unique_leaves(adata: AnnData | list[AnnData]) -> set:
+def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
     if isinstance(adata, list):
-        return set.union(*[unique_leaves(adata_) for adata_ in adata])
-    return {int(x[1:]) for x in adata.obs[Keys.SWAV_CLASSES].dropna().unique()}
+        return set.union(*[unique_obs(adata_, obs_key) for adata_ in adata])
+    return set(list(adata.obs[obs_key].dropna().unique()))
+
+
+def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:
+    leaves = unique_obs(adata, Keys.SWAV_CLASSES)
+    return np.array([int(x[1:]) for x in leaves])

@@ -4,12 +4,12 @@ import logging
 
 import lightning as L
 import numpy as np
+import seaborn as sns
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
-from sklearn.cluster import KMeans
 from torch import Tensor, optim
 from torch_geometric.data import Data
 
@@ -43,7 +43,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         slide_key: str = None,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
-        tissue_names: list[str] | None = None,
         embedding_size: int = 100,
         output_size: int = 64,
         n_hops_local: int = 2,
@@ -58,7 +57,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
-        lambda_regularization: float = 0.0,
+        min_prototypes_ratio: float = 0.8,
     ) -> None:
         """
 
@@ -102,14 +101,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
         self.swav_head = SwavHead(
-            self.mode, output_size, num_prototypes, temperature, temperature_weight_proto, lambda_regularization
+            self.mode, output_size, num_prototypes, temperature, temperature_weight_proto, min_prototypes_ratio
         )
 
         ### Misc
         self._num_workers = 0
         self._checkpoint = None
         self._datamodule = None
-        self._init_tissue_queue(tissue_names)
+        self.init_slide_queue(self.adatas)
 
     @property
     def datamodule(self) -> NovaeDatamodule:
@@ -132,15 +131,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if self._datamodule is not None:
             self._datamodule.num_workers = value
 
-    @property
-    def lambda_regularization(self) -> float:
-        return self.hparams.lambda_regularization
-
-    @lambda_regularization.setter
-    def lambda_regularization(self, value: float) -> None:
-        self.hparams.lambda_regularization = value
-        self.swav_head.lambda_regularization = value
-
     def __repr__(self) -> str:
         info_dict = {
             "known genes": self.cell_embedder.voc_size,
@@ -159,9 +149,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
         out: dict[str, Data] = self(batch)
-        tissue = batch["main"].get(Keys.UNS_TISSUE, [None])[0]
+        slide_id = batch["main"].get("slide_id", [None])[0]
 
-        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"], tissue)
+        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"], slide_id)
 
         self._log_all({"loss": loss, "entropy": mean_entropy_normalized})
 
@@ -179,46 +169,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 **kwargs,
             )
 
-    def _init_tissue_queue(self, tissue_names: list[str] | None):
-        if tissue_names is not None:
-            self.swav_head.init_queue(tissue_names)
+    def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
+        if adata is None:
             return
 
-        if self.adatas is None or Keys.UNS_TISSUE not in self.adatas[0].uns:
-            return
-
-        tissue_names = list({adata.uns[Keys.UNS_TISSUE] for adata in self.adatas})
-        if len(tissue_names) > 1:
+        slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
+        if len(slide_ids) > 1:
             self.mode.queue_mode = True
-            self.hparams["tissue_names"] = tissue_names
-            self.swav_head.init_queue(tissue_names)
-            self.init_diagonal_prototypes(tissue_names)
-
-    @torch.no_grad()
-    def init_diagonal_prototypes(self, tissue_names: list[str], sample_cells: int = Nums.DEFAULT_SAMPLE_CELLS):
-        self._parse_hardware_args("gpu", num_workers=8, use_device=True)  # TODO: remove
-
-        k_per_tissue, remainder = divmod(self.swav_head.num_prototypes, len(tissue_names))
-        k_per_tissue = k_per_tissue + (torch.arange(len(tissue_names)) < remainder).to(int)
-        pointers = torch.cat([torch.tensor([0]), torch.cumsum(k_per_tissue, dim=0)])
-
-        queue = torch.zeros(len(tissue_names), self.swav_head.num_prototypes)
-        for t in range(len(tissue_names)):
-            start, stop = pointers[t], pointers[t + 1]
-            queue[t, start:stop] += 1 / (stop - start)
-        queue = queue.unsqueeze(1).repeat(1, Nums.QUEUE_SIZE, 1)
-
-        del self.swav_head.queue
-        self.swav_head.register_buffer("queue", queue)
-
-        for t, tissue in enumerate(tissue_names):
-            adatas_ = [adata for adata in self.adatas if adata.uns[Keys.UNS_TISSUE] == tissue]
-            datamodule = self._init_datamodule(adatas_, sample_cells=sample_cells)
-            X = self._compute_representation_datamodule(adatas_, datamodule, return_representations=True)
-
-            kmeans = KMeans(n_clusters=int(k_per_tissue[t]), random_state=0, n_init="auto")
-            kmeans_prototypes = torch.tensor(kmeans.fit(X.numpy(force=True)).cluster_centers_)
-            self.swav_head._prototypes.data[pointers[t] : pointers[t + 1]] = kmeans_prototypes
+            self.swav_head.init_queue(slide_ids)
 
     def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
         if adata is None:
@@ -365,6 +323,27 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **kwargs,
         )
 
+    def plot_prototype_weights(self, figsize: tuple[int] = (6, 4), vmin: float = 0.8, vmax: float = 1.2, **kwargs):
+        weights = (
+            self.swav_head.sinkhorn(self.swav_head.queue.mean(dim=1)).numpy(force=True) * self.swav_head.num_prototypes
+        )
+
+        where_enough_prototypes = (weights >= 1).sum(1) >= self.swav_head.min_prototypes
+        for i in np.where(where_enough_prototypes)[0]:
+            weights[i, weights[i] < 1] = 0
+        for i in np.where(~where_enough_prototypes)[0]:
+            indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
+            weights[i, indices_0] = 0
+
+        sns.clustermap(
+            weights,
+            yticklabels=list(self.swav_head.slide_label_encoder.keys()),
+            vmin=vmin,
+            vmax=vmax,
+            figsize=figsize,
+            **kwargs,
+        )
+
     @utils.format_docs
     def assign_domains(
         self,
@@ -392,7 +371,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adatas = self._to_anndata_list(adata)
 
         if n_domains is not None:
-            leaves_indices = np.array(list(utils.unique_leaves(adatas)))
+            leaves_indices = utils.unique_leaves_indices(adatas)
             level = self.swav_head.find_level(leaves_indices, n_domains)
             return self.assign_domains(adatas, level=level, key_added=key_added)
 

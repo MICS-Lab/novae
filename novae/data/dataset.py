@@ -169,7 +169,7 @@ class NovaeDataset(Dataset):
             edge_index=edge_index,
             edge_attr=edge_attr,
             genes_indices=genes_indices,
-            novae_tissue=adata.uns.get(Keys.UNS_TISSUE),
+            slide_id=adata.obs[Keys.SLIDE_ID].iloc[0],
             counts=counts,
             counts_genes_indices=counts_genes_indices,
         )
