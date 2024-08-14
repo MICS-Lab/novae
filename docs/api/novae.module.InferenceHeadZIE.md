@@ -1,1 +1,1 @@
-::: novae.module.InferenceHeadZIE
+::: novae.module.InferenceHeadPoisson
