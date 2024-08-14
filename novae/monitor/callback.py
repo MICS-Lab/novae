@@ -61,7 +61,7 @@ class ValidationCallback(Callback):
         )
         model.swav_head.hierarchical_clustering()
 
-        obs_key = model.assign_domains(n_domains=self.k)
+        obs_key = model.assign_domains(self.adata, n_domains=self.k)
 
         plt.figure()
         sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
