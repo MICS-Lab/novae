@@ -339,29 +339,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
             scores = self.swav_head.compute_scores(representations)
 
-        leaves_predictions = self._codes_argmax_per_slide(scores, adata, valid_indices)
+        leaves_predictions = scores.argmax(dim=1).numpy(force=True)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
         adata.obs[Keys.SWAV_CLASSES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
-
-    def _codes_argmax_per_slide(self, scores: Tensor, adata: AnnData, valid_indices: np.ndarray) -> Tensor:
-        slide_ids = adata.obs[Keys.SLIDE_ID].values[valid_indices]
-
-        unique_slide_ids = np.unique(slide_ids)
-
-        ilocs = self.swav_head.get_prototype_ilocs(scores, tissue=adata.uns.get(Keys.UNS_TISSUE, None))
-
-        if len(unique_slide_ids) == 1:
-            q = self.swav_head.sinkhorn(scores[:, ilocs])
-            return q.argmax(dim=1) if ilocs is Ellipsis else ilocs[q.argmax(dim=1)]
-
-        res = torch.zeros(len(scores), dtype=torch.long)
-
-        for slide_id in unique_slide_ids:
-            indices = np.where(slide_ids == slide_id)[0]
-            q = self.swav_head.sinkhorn(scores[indices, ilocs])
-            res[indices] = q.argmax(dim=1) if ilocs is Ellipsis else ilocs[q.argmax(dim=1)]
-
-        return res
 
     def plot_niches_hierarchy(
         self,
