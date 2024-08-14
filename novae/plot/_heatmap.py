@@ -35,6 +35,7 @@ def _weights_clustermap(
     sns.clustermap(
         weights,
         yticklabels=slide_ids if show_yticklabels else False,
+        xticklabels=False,
         vmin=vmin,
         vmax=vmax,
         figsize=figsize,
