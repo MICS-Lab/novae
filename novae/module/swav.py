@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    queue: None | Tensor  # (n_tissues, queue_size, num_prototypes)
+    queue: None | Tensor  # (n_slides, queue_size, num_prototypes)
 
     def __init__(
         self,
@@ -27,7 +27,7 @@ class SwavHead(L.LightningModule):
         num_prototypes: int,
         temperature: float,
         temperature_weight_proto: float,
-        lambda_regularization: float,
+        min_prototypes_ratio: float,
     ):
         """SwavHead module, adapted from the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
 
@@ -42,30 +42,29 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
         self.temperature_weight_proto = temperature_weight_proto
-        self.lambda_regularization = lambda_regularization
 
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
-        self.min_prototypes = int(num_prototypes * Nums.MIN_PROTOTYPES_RATIO)
+        self.min_prototypes = int(num_prototypes * min_prototypes_ratio)
 
         self.queue = None
 
         self.reset_clustering()
 
-    def init_queue(self, tissue_names: list[str]) -> None:
+    def init_queue(self, slide_ids: list[str]) -> None:
         del self.queue
 
-        shape = (len(tissue_names), Nums.QUEUE_SIZE, self.num_prototypes)
+        shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
         self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
 
-        self.tissue_label_encoder = {tissue: i for i, tissue in enumerate(tissue_names)}
+        self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}
 
     @torch.no_grad()
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, out1: Tensor, out2: Tensor, tissue: str | None) -> tuple[Tensor, Tensor]:
+    def forward(self, out1: Tensor, out2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
         """Compute the SWAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -80,7 +79,7 @@ class SwavHead(L.LightningModule):
         scores1 = self.compute_scores(out1)  # (B, num_prototypes)
         scores2 = self.compute_scores(out2)  # (B, num_prototypes)
 
-        ilocs = self.get_prototype_ilocs(scores1, tissue)
+        ilocs = self.get_prototype_ilocs(scores1, slide_id)
 
         scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
 
@@ -96,20 +95,20 @@ class SwavHead(L.LightningModule):
         return out @ self.prototypes.T
 
     @torch.no_grad()
-    def get_prototype_ilocs(self, scores: Tensor, tissue: str | None = None) -> Tensor:
-        if tissue is None or self.mode.zero_shot or not self.mode.queue_mode:
+    def get_prototype_ilocs(self, scores: Tensor, slide_id: str | None = None) -> Tensor:
+        if slide_id is None or self.mode.zero_shot or not self.mode.queue_mode:
             return ...
 
-        tissue_index = self.tissue_label_encoder[tissue]
-        tissue_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
+        slide_index = self.slide_label_encoder[slide_id]
+        slide_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
 
-        self.queue[tissue_index, 1:] = self.queue[tissue_index, :-1].clone()
-        self.queue[tissue_index, 0] = tissue_weights
+        self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
+        self.queue[slide_index, 0] = slide_weights
 
         if not self.mode.use_queue:
             return ...
 
-        weights = self.sinkhorn(self.queue.mean(dim=1))[tissue_index]
+        weights = self.sinkhorn(self.queue.mean(dim=1))[slide_index]
         ilocs = torch.where(weights > 1 / self.num_prototypes)[0]
 
         return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
@@ -139,9 +138,9 @@ class SwavHead(L.LightningModule):
         B, num_prototypes = Q.shape
 
         for _ in range(Nums.SINKHORN_ITERATIONS):
-            Q /= torch.sum(Q, dim=0, keepdim=True) + self.lambda_regularization
+            Q /= torch.sum(Q, dim=0, keepdim=True)
             Q /= num_prototypes
-            Q /= torch.sum(Q, dim=1, keepdim=True) + self.lambda_regularization
+            Q /= torch.sum(Q, dim=1, keepdim=True)
             Q /= B
 
         return Q / Q.sum(dim=1, keepdim=True)  # ensure rows sum to 1 (for cross-entropy loss)

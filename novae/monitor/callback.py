@@ -23,7 +23,7 @@ class LogProtoCovCallback(Callback):
         log_plt_figure("prototypes_covariance")
 
 
-class LogTissuePrototypeWeights(Callback):
+class LogTissuePrototypeWeights(Callback):  # TODO: update
     def on_train_epoch_end(self, trainer: Trainer, model: Novae) -> None:
         if model.swav_head.queue is None:
             return

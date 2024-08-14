@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 
 import novae
-from novae import log
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 
@@ -24,9 +23,6 @@ def main(args: argparse.Namespace) -> None:
 
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
-        if "lambda_regularization" in config.model_kwargs:
-            model.lambda_regularization = config.model_kwargs["lambda_regularization"]
-            log.info(f"Set {model.lambda_regularization=}")
         model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
         model = novae.Novae(adatas, **config.model_kwargs)
