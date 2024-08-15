@@ -3,7 +3,7 @@
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=4
-#SBATCH --partition=cpu_short
+#SBATCH --partition=cpu_med
 
 module purge
 module load anaconda3/2022.10/gcc-11.2.0
