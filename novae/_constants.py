@@ -53,7 +53,7 @@ class Nums:
     SWAV_EPSILON: float = 0.05
     SINKHORN_ITERATIONS: int = 3
     QUEUE_SIZE: int = 5
-    QUEUE_WEIGHT_THRESHOLD: float = 0.98
+    QUEUE_WEIGHT_THRESHOLD: float = 0.99
 
     # misc nums
     MEAN_NGH_TH_WARNING: float = 3.5
