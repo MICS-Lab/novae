@@ -1,7 +1,7 @@
 class Keys:
     # obs keys
-    SWAV_CLASSES: str = "novae_leaves"
-    NICHE_PREFIX: str = "novae_niche_"
+    LEAVES: str = "novae_leaves"
+    DOMAINS_PREFIX: str = "novae_domains_"
     IS_VALID_OBS: str = "neighborhood_valid"
     SLIDE_ID: str = "novae_sid"
 

@@ -54,7 +54,7 @@ def dummy_dataset(
 
     Args:
         n_panels: Number of panels. Each panel will correspond to one output `AnnData` object.
-        n_domains: Number of domains, or niches.
+        n_domains: Number of domains.
         n_slides_per_panel: Number of slides per panel.
         xmax: Maximum value for the spatial coordinates (the larger, the more cells).
         n_vars: Maxmium number of genes per panel.
@@ -62,7 +62,7 @@ def dummy_dataset(
         step: Step between cells in their spatial coordinates.
         panel_shift_lambda: Lambda used in the exponential law for each panel.
         slide_shift_lambda: Lambda used in the exponential law for each slide.
-        domain_shift_lambda: Lambda used in the exponential law for each domain or niche.
+        domain_shift_lambda: Lambda used in the exponential law for each domain.
         slide_ids_unique: Whether to ensure that slide ids are unique.
         compute_spatial_neighbors: Whether to compute the spatial neighbors graph. We remove some the edges of one node for testing purposes.
 

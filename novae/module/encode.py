@@ -12,6 +12,7 @@ from . import AttentionAggregation
 class GraphEncoder(L.LightningModule):
     """Graph encoder of Novae. It uses a graph attention network."""
 
+    @utils.format_docs
     def __init__(
         self,
         embedding_size: int,
@@ -22,10 +23,10 @@ class GraphEncoder(L.LightningModule):
     ) -> None:
         """
         Args:
-            embedding_size: The size of the node features, i.e. the embedding size.
+            {embedding_size}
             hidden_size: The size of the hidden layers in the GAT.
             num_layers: The number of layers in the GAT.
-            output_size: The size of the output embeddings.
+            {output_size}
             heads: The number of attention heads in the GAT.
         """
         super().__init__()
@@ -50,7 +51,7 @@ class GraphEncoder(L.LightningModule):
             {data}
 
         Returns:
-            A tensor of shape `(B, output_size)` containing the encoded graphs.
+            A tensor of shape `(B, O)` containing the encoded graphs.
         """
         out = self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
         return self.node_aggregation(out, index=data.batch)

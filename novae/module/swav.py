@@ -11,8 +11,8 @@ import torch.nn.functional as F
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from torch import Tensor, nn
 
+from .. import utils
 from .._constants import Nums
-from ..utils import Mode
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +20,10 @@ log = logging.getLogger(__name__)
 class SwavHead(L.LightningModule):
     queue: None | Tensor  # (n_slides, queue_size, num_prototypes)
 
+    @utils.format_docs
     def __init__(
         self,
-        mode: Mode,
+        mode: utils.Mode,
         output_size: int,
         num_prototypes: int,
         temperature: float,
@@ -32,9 +33,9 @@ class SwavHead(L.LightningModule):
         """SwavHead module, adapted from the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
 
         Args:
-            output_size: Size of the encoder embeddings.
-            num_prototypes: Number of prototypes.
-            temperature: Temperature used in the cross-entropy loss.
+            {output_size}
+            {num_prototypes}
+            {temperature}
         """
         super().__init__()
         self.mode = mode
@@ -69,50 +70,52 @@ class SwavHead(L.LightningModule):
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, out1: Tensor, out2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
+    def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
         """Compute the SWAV loss for two batches of neighborhood graph views.
 
         Args:
-            out1: Batch containing graphs representations `(B, output_size)`
-            out2: Batch containing graphs representations `(B, output_size)`
+            z1: Batch containing graphs representations `(B, output_size)`
+            z2: Batch containing graphs representations `(B, output_size)`
 
         Returns:
             The SWAV loss, and the mean entropy normalized (for monitoring).
         """
         self.normalize_prototypes()
 
-        scores1 = self.compute_scores(out1)  # (B, num_prototypes)
-        scores2 = self.compute_scores(out2)  # (B, num_prototypes)
+        projections1 = self.projection(z1)  # (B, K)
+        projections2 = self.projection(z2)  # (B, K)
 
-        ilocs = self.get_prototype_ilocs(scores1, slide_id)
+        ilocs = self.get_prototype_ilocs(projections1, slide_id)
 
-        scores1, scores2 = scores1[:, ilocs], scores2[:, ilocs]
+        projections1, projections2 = projections1[:, ilocs], projections2[:, ilocs]
 
-        q1 = self.sinkhorn(scores1)  # (B, num_prototypes) or (B, len(ilocs))
-        q2 = self.sinkhorn(scores2)  # (B, num_prototypes) or (B, len(ilocs))
+        q1 = self.sinkhorn(projections1)  # (B, K) or (B, len(ilocs))
+        q2 = self.sinkhorn(projections2)  # (B, K) or (B, len(ilocs))
 
-        loss = -0.5 * (self.cross_entropy_loss(q1, scores2) + self.cross_entropy_loss(q2, scores1))
+        loss = -0.5 * (self.cross_entropy_loss(q1, projections2) + self.cross_entropy_loss(q2, projections1))
 
         return loss, _mean_entropy_normalized(q1)
 
-    def compute_scores(self, out: Tensor) -> Tensor:
-        """Compute the probabilities of assignments to the prototypes (denoted `p` in the article).
+    @utils.format_docs
+    def projection(self, z: Tensor) -> Tensor:
+        """Compute the projection of the (normalized) representations over the prototypes.
 
         Args:
-            out: The embeddings of the batch, of size `(B, O)`.
+            {z}
 
         Returns:
-            The probabilities of size `(B, K)`.
+            The projections of size `(B, K)`.
         """
-        out = F.normalize(out, dim=1, p=2)
-        return out @ self.prototypes.T
+        z_normalized = F.normalize(z, dim=1, p=2)
+        return z_normalized @ self.prototypes.T
 
+    @utils.format_docs
     @torch.no_grad()
-    def get_prototype_ilocs(self, scores: Tensor, slide_id: str | None = None) -> Tensor:
+    def get_prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
         """Get the indices of the prototypes to use for the current slide.
 
         Args:
-            scores: Probabilities of assignments to the prototypes, of size `(B, K)`.
+            {projections}
             slide_id: ID of the slide, or `None`.
 
         Returns:
@@ -122,7 +125,7 @@ class SwavHead(L.LightningModule):
             return ...
 
         slide_index = self.slide_label_encoder[slide_id]
-        slide_weights = F.softmax(scores / self.temperature_weight_proto, dim=1).mean(0)
+        slide_weights = F.softmax(projections / self.temperature_weight_proto, dim=1).mean(0)
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
         self.queue[slide_index, 0] = slide_weights
@@ -139,7 +142,7 @@ class SwavHead(L.LightningModule):
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
-            A tensor of shape `(n_slides, num_prototypes)`.
+            A tensor of shape `(n_slides, K)`.
         """
         return self.sinkhorn(self.queue.mean(dim=1)) * self.num_prototypes
 
@@ -152,24 +155,25 @@ class SwavHead(L.LightningModule):
 
         self._kmeans_prototypes = torch.nn.Parameter(torch.tensor(kmeans_prototypes))
 
+    @utils.format_docs
     @torch.no_grad()
-    def sinkhorn(self, scores: Tensor) -> Tensor:
-        """Apply the Sinkhorn-Knopp algorithm to the scores.
+    def sinkhorn(self, projections: Tensor) -> Tensor:
+        """Apply the Sinkhorn-Knopp algorithm to the projections.
 
         Args:
-            scores: The normalized embeddings projected into the prototypes, denoted `Z@C.T` in the paper.
+            {projections}
 
         Returns:
-            The soft codes from the Sinkhorn-Knopp algorithm, with shape `(B, num_prototypes)`.
+            The soft codes from the Sinkhorn-Knopp algorithm, with shape `(B, K)`.
         """
-        Q = torch.exp(scores / Nums.SWAV_EPSILON)  # (B, num_prototypes)
+        Q = torch.exp(projections / Nums.SWAV_EPSILON)  # (B, K)
         Q /= torch.sum(Q)
 
-        B, num_prototypes = Q.shape
+        B, K = Q.shape
 
         for _ in range(Nums.SINKHORN_ITERATIONS):
             Q /= torch.sum(Q, dim=0, keepdim=True)
-            Q /= num_prototypes
+            Q /= K
             Q /= torch.sum(Q, dim=1, keepdim=True)
             Q /= B
 
@@ -182,7 +186,7 @@ class SwavHead(L.LightningModule):
         """
         Perform hierarchical clustering on the prototypes. Saves the full tree of clusters.
         """
-        X = self.prototypes.data.numpy(force=True)  # (num_prototypes, output_size)
+        X = self.prototypes.data.numpy(force=True)  # (K, O)
 
         _clustering = AgglomerativeClustering(
             n_clusters=None,
@@ -233,7 +237,7 @@ class SwavHead(L.LightningModule):
             level: Level of the hierarchical clustering tree (or, number of clusters)
 
         Returns:
-            Series of classes (one among `n_classes`).
+            Series of classes.
         """
         return series.map(lambda x: f"N{self.clusters_levels[-level, int(x[1:])]}" if isinstance(x, str) else x)
 

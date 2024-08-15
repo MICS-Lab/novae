@@ -22,14 +22,14 @@ def _get_slides_indices(adatas: list[AnnData], only_valid_obs: bool = True) -> t
     return adata_indices, slides_obs_indices
 
 
-def _niches_counts(adata: AnnData, i: int, obs_key: str) -> pd.DataFrame:
+def _domains_counts(adata: AnnData, i: int, obs_key: str) -> pd.DataFrame:
     df = adata.obs[[Keys.SLIDE_ID, obs_key]].groupby(Keys.SLIDE_ID, observed=False)[obs_key].value_counts().unstack()
     df[Keys.ADATA_INDEX] = i
     return df
 
 
-def _niches_counts_per_slide(adatas: list[AnnData], obs_key: str) -> pd.DataFrame:
-    return pd.concat([_niches_counts(adata, i, obs_key) for i, adata in enumerate(adatas)], axis=0)
+def _domains_counts_per_slide(adatas: list[AnnData], obs_key: str) -> pd.DataFrame:
+    return pd.concat([_domains_counts(adata, i, obs_key) for i, adata in enumerate(adatas)], axis=0)
 
 
 def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
@@ -41,12 +41,12 @@ def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
 
     adata_indices, slides_obs_indices = _get_slides_indices(adatas)
 
-    niches_counts_per_slide = _niches_counts_per_slide(adatas, obs_key)
-    domains = niches_counts_per_slide.columns[:-1]
-    ref_slide_ids: pd.Series = niches_counts_per_slide[domains].idxmax(axis=0)
+    domains_counts_per_slide = _domains_counts_per_slide(adatas, obs_key)
+    domains = domains_counts_per_slide.columns[:-1]
+    ref_slide_ids: pd.Series = domains_counts_per_slide[domains].idxmax(axis=0)
 
     def _get_centroid_reference(domain: str, slide_id: str, obs_key: str):
-        adata_ref_index: int = niches_counts_per_slide[Keys.ADATA_INDEX].loc[slide_id]
+        adata_ref_index: int = domains_counts_per_slide[Keys.ADATA_INDEX].loc[slide_id]
         adata_ref = adatas[adata_ref_index]
         where = (adata_ref.obs[Keys.SLIDE_ID] == slide_id) & (adata_ref.obs[obs_key] == domain)
         return adata_ref.obsm[Keys.REPR][where].mean(0)

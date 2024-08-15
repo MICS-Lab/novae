@@ -39,11 +39,12 @@ class InferenceHeadPoisson(L.LightningModule):
 
         self.poisson_nllloss = nn.PoissonNLLLoss(log_input=True)
 
+    @utils.format_docs
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
         """Compute the poisson parameter based on the cells representations and the genes embeddings.
 
         Args:
-            z: Latent space for `B` cells. Size `(B, O)`.
+            {z}
             genes_embeddings: Embedding of `G` genes. Size `(G, E)`.
 
         Returns:
@@ -53,12 +54,13 @@ class InferenceHeadPoisson(L.LightningModule):
 
         return self.mlp(combined_embeddings).squeeze(-1)  # (B, G)
 
+    @utils.format_docs
     def loss(self, x: Tensor, z: Tensor, genes_indices: Tensor) -> Tensor:
         """Negative log-likelihood of the zero-inflated exponential distribution
 
         Args:
             x: Expressions of genes `(B, G)` as counts.
-            z: Latent space for `B` cells. Size `(B, O)`.
+            {z}
             genes_indices: Tensor of gene indices to be predicted.
 
         Returns:

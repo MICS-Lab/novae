@@ -86,7 +86,7 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
 
 @utils.format_docs
 def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_top_genes: int = 3) -> float:
-    """Mean SVG score over all slides. A high score indicates better niche-specific genes, or spatial variable genes.
+    """Mean SVG score over all slides. A high score indicates better domain-specific genes, or spatial variable genes.
 
     Args:
         adata: An `AnnData` object, or a list.
@@ -107,7 +107,7 @@ def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str 
 
 @utils.format_docs
 def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
-    """Average score of the top differentially expressed genes for each niche.
+    """Average score of the top differentially expressed genes for each domain.
 
     Args:
         adata: An `AnnData` object
@@ -156,7 +156,7 @@ def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slid
 
     Args:
         adata: An `AnnData` object
-        obs_key: The key in `adata.obs` that contains the domain or niche id.
+        obs_key: The key in `adata.obs` that contains the domains.
         n_classes: The number of classes.
         slide_key: The key in `adata.obs` that contains the slide id.
 
@@ -184,7 +184,7 @@ def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs
     Args:
         adatas: One or a list of AnnData object(s).
         slide_key: The key in `adata.obs` that contains the slide id.
-        obs_key: The key in `adata.obs` that contains the domain or niche id.
+        obs_key: The key in `adata.obs` that contains the domain id.
 
     Yields:
         One `AnnData` per slide.

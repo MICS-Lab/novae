@@ -26,7 +26,7 @@ def domains(
     show: bool = False,
     **kwargs: int,
 ):
-    """Show the Novae spatial domains or niches for all slides in the `AnnData` object.
+    """Show the Novae spatial domains for all slides in the `AnnData` object.
 
     Info:
         Make sure you have already your Novae domains assigned to the `AnnData` object. You can use `model.assign_domains(...)` to do so.
@@ -34,7 +34,7 @@ def domains(
 
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
-        obs_key: Name of the key from `adata.obs` containing the Novae niches. By default, the last available niche key is shown.
+        obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
         slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
         cell_size: Size of the cells or spots.
         ncols: Number of columns to be shown.
@@ -44,7 +44,7 @@ def domains(
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
     if obs_key is not None:
-        assert str(obs_key).startswith(Keys.NICHE_PREFIX), f"Received {obs_key=}, which is not a valid Novae obs_key"
+        assert str(obs_key).startswith(Keys.DOMAINS_PREFIX), f"Received {obs_key=}, which is not a valid Novae obs_key"
 
     adatas = adata if isinstance(adata, list) else [adata]
     slide_name_key = slide_name_key if slide_name_key is not None else Keys.SLIDE_ID

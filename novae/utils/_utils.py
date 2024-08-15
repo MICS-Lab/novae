@@ -327,26 +327,26 @@ def parse_device_args(accelerator: str = "cpu") -> torch.device:
 ERROR_ADVICE_OBS_KEY = "Please run `model.assign_domains(...)` first"
 
 
-def _available_niche_key(adata: AnnData) -> set[int]:
-    return set(adata.obs.columns[adata.obs.columns.str.startswith(Keys.NICHE_PREFIX)])
+def _available_domains_key(adata: AnnData) -> set[int]:
+    return set(adata.obs.columns[adata.obs.columns.str.startswith(Keys.DOMAINS_PREFIX)])
 
 
-def _shared_niche_keys(adatas: list[AnnData]) -> set[int]:
-    available_keys = [_available_niche_key(adata) for adata in adatas]
-    assert any(available_keys), f"No Novae niches available. {ERROR_ADVICE_OBS_KEY}"
+def _shared_domains_keys(adatas: list[AnnData]) -> set[int]:
+    available_keys = [_available_domains_key(adata) for adata in adatas]
+    assert any(available_keys), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
     available_keys = set.intersection(*available_keys)
-    assert available_keys, f"No common Novae niches available. {ERROR_ADVICE_OBS_KEY}"
+    assert available_keys, f"No common Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
     return available_keys
 
 
 def _check_available_obs_key(adatas: list[AnnData], obs_key: str | None) -> str:
-    available_obs_keys = _shared_niche_keys(adatas)
+    available_obs_keys = _shared_domains_keys(adatas)
     if obs_key is not None:
         assert all(
             obs_key in adata.obs for adata in adatas
-        ), f"Novae niches '{obs_key}' not available in all AnnData objects. {ERROR_ADVICE_OBS_KEY}. Or consider using one of {available_obs_keys} instead."
+        ), f"Novae domains '{obs_key}' not available in all AnnData objects. {ERROR_ADVICE_OBS_KEY}. Or consider using one of {available_obs_keys} instead."
         return obs_key
 
     obs_key = list(available_obs_keys)[-1]
@@ -361,5 +361,5 @@ def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
 
 
 def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:
-    leaves = unique_obs(adata, Keys.SWAV_CLASSES)
+    leaves = unique_obs(adata, Keys.LEAVES)
     return np.array([int(x[1:]) for x in leaves])

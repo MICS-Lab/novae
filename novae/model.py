@@ -65,16 +65,16 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {slide_key}
             {scgpt_model_dir}
             {var_names}
-            embedding_size: Size of the gene embedding. Do not use it when loading embeddings from scGPT.
-            output_size: Size of the latent space.
+            {embedding_size} Do not use it when loading embeddings from scGPT.
+            {output_size}
             {n_hops_local}
             {n_hops_view}
             heads: Number of heads for the graph encoder.
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.
             batch_size: Mini-batch size.
-            temperature: Swav temperature.
-            num_prototypes: Number of prototypes, or "leaves" niches.
+            {temperature}
+            {num_prototypes}
             {panel_subset_size}
             {background_noise_lambda}
             {sensitivity_noise_std}
@@ -147,26 +147,26 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Data], batch_idx: int):
-        out: dict[str, Data] = self(batch)
+        z_dict: dict[str, Tensor] = self(batch)
         slide_id = batch["main"].get("slide_id", [None])[0]
 
-        loss, mean_entropy_normalized = self.swav_head(out["main"], out["view"], slide_id)
+        loss, mean_entropy_normalized = self.swav_head(z_dict["main"], z_dict["view"], slide_id)
 
-        self._log_all({"loss": loss, "entropy": mean_entropy_normalized})
+        self._log_progress_bar("loss", loss)
+        self._log_progress_bar("entropy", mean_entropy_normalized, on_epoch=False)
 
         return loss
 
-    def _log_all(self, log_dict: dict[str, float], **kwargs):
-        for name, value in log_dict.items():
-            self.log(
-                f"train/{name}",
-                value,
-                on_epoch=True,
-                on_step=True,
-                batch_size=self.hparams.batch_size,
-                prog_bar=True,
-                **kwargs,
-            )
+    def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
+        self.log(
+            f"train/{name}",
+            value,
+            on_epoch=on_epoch,
+            on_step=True,
+            batch_size=self.hparams.batch_size,
+            prog_bar=True,
+            **kwargs,
+        )
 
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
         if adata is None:
@@ -265,7 +265,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
     ) -> Tensor | None:
         valid_indices = datamodule.dataset.valid_indices[0]
-        representations, scores = [], []
+        representations, projections = [], []
 
         for batch in utils.tqdm(datamodule.predict_dataloader()):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
@@ -274,8 +274,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             representations.append(batch_repr)
 
             if not self.mode.zero_shot:
-                batch_scores = self.swav_head.compute_scores(batch_repr)
-                scores.append(batch_scores)
+                batch_projections = self.swav_head.projection(batch_repr)
+                projections.append(batch_projections)
 
         representations = torch.cat(representations)
 
@@ -285,36 +285,36 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
         if not self.mode.zero_shot:
-            scores = torch.cat(scores)
-            self._compute_leaves(adata, scores, valid_indices)
+            projections = torch.cat(projections)
+            self._compute_leaves(adata, projections, valid_indices)
 
-    def _compute_leaves(self, adata: AnnData, scores: Tensor | None, valid_indices: np.ndarray | None):
-        assert (scores is None) is (valid_indices is None)
+    def _compute_leaves(self, adata: AnnData, projections: Tensor | None, valid_indices: np.ndarray | None):
+        assert (projections is None) is (valid_indices is None)
 
-        if scores is None:
+        if projections is None:
             valid_indices = utils.get_valid_indices(adata)
             representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
-            scores = self.swav_head.compute_scores(representations)
+            projections = self.swav_head.projection(representations)
 
-        leaves_predictions = scores.argmax(dim=1).numpy(force=True)
+        leaves_predictions = projections.argmax(dim=1).numpy(force=True)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
-        adata.obs[Keys.SWAV_CLASSES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
+        adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
 
-    def plot_niches_hierarchy(
+    def plot_domains_hierarchy(
         self,
         max_level: int = 10,
         hline_level: int | list[int] | None = None,
         leaf_font_size: int = 8,
         **kwargs,
     ):
-        """Plot the niches hierarchy as a dendogram.
+        """Plot the domains hierarchy as a dendogram.
 
         Args:
             max_level: Maximum level to be plot.
             hline_level: If not `None`, a red line will ne drawn at this/these level(s).
             leaf_font_size: The font size for the leaf labels.
         """
-        plot._niches_hierarchy(
+        plot._domains_hierarchy(
             self.swav_head.clustering,
             max_level=max_level,
             hline_level=hline_level,
@@ -342,18 +342,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         n_domains: int | None = None,
         key_added: str | None = None,
     ) -> str:
-        """Assign a domain (or niche) to each cell based on the "leaves" classes.
+        """Assign a domain to each cell based on the "leaves" classes.
 
         Note:
             You'll need to run `model.compute_representation(...)` first.
 
-            The domains are saved in `adata.obs["novae_niche_k"]` by default, where `k=10`.
+            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
         Args:
             {adata}
             level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
-            n_domains: Usually,
-            key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `"novae_niche_k"`.
+            n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
+            key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
         Returns:
             The name of the key added to `adata.obs`.
@@ -365,13 +365,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             level = self.swav_head.find_level(leaves_indices, n_domains)
             return self.assign_domains(adatas, level=level, key_added=key_added)
 
-        key_added = f"{Keys.NICHE_PREFIX}{level}" if key_added is None else key_added
+        key_added = f"{Keys.DOMAINS_PREFIX}{level}" if key_added is None else key_added
 
         for adata in adatas:
             assert (
-                Keys.SWAV_CLASSES in adata.obs
-            ), f"Did not found `adata.obs['{Keys.SWAV_CLASSES}']`. Please run `model.compute_representation(...)` first"
-            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.SWAV_CLASSES], level)
+                Keys.LEAVES in adata.obs
+            ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representation(...)` first"
+            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.LEAVES], level)
 
         return key_added
 
@@ -507,7 +507,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         callbacks: list[Callback] | None = None,
         enable_checkpointing: bool = False,
         logger: Logger | list[Logger] | bool = False,
-        **kwargs: int,
+        **trainer_kwargs: int,
     ):
         """Train a Novae model. The training will be stopped by early stopping.
 
@@ -523,7 +523,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             callbacks: Optional list of Pytorch lightning callbacks.
             enable_checkpointing: Whether to enable model checkpointing.
             logger: The pytorch lightning logger.
-            **kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
+            **trainer_kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
         self.mode.fit()
 
@@ -553,7 +553,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             callbacks=callbacks,
             logger=logger,
             enable_checkpointing=enable_checkpointing,
-            **kwargs,
+            **trainer_kwargs,
         )
         trainer.fit(self, datamodule=self.datamodule)
 

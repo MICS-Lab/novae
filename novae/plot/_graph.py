@@ -21,7 +21,7 @@ def _leaves_count(clustering: AgglomerativeClustering) -> np.ndarray:
     return counts
 
 
-def _niches_hierarchy(
+def _domains_hierarchy(
     clustering: AgglomerativeClustering,
     max_level: int = 10,
     hline_level: int | list[int] | None = None,
@@ -60,7 +60,7 @@ def _niches_hierarchy(
     plt.yticks(original_ticks, original_ymax - original_ticks)
 
     plt.xlabel(None)
-    plt.ylabel("Niche level")
-    plt.title("Niches hierarchy")
-    plt.xlabel("Number of niches in node (or prototype ID if no parenthesis)")
+    plt.ylabel("Domains level")
+    plt.title("Domains hierarchy")
+    plt.xlabel("Number of domains in node (or prototype ID if no parenthesis)")
     sns.despine(offset=10, trim=True, bottom=True)

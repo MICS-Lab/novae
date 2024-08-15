@@ -88,15 +88,15 @@ def test_representation_single_panel(slide_key: str | None):
 
     model.compute_representation()
 
-    niches = adata.obs[Keys.SWAV_CLASSES].copy()
+    domains = adata.obs[Keys.LEAVES].copy()
 
     model.compute_representation()
 
-    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])
+    assert domains.equals(adata.obs[Keys.LEAVES])
 
     model.compute_representation([adata], slide_key=slide_key)
 
-    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])
+    assert domains.equals(adata.obs[Keys.LEAVES])
 
     if slide_key is not None:
         sids = adata.obs[slide_key].unique()
@@ -106,13 +106,13 @@ def test_representation_single_panel(slide_key: str | None):
 
         adata_concat = anndata.concat(adatas)
 
-        assert niches.equals(adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index])
+        assert domains.equals(adata_concat.obs[Keys.LEAVES].loc[domains.index])
 
         model.compute_representation(adatas, slide_key=slide_key)
 
         adata_concat = anndata.concat(adatas)
 
-        assert niches.equals(adata_concat.obs[Keys.SWAV_CLASSES].loc[niches.index])
+        assert domains.equals(adata_concat.obs[Keys.LEAVES].loc[domains.index])
 
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
@@ -130,13 +130,13 @@ def test_representation_multi_panel(slide_key: str | None):
 
     model.compute_representation()
 
-    niches_series = pd.concat([adata.obs[Keys.SWAV_CLASSES].copy() for adata in adatas])
+    domains_series = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
     model.compute_representation(adatas, slide_key=slide_key)
 
-    niches_series2 = pd.concat([adata.obs[Keys.SWAV_CLASSES].copy() for adata in adatas])
+    domains_series2 = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
-    assert niches_series.equals(niches_series2.loc[niches_series.index])
+    assert domains_series.equals(domains_series2.loc[domains_series.index])
 
     adata_split = [
         adata[adata.obs[Keys.SLIDE_ID] == sid].copy() for adata in adatas for sid in adata.obs[Keys.SLIDE_ID].unique()
@@ -144,9 +144,9 @@ def test_representation_multi_panel(slide_key: str | None):
 
     model.compute_representation(adata_split)
 
-    niches_series2 = pd.concat([adata.obs[Keys.SWAV_CLASSES] for adata in adata_split])
+    domains_series2 = pd.concat([adata.obs[Keys.LEAVES] for adata in adata_split])
 
-    assert niches_series.equals(niches_series2.loc[niches_series.index])
+    assert domains_series.equals(domains_series2.loc[domains_series.index])
 
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
@@ -185,7 +185,7 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     model.compute_representation()
     model.assign_domains()
 
-    niches = adata.obs[Keys.SWAV_CLASSES].copy()
+    domains = adata.obs[Keys.LEAVES].copy()
     representations = adata.obsm[Keys.REPR].copy()
 
     model.save_pretrained("tests/test_model")
@@ -196,4 +196,4 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     new_model.assign_domains(adata)
 
     assert (adata.obsm[Keys.REPR] == representations).all()
-    assert niches.equals(adata.obs[Keys.SWAV_CLASSES])
+    assert domains.equals(adata.obs[Keys.LEAVES])

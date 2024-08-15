@@ -8,7 +8,7 @@ from novae._constants import Keys
 obs1 = pd.DataFrame(
     {
         Keys.SLIDE_ID: ["a", "a", "b", "b", "a", "b", "b"],
-        "niche_key": ["N1", "N1", "N1", "N1", "N3", "N1", "N2"],
+        "domains_key": ["N1", "N1", "N1", "N1", "N3", "N1", "N2"],
         Keys.IS_VALID_OBS: [True, True, True, True, True, True, True],
     },
     index=[f"{i}_1" for i in range(7)],
@@ -43,7 +43,7 @@ adata1 = AnnData(obs=obs1, obsm={Keys.REPR: latent1})
 obs2 = pd.DataFrame(
     {
         Keys.SLIDE_ID: ["c", "c", "c", "c", "c"],
-        "niche_key": ["N2", "N1", np.nan, "N2", "N2"],
+        "domains_key": ["N2", "N1", np.nan, "N2", "N2"],
         Keys.IS_VALID_OBS: [True, True, False, True, True],
     },
     index=[f"{i}_2" for i in range(5)],
@@ -73,11 +73,11 @@ adata2 = AnnData(obs=obs2, obsm={Keys.REPR: latent2})
 
 adatas = [adata1, adata2]
 for adata in adatas:
-    for key in [Keys.SLIDE_ID, "niche_key"]:
+    for key in [Keys.SLIDE_ID, "domains_key"]:
         adata.obs[key] = adata.obs[key].astype("category")
 
 
 def test_batch_effect_correction():
-    novae.utils.batch_effect_correction(adatas, "niche_key")
+    novae.utils.batch_effect_correction(adatas, "domains_key")
     assert (adata1.obsm[Keys.REPR_CORRECTED] == expected1).all()
     assert (adata2.obsm[Keys.REPR_CORRECTED] == expected2).all()

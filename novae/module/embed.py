@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 class CellEmbedder(L.LightningModule):
     """Convert a cell into an embedding using a gene embedding matrix."""
 
+    @utils.format_docs
     def __init__(
         self,
         gene_names: list[str] | dict[str, int],
@@ -35,7 +36,7 @@ class CellEmbedder(L.LightningModule):
 
         Args:
             gene_names: Name of the genes to be used in the embedding, or dictionnary of index to name.
-            embedding_size: Size of each embedding. Optional if `embedding` is provided.
+            {embedding_size} Optional if `embedding` is provided.
             embedding: Optional pre-trained embedding matrix. If provided, `embedding_size` shouldn't be provided.
         """
         super().__init__()
@@ -114,7 +115,7 @@ class CellEmbedder(L.LightningModule):
             {data} The number of node features is variable.
 
         Returns:
-            {data} Each node now has a size of `embedding_size`.
+            {data} Each node now has a size of `E`.
         """
         genes_embeddings = self.embedding(data.genes_indices[0])
         genes_embeddings = self.linear(genes_embeddings)

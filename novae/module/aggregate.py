@@ -4,15 +4,18 @@ import lightning as L
 from torch import Tensor, nn
 from torch_geometric.nn.aggr import AttentionalAggregation
 
+from .. import utils
+
 
 class AttentionAggregation(L.LightningModule):
     """Aggregate the node embeddings using attention."""
 
+    @utils.format_docs
     def __init__(self, output_size: int):
         """
 
         Args:
-            output_size: Size of the nodes after the encoder.
+            {output_size}
         """
         super().__init__()
         self.gate_nn = nn.Linear(output_size, 1)
@@ -28,6 +31,6 @@ class AttentionAggregation(L.LightningModule):
             index: The Pytorch Geometric index used to know to which graph each node belongs.
 
         Returns:
-            A tensor of shape `(B, output_size)` of graph embeddings.
+            A tensor of shape `(B, O)` of graph embeddings.
         """
         return self.attention_aggregation(x, index=index)
