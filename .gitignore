@@ -29,7 +29,7 @@ checkpoints
 
 # Data files
 data/*
-!data/scripts
+!data/_scripts
 !data/README.md
 !data/*.py
 !data/*.sh

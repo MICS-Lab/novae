@@ -4,7 +4,7 @@ We detail below how to download public spatial transcriptomics datasets. The dat
 
 ## Download
 
-For consistency, all the scripts below need to be executed at the root of this directory (i.e., `novae/data`).
+For consistency, all the scripts below need to be executed at the root of the `data` directory (i.e., `novae/data`).
 
 ### MERSCOPE (18 samples)
 
@@ -12,10 +12,10 @@ Requirements: the `gsutil` command line should be installed (see [here](https://
 
 ```sh
 # download all MERSCOPE datasets
-sh merscope_download.sh
+sh _scripts/merscope_download.sh
 
 # convert all datasets to h5ad files
-python merscope_convert.py
+python _scripts/merscope_convert.py
 ```
 
 ### Xenium (20+ samples)
@@ -24,10 +24,10 @@ Requirements: a Python environment with `spatialdata-io` installed.
 
 ```sh
 # download all Xenium datasets
-sh xenium_download.sh
+sh _scripts/xenium_download.sh
 
 # convert all datasets to h5ad files
-python xenium_convert.py
+python _scripts/xenium_convert.py
 ```
 
 ### CosMX (3 samples)
@@ -36,10 +36,10 @@ Requirements: a Python environment with `scanpy` installed.
 
 ```sh
 # download all CosMX datasets
-sh cosmx_download.sh
+sh _scripts/cosmx_download.sh
 
 # convert all datasets to h5ad files
-python cosmx_convert.py
+python _scripts/cosmx_convert.py
 ```
 
 ### All datasets
@@ -47,7 +47,7 @@ python cosmx_convert.py
 All above datasets can be downloaded using a single command line. Make sure you have all the requirements listed above.
 
 ```sh
-sh 1_download_all.sh
+sh _scripts/1_download_all.sh
 ```
 
 ## Preprocess and prepare for training
@@ -55,12 +55,12 @@ sh 1_download_all.sh
 The script bellow will copy all `adata.h5ad` files into a single directory, compute UMAPs, and minor preprocessing. See the `argparse` helper of this script for more details.
 
 ```sh
-python 2_prepare.py
+python _scripts/2_prepare.py
 ```
 
 ## Usage
 
-These datasets can be used during training (see the `scripts` directory at the root of the repository).
+These datasets can be used during training (see the `scripts` directory at the root of the `novae` repository).
 
 ## Notes
 - Missing technologies: CosMX, Curio Seeker, Resolve

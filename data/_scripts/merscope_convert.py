@@ -28,7 +28,8 @@ def convert_to_h5ad(dataset_dir: Path):
     obs = pd.read_csv(obs_dir, index_col=0, dtype={"EntityID": str})
 
     obs.index = obs.index.astype(str) + f"_{slide_id}"
-    data.index = obs.index
+    data.index = data.index.astype(str) + f"_{slide_id}"
+    obs = obs.loc[data.index]
 
     is_gene = ~data.columns.str.lower().str.contains("blank")
 
