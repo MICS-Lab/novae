@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import scanpy as sc
 from anndata import AnnData
@@ -7,6 +9,8 @@ from sklearn import metrics
 
 from .. import utils
 from .._constants import Keys, Nums
+
+log = logging.getLogger(__name__)
 
 
 @utils.format_docs
@@ -117,6 +121,10 @@ def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
     Returns:
         The average SVG score.
     """
+    if adata.obs[obs_key].value_counts().min() == 1:
+        log.warn(f"Skipping {obs_key=} because some domains have only one cell")
+        return -1000
+
     sc.tl.rank_genes_groups(adata, groupby=obs_key)
     sub_recarray: np.recarray = adata.uns["rank_genes_groups"]["scores"][:n_top_genes]
     return np.mean([sub_recarray[field].mean() for field in sub_recarray.dtype.names])
