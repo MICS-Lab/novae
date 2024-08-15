@@ -8,7 +8,7 @@ from torch import Tensor
 
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
-from ..utils import _sparse_std
+from ..utils import sparse_std
 
 
 class AnnDataTorch:
@@ -53,9 +53,7 @@ class AnnDataTorch:
                 mean = mean.A1 if isinstance(mean, np.matrix) else mean
                 means[slide_id] = mean.astype(np.float32)
 
-                std = (
-                    adata_slide.X.std(0) if isinstance(adata_slide.X, np.ndarray) else _sparse_std(adata_slide.X, 0).A1
-                )
+                std = adata_slide.X.std(0) if isinstance(adata_slide.X, np.ndarray) else sparse_std(adata_slide.X, 0).A1
                 stds[slide_id] = std.astype(np.float32)
 
         label_encoder = LabelEncoder()

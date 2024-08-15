@@ -11,7 +11,7 @@ from . import repository_root, spatial_neighbors, wandb_log_dir
 log = logging.getLogger(__name__)
 
 
-def _load_dataset(relative_path: str) -> list[AnnData]:
+def load_dataset(relative_path: str) -> list[AnnData]:
     """Load one or multiple AnnData objects based on a relative path from the data directory
 
     Args:
@@ -140,7 +140,7 @@ def _drop_neighbors(adata: AnnData, index: int):
         adata.obsp[key].eliminate_zeros()
 
 
-def _load_wandb_artifact(name: str) -> Path:
+def load_wandb_artifact(name: str) -> Path:
     import wandb
 
     api = wandb.Api()

@@ -193,9 +193,3 @@ def _get_technology_coords(adata: AnnData, technology: str) -> np.ndarray:
     assert all(column in adata.obs for column in columns), f"For {technology=}, you must have {columns} in `adata.obs`"
 
     return adata.obs[columns].values * factor
-
-
-def _check_has_delaunay(adata: AnnData):
-    message = "key not in adata.obsp, consider running the delaunay graph (e.g., spatial_neighbors(adata, [0, 100])`)"
-    assert "spatial_connectivities" in adata.obsp, f"spatial_connectivities {message}"
-    assert "spatial_distances" in adata.obsp, f"spatial_distances {message}"

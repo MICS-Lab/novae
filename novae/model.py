@@ -425,7 +425,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @classmethod
     def _load_wandb_artifact(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
-        artifact_path = utils._load_wandb_artifact(name) / "model.ckpt"
+        artifact_path = utils.load_wandb_artifact(name) / "model.ckpt"
 
         try:
             model = cls.load_from_checkpoint(artifact_path, map_location=map_location, strict=False, **kwargs)
@@ -438,7 +438,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def batch_effect_correction(self, adata: AnnData | list[AnnData] | None = None, obs_key: str | None = None):
         adatas = self._to_anndata_list(adata)
-        obs_key = utils._check_available_obs_key(adatas, obs_key)
+        obs_key = utils.check_available_domains_key(adatas, obs_key)
 
         utils.batch_effect_correction(adatas, obs_key)
 

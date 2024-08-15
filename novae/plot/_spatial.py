@@ -48,7 +48,7 @@ def domains(
 
     adatas = adata if isinstance(adata, list) else [adata]
     slide_name_key = slide_name_key if slide_name_key is not None else Keys.SLIDE_ID
-    obs_key = utils._check_available_obs_key(adatas, obs_key)
+    obs_key = utils.check_available_domains_key(adatas, obs_key)
 
     for adata in adatas:
         sanitize_anndata(adata)

@@ -6,6 +6,7 @@ import pytest
 import novae
 from novae._constants import Keys
 from novae.data.dataset import _to_adjacency_local, _to_adjacency_view
+from novae.utils._validate import _set_unique_slide_ids
 
 from ._utils import adata, adata_concat, adata_line
 
@@ -37,7 +38,7 @@ def test_set_unique_slide_ids():
         slide_ids_unique=False,
     )
 
-    novae.utils._set_unique_slide_ids(adatas, slide_key="slide_key")
+    _set_unique_slide_ids(adatas, slide_key="slide_key")
 
     assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == f"{id(adatas[0])}_slide_0"
 
@@ -49,7 +50,7 @@ def test_set_unique_slide_ids():
         slide_ids_unique=True,
     )
 
-    novae.utils._set_unique_slide_ids(adatas, slide_key="slide_key")
+    _set_unique_slide_ids(adatas, slide_key="slide_key")
 
     assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == "slide_0_0"
 
