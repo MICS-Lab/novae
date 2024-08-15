@@ -7,11 +7,11 @@ class DataConfig(BaseModel):
 
 
 class PostTrainingConfig(BaseModel):
-    save_umap: int | None = None
-    save_result: bool = False
-    save_metrics: bool = False
-    log_domains: bool = False
     n_domains: list[int] = [7, 10]
+    log_umap: bool = False
+    log_metrics: bool = False
+    log_domains: bool = False
+    save_h5ad: bool = False
 
 
 class Config(BaseModel):

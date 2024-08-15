@@ -23,5 +23,6 @@ fit_kwargs:
   min_delta: 0.025
 
 post_training:
-  save_umap: 20
+  n_domains: [20, 25]
+  log_umap: true
   log_domains: true
