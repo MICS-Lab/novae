@@ -17,11 +17,11 @@ nav:
     - novae.plot: api/novae.plot.md
     - novae.monitor: api/novae.monitor.md
     - novae.module:
-      - novae.module.GraphAugmentation: api/novae.module.GraphAugmentation.md
+      - novae.module.SwavHead: api/novae.module.SwavHead.md
       - novae.module.CellEmbedder: api/novae.module.CellEmbedder.md
+      - novae.module.GraphAugmentation: api/novae.module.GraphAugmentation.md
       - novae.module.GraphEncoder: api/novae.module.GraphEncoder.md
       - novae.module.AttentionAggregation: api/novae.module.AttentionAggregation.md
-      - novae.module.SwavHead: api/novae.module.SwavHead.md
       - novae.module.InferenceHeadZIE: api/novae.module.InferenceHeadZIE.md
     - novae.data:
       - novae.data.NovaeDataset: api/novae.data.NovaeDataset.md

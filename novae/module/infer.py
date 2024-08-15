@@ -28,7 +28,7 @@ def _combine_embeddings(z: Tensor, genes_embeddings: Tensor) -> Tensor:
 
     return torch.cat(
         [z.unsqueeze(1).expand(-1, n_genes, -1), genes_embeddings.unsqueeze(0).expand(n_obs, -1, -1)], dim=-1
-    )  # (B x G x (C + E))
+    )  # (B, G, (C + E))
 
 
 class InferenceHeadPoisson(L.LightningModule):
@@ -40,24 +40,29 @@ class InferenceHeadPoisson(L.LightningModule):
         self.poisson_nllloss = nn.PoissonNLLLoss(log_input=True)
 
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        """
-        z: (B x O)
-        genes_embeddings: (G x E)
-        """
-        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B x G x (O + E)
+        """Compute the poisson parameter based on the cells representations and the genes embeddings.
 
-        return self.mlp(combined_embeddings).squeeze(-1)  # (B x G)
+        Args:
+            z: Latent space for `B` cells. Size `(B, O)`.
+            genes_embeddings: Embedding of `G` genes. Size `(G, E)`.
+
+        Returns:
+            The mean negative log-likelihood
+        """
+        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B, G, (O + E)
+
+        return self.mlp(combined_embeddings).squeeze(-1)  # (B, G)
 
     def loss(self, x: Tensor, z: Tensor, genes_indices: Tensor) -> Tensor:
         """Negative log-likelihood of the zero-inflated exponential distribution
 
         Args:
-            x: Expressions of genes (B x G) as counts
-            z: Latent space (B x O)
-            genes_indices: Tensor of gene indices
+            x: Expressions of genes `(B, G)` as counts.
+            z: Latent space for `B` cells. Size `(B, O)`.
+            genes_indices: Tensor of gene indices to be predicted.
 
         Returns:
-            The mean negative log-likelihood
+            The mean Poisson negative log-likelihood.
         """
         with torch.no_grad():
             genes_embeddings = self.cell_embedder.embedding(genes_indices)
@@ -74,13 +79,9 @@ class InferenceHeadBaseline(L.LightningModule):
         self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
 
     def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        """
-        z: (B x C)
-        genes_embeddings: (G x E)
-        """
-        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B x G x (C + E)
+        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B, G, (C + E)
 
-        return self.mlp(combined_embeddings).squeeze(-1)  # predictions (B x G)
+        return self.mlp(combined_embeddings).squeeze(-1)  # predictions (B, G)
 
     def loss(self, x: Tensor, z: Tensor, genes_indices: Tensor) -> Tensor:
         with torch.no_grad():
@@ -113,9 +114,9 @@ class InferenceModel(L.LightningModule):
     def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
         data = batch["main"]
         with torch.no_grad():
-            z = self.novae_model(batch)["main"]  # (B x O)
-        x = self.mean_aggregation(data.counts, index=data.batch)  # (B x G)
-        genes_indices = data.counts_genes_indices  # (B x G)
+            z = self.novae_model(batch)["main"]  # (B, O)
+        x = self.mean_aggregation(data.counts, index=data.batch)  # (B, G)
+        genes_indices = data.counts_genes_indices  # (B, G)
 
         return sum([self.head.loss(x[[i]], z[[i]], genes_indices[i]) for i in range(len(x))])
 

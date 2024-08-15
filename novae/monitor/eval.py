@@ -128,7 +128,7 @@ def _jensen_shannon_divergence(distributions: np.ndarray) -> float:
     The lower the score, the better distribution of clusters among the different batches.
 
     Args:
-        distributions: An array of shape (B x C), where B is the number of batches, and C is the number of clusters. For each batch, it contains the percentage of each cluster among cells.
+        distributions: An array of shape (B, C), where B is the number of batches, and C is the number of clusters. For each batch, it contains the percentage of each cluster among cells.
 
     Returns:
         A float corresponding to the JSD

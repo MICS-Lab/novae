@@ -53,6 +53,11 @@ class SwavHead(L.LightningModule):
         self.reset_clustering()
 
     def init_queue(self, slide_ids: list[str]) -> None:
+        """Initialize the slide-queue.
+
+        Args:
+            slide_ids: A list of slide ids.
+        """
         del self.queue
 
         shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
@@ -91,11 +96,28 @@ class SwavHead(L.LightningModule):
         return loss, _mean_entropy_normalized(q1)
 
     def compute_scores(self, out: Tensor) -> Tensor:
+        """Compute the probabilities of assignments to the prototypes (denoted `p` in the article).
+
+        Args:
+            out: The embeddings of the batch, of size `(B, O)`.
+
+        Returns:
+            The probabilities of size `(B, K)`.
+        """
         out = F.normalize(out, dim=1, p=2)
         return out @ self.prototypes.T
 
     @torch.no_grad()
     def get_prototype_ilocs(self, scores: Tensor, slide_id: str | None = None) -> Tensor:
+        """Get the indices of the prototypes to use for the current slide.
+
+        Args:
+            scores: Probabilities of assignments to the prototypes, of size `(B, K)`.
+            slide_id: ID of the slide, or `None`.
+
+        Returns:
+            The indices of the prototypes to use, or an `Ellipsis` if all prototypes.
+        """
         if slide_id is None or self.mode.zero_shot or not self.mode.queue_mode:
             return ...
 
@@ -113,7 +135,12 @@ class SwavHead(L.LightningModule):
 
         return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
 
-    def get_queue_weights(self):
+    def get_queue_weights(self) -> Tensor:
+        """Convert the queue to a matrix of prototype weight per slide.
+
+        Returns:
+            A tensor of shape `(n_slides, num_prototypes)`.
+        """
         return self.sinkhorn(self.queue.mean(dim=1)) * self.num_prototypes
 
     def set_kmeans_prototypes(self, latent: np.ndarray):
@@ -130,7 +157,7 @@ class SwavHead(L.LightningModule):
         """Apply the Sinkhorn-Knopp algorithm to the scores.
 
         Args:
-            scores: The normalized embeddings projected into the prototypes, denoted Z@C.T in the paper.
+            scores: The normalized embeddings projected into the prototypes, denoted `Z@C.T` in the paper.
 
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm, with shape `(B, num_prototypes)`.

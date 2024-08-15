@@ -377,10 +377,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @classmethod
     def from_pretrained(self, model_name_or_path: str, **kwargs: int) -> "Novae":
-        """Load a pretrained `Novae` model from HuggingFace Hub.
+        """Load a pretrained `Novae` model from HuggingFace Hub. See [here](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd) the available Novae model names.
 
         Args:
-            model_name_or_path: Name of the model (or path to the local model).
+            model_name_or_path: Name of the model, e.g. `MICS-Lab/novae-example-v0`, or path to the local model.
             **kwargs: Optional kwargs for Hugging Face [`from_pretrained`](https://huggingface.co/docs/huggingface_hub/v0.24.0/en/package_reference/mixins#huggingface_hub.ModelHubMixin.from_pretrained) method.
 
         Returns:

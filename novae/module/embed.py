@@ -94,7 +94,7 @@ class CellEmbedder(L.LightningModule):
 
         Args:
             gene_names: Names of the gene names to convert.
-            as_torch: Whether to return a torch tensor or a numpy array.
+            as_torch: Whether to return a `torch` tensor or a `numpy` array.
 
         Returns:
             A tensor or array of gene indices.
@@ -124,7 +124,7 @@ class CellEmbedder(L.LightningModule):
         return data
 
     def pca_init(self, adatas: list[AnnData] | None):
-        """Initialize the embedding with PCA components.
+        """Initialize the Noave embeddings with PCA components.
 
         Args:
             adatas: A list of `AnnData` objects to use for PCA initialization.
