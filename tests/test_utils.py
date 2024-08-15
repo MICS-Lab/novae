@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 import novae
+from novae._constants import Keys
 from novae.data.dataset import _to_adjacency_local, _to_adjacency_view
 
 from ._utils import adata, adata_concat, adata_line
@@ -25,6 +26,32 @@ def test_build():
     assert connectivities.shape[0] == adata.n_obs
 
     assert (connectivities.A == true_connectivities).all()
+
+
+def test_set_unique_slide_ids():
+    adatas = novae.utils.dummy_dataset(
+        xmax=200,
+        n_panels=2,
+        n_slides_per_panel=1,
+        n_vars=30,
+        slide_ids_unique=False,
+    )
+
+    novae.utils._set_unique_slide_ids(adatas, slide_key="slide_key")
+
+    assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == f"{id(adatas[0])}_slide_0"
+
+    adatas = novae.utils.dummy_dataset(
+        xmax=200,
+        n_panels=2,
+        n_slides_per_panel=1,
+        n_vars=30,
+        slide_ids_unique=True,
+    )
+
+    novae.utils._set_unique_slide_ids(adatas, slide_key="slide_key")
+
+    assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == "slide_0_0"
 
 
 def test_build_slide_key():

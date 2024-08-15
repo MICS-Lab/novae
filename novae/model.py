@@ -186,7 +186,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         elif isinstance(adata, list):
             return adata
         else:
-            raise ValueError(f"Invalid type {type(adata)} for argument adata")
+            raise ValueError(f"Invalid type for `adata`: {type(adata)}")
 
     def _get_prepared_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
         if adata is None:

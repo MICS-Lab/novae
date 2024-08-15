@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 @format_docs
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
-    slide_key: str = None,
+    slide_key: str | None = None,
     var_names: set | list[str] | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model.
@@ -42,7 +42,6 @@ def prepare_adatas(
         - If `slide_key` is provided, ensure that all `slide_key` are valid and unique
         - If using a pretrained model, save which genes are known by the model
 
-
     Args:
         {adata}
         {slide_key}
@@ -56,12 +55,17 @@ def prepare_adatas(
     if adata is None:
         return None, var_names
 
-    adatas = [adata] if isinstance(adata, AnnData) else adata
+    if isinstance(adata, AnnData):
+        adatas = [adata]
+    elif isinstance(adata, list):
+        adatas = adata
+    else:
+        raise ValueError(f"Invalid type for `adata`: {type(adata)}")
 
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
+    _set_unique_slide_ids(adatas, slide_key=slide_key)
     _sanity_check(adatas, slide_key=slide_key)
-
     _lookup_highly_variable_genes(adatas)
 
     for adata in adatas:
@@ -78,6 +82,33 @@ def prepare_adatas(
         var_names = genes_union(adatas, among_used=True)
 
     return adatas, var_names
+
+
+def _set_unique_slide_ids(adatas: list[AnnData], slide_key: str | None) -> None:
+    # we will re-create the slide-ids, even if already set
+    for adata in adatas:
+        if Keys.SLIDE_ID in adata.obs:
+            del adata.obs[Keys.SLIDE_ID]
+
+    if slide_key is None:  # each adata has its own slide ID
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+        return
+
+    assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
+
+    slides_ids = [unique_obs(adata, slide_key) for adata in adatas]
+
+    if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
+        return
+
+    log.warn("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
+
+    for adata in adatas:
+        values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
+        adata.obs[Keys.SLIDE_ID] = values.astype("category")
 
 
 def _var_or_true(adata: AnnData, key: str) -> pd.Series | bool:
@@ -145,16 +176,6 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
     count_raw = 0
 
     for adata in adatas:
-        if Keys.SLIDE_ID in adata.obs:
-            del adata.obs[Keys.SLIDE_ID]
-
-        if slide_key is None:
-            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
-        else:
-            assert slide_key in adata.obs, f"{slide_key=} must be in all adata.obs"
-            values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
-            adata.obs[Keys.SLIDE_ID] = values.astype("category")
-
         if adata.X.min() < 0:
             log.warn("Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)")
 
