@@ -62,7 +62,7 @@ if __name__ == "__main__":
         "--path",
         type=str,
         default=".",
-        help="Path to spatial directory (containing the 'vizgen' directory)",
+        help="Path to spatial directory (containing the 'merscope' directory)",
     )
 
     main(parser.parse_args())
