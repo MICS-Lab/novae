@@ -46,7 +46,8 @@ class Nums:
     MEAN_DISTANCE_LOWER_TH_WARNING: float = 4
 
     # genes constants
-    MAX_GENES: int = 3_000
+    N_HVG_THRESHOLD: int = 500
+    MIN_GENES_FOR_HVG: int = 100
     MIN_GENES: int = 20
 
     # swav head constants

@@ -55,18 +55,9 @@ def prepare_adatas(
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
     _set_unique_slide_ids(adatas, slide_key=slide_key)
-    _sanity_check(adatas, slide_key=slide_key)
+    _standardize_adatas(adatas, slide_key=slide_key)  # log1p + spatial_neighbors
     _lookup_highly_variable_genes(adatas)
-
-    for adata in adatas:
-        _lookup_valid_genes(adata, var_names)
-
-        adata.var[Keys.USE_GENE] = _var_or_true(adata, Keys.HIGHLY_VARIABLE) & _var_or_true(adata, Keys.IS_KNOWN_GENE)
-
-        n_used = adata.var[Keys.USE_GENE].sum()
-        assert (
-            n_used >= Nums.MIN_GENES
-        ), f"Too few genes ({n_used}) are both (i) known by the model and (ii) highly variable."
+    _select_novae_genes(adatas, var_names)
 
     if var_names is None:
         var_names = _genes_union(adatas, among_used=True)
@@ -74,9 +65,36 @@ def prepare_adatas(
     return adatas, var_names
 
 
-def _sanity_check(adatas: list[AnnData], slide_key: str = None):
+def _set_unique_slide_ids(adatas: list[AnnData], slide_key: str | None) -> None:
+    # we will re-create the slide-ids, even if already set
+    for adata in adatas:
+        if Keys.SLIDE_ID in adata.obs:
+            del adata.obs[Keys.SLIDE_ID]
+
+    if slide_key is None:  # each adata has its own slide ID
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+        return
+
+    assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
+
+    slides_ids = [unique_obs(adata, slide_key) for adata in adatas]
+
+    if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
+        return
+
+    log.warn("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
+
+    for adata in adatas:
+        values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
+        adata.obs[Keys.SLIDE_ID] = values.astype("category")
+
+
+def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
     """
-    Check that the AnnData objects are preprocessed correctly
+    Make sure all AnnData objects are preprocessed correctly and have a Delaunay graph
     """
     assert hasattr(
         adatas, "__iter__"
@@ -120,16 +138,55 @@ def _sanity_check(adatas: list[AnnData], slide_key: str = None):
         )
 
 
-def _genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:
-    if among_used:
-        var_names_list = [adata.var_names[adata.var[Keys.USE_GENE]] for adata in adatas]
-    else:
-        var_names_list = [adata.var_names for adata in adatas]
+def _lookup_highly_variable_genes(adatas: list[AnnData]):
+    if len(adatas) == 1 or _is_multi_panel(adatas):
+        for adata in adatas:
+            _highly_variable_genes(adata)
+        return
 
-    return list(set.union(*[set(lower_var_names(var_names)) for var_names in var_names_list]))
+    adata_ = anndata.concat(adatas)
+
+    assert adata_.n_vars == adatas[0].n_vars, "Same panel used but the gene names don't have the same case"
+
+    _highly_variable_genes(adata_, set_default_true=True)
+
+    highly_variable_genes = adata_.var_names[adata_.var[Keys.HIGHLY_VARIABLE]]
+
+    for adata in adatas:
+        adata.var[Keys.HIGHLY_VARIABLE] = False
+        adata.var.loc[highly_variable_genes, Keys.HIGHLY_VARIABLE] = True
 
 
-def _lookup_valid_genes(adata: AnnData, var_names: set | list[str] | None):
+def _highly_variable_genes(adata: AnnData, set_default_true: bool = False):
+    if adata.n_vars <= Nums.MIN_GENES_FOR_HVG:  # if too few genes, keep all genes
+        if set_default_true:
+            adata.var[Keys.HIGHLY_VARIABLE] = True
+        return
+
+    sc.pp.highly_variable_genes(adata)
+
+    n_hvg = adata.var[Keys.HIGHLY_VARIABLE].sum()
+
+    if n_hvg < Nums.MIN_GENES:
+        log.warn(f"Only {n_hvg} highly variable genes were found.")
+
+    if n_hvg < Nums.N_HVG_THRESHOLD and n_hvg < adata.n_vars // 2:
+        sc.pp.highly_variable_genes(adata, n_top_genes=adata.n_vars // 2)  # keep at least half of the genes
+
+
+def _select_novae_genes(adatas: list[AnnData], var_names: set | list[str] | None) -> None:
+    for adata in adatas:
+        _lookup_known_genes(adata, var_names)
+
+        adata.var[Keys.USE_GENE] = _var_or_true(adata, Keys.HIGHLY_VARIABLE) & _var_or_true(adata, Keys.IS_KNOWN_GENE)
+
+        n_used = adata.var[Keys.USE_GENE].sum()
+        assert (
+            n_used >= Nums.MIN_GENES
+        ), f"Too few genes ({n_used}) are both (i) known by the model and (ii) highly variable."
+
+
+def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None):
     if var_names is None or Keys.IS_KNOWN_GENE in adata.var:
         return
 
@@ -141,56 +198,17 @@ def _lookup_valid_genes(adata: AnnData, var_names: set | list[str] | None):
         log.warn(f"Only {n_known / adata.n_vars:.1%} of genes are known by the model.")
 
 
-def _set_unique_slide_ids(adatas: list[AnnData], slide_key: str | None) -> None:
-    # we will re-create the slide-ids, even if already set
-    for adata in adatas:
-        if Keys.SLIDE_ID in adata.obs:
-            del adata.obs[Keys.SLIDE_ID]
+def _genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:
+    if among_used:
+        var_names_list = [adata.var_names[adata.var[Keys.USE_GENE]] for adata in adatas]
+    else:
+        var_names_list = [adata.var_names for adata in adatas]
 
-    if slide_key is None:  # each adata has its own slide ID
-        for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
-        return
-
-    assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
-
-    slides_ids = [unique_obs(adata, slide_key) for adata in adatas]
-
-    if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
-        for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
-        return
-
-    log.warn("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
-
-    for adata in adatas:
-        values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
-        adata.obs[Keys.SLIDE_ID] = values.astype("category")
+    return list(set.union(*[set(lower_var_names(var_names)) for var_names in var_names_list]))
 
 
 def _var_or_true(adata: AnnData, key: str) -> pd.Series | bool:
     return adata.var[key] if key in adata.var else True
-
-
-def _lookup_highly_variable_genes(adatas: list[AnnData]):
-    if max(adata.n_vars for adata in adatas) <= Nums.MAX_GENES:
-        return
-
-    if len(adatas) == 0 or _is_multi_panel(adatas):
-        for adata in adatas:
-            sc.pp.highly_variable_genes(adata)
-        return
-
-    adata_ = anndata.concat(adatas)
-
-    assert adata_.n_vars == adatas[0].n_vars, "Same panel used but the gene names don't have the same case"
-
-    sc.pp.highly_variable_genes(adata_)
-    highly_variable_genes = adata_.var_names[adata_.var[Keys.HIGHLY_VARIABLE]]
-
-    for adata in adatas:
-        adata.var[Keys.HIGHLY_VARIABLE] = False
-        adata.var.loc[highly_variable_genes, Keys.HIGHLY_VARIABLE] = True
 
 
 def _is_multi_panel(adatas: list[AnnData]) -> bool:

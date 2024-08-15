@@ -22,7 +22,7 @@ adata = adatas[0]
 
 def _generate_fake_scgpt_inputs():
     gene_names = TRUE_GENE_NAMES[:100]
-    indices = [7, 4, 3, 0, 1, 2, 9, 5, 6, 8] + list(range(10, 40))
+    indices = [7, 4, 3, 0, 1, 2, 9, 5, 6, 8] + list(range(10, 100))
 
     vocab = dict(zip(gene_names, indices))
 
