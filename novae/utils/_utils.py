@@ -21,8 +21,50 @@ from .._constants import Keys
 log = logging.getLogger(__name__)
 
 
-def get_valid_indices(adata: AnnData) -> np.ndarray:
+def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
+    if isinstance(adata, list):
+        return set.union(*[unique_obs(adata_, obs_key) for adata_ in adata])
+    return set(list(adata.obs[obs_key].dropna().unique()))
+
+
+def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:
+    leaves = unique_obs(adata, Keys.LEAVES)
+    return np.array([int(x[1:]) for x in leaves])
+
+
+def valid_indices(adata: AnnData) -> np.ndarray:
     return np.where(adata.obs[Keys.IS_VALID_OBS])[0]
+
+
+def lower_var_names(var_names: pd.Index | list[str]) -> pd.Index | list[str]:
+    if isinstance(var_names, pd.Index):
+        return var_names.str.lower()
+    return [name.lower() for name in var_names]
+
+
+def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
+    a_squared = a.multiply(a)
+    return np.sqrt(a_squared.mean(axis) - np.square(a.mean(axis)))
+
+
+def fill_invalid_indices(
+    out: np.ndarray | Tensor,
+    n_obs: int,
+    valid_indices: list[int],
+    fill_value: float | str = np.nan,
+    dtype: object = None,
+) -> np.ndarray:
+    if isinstance(out, Tensor):
+        out = out.numpy(force=True)
+
+    dtype = np.float32 if dtype is None else dtype
+
+    if isinstance(fill_value, str):
+        dtype = object
+
+    res = np.full((n_obs, *out.shape[1:]), fill_value, dtype=dtype)
+    res[valid_indices] = out
+    return res
 
 
 def requires_fit(f: Callable) -> Callable:
@@ -36,15 +78,23 @@ def requires_fit(f: Callable) -> Callable:
     return wrapper
 
 
-def lower_var_names(var_names: pd.Index | list[str]) -> pd.Index | list[str]:
-    if isinstance(var_names, pd.Index):
-        return var_names.str.lower()
-    return [name.lower() for name in var_names]
+def parse_device_args(accelerator: str = "cpu") -> torch.device:
+    """Updated from scvi-tools"""
+    connector = _AcceleratorConnector(accelerator=accelerator)
+    _accelerator = connector._accelerator_flag
+    _devices = connector._devices_flag
 
+    if _accelerator == "cpu":
+        return torch.device("cpu")
 
-def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
-    a_squared = a.multiply(a)
-    return np.sqrt(a_squared.mean(axis) - np.square(a.mean(axis)))
+    if isinstance(_devices, list):
+        device_idx = _devices[0]
+    elif isinstance(_devices, str) and "," in _devices:
+        device_idx = _devices.split(",")[0]
+    else:
+        device_idx = _devices
+
+    return torch.device(f"{_accelerator}:{device_idx}")
 
 
 def repository_root() -> Path:
@@ -76,26 +126,6 @@ def tqdm(*args, desc="DataLoader", **kwargs):
     return _tqdm(*args, desc=desc, **kwargs)
 
 
-def fill_invalid_indices(
-    out: np.ndarray | Tensor,
-    n_obs: int,
-    valid_indices: list[int],
-    fill_value: float | str = np.nan,
-    dtype: object = None,
-) -> np.ndarray:
-    if isinstance(out, Tensor):
-        out = out.numpy(force=True)
-
-    dtype = np.float32 if dtype is None else dtype
-
-    if isinstance(fill_value, str):
-        dtype = object
-
-    res = np.full((n_obs, *out.shape[1:]), fill_value, dtype=dtype)
-    res[valid_indices] = out
-    return res
-
-
 def pretty_num_parameters(model: torch.nn.Module) -> str:
     n_params = sum(p.numel() for p in model.parameters())
 
@@ -108,33 +138,3 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
 def pretty_model_repr(info_dict: dict[str, str], model_name: str = "Novae") -> str:
     rows = [f"{model_name} model"] + [f"[{k}]: {v}" for k, v in info_dict.items()]
     return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
-
-
-def parse_device_args(accelerator: str = "cpu") -> torch.device:
-    """Updated from scvi-tools"""
-    connector = _AcceleratorConnector(accelerator=accelerator)
-    _accelerator = connector._accelerator_flag
-    _devices = connector._devices_flag
-
-    if _accelerator == "cpu":
-        return torch.device("cpu")
-
-    if isinstance(_devices, list):
-        device_idx = _devices[0]
-    elif isinstance(_devices, str) and "," in _devices:
-        device_idx = _devices.split(",")[0]
-    else:
-        device_idx = _devices
-
-    return torch.device(f"{_accelerator}:{device_idx}")
-
-
-def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
-    if isinstance(adata, list):
-        return set.union(*[unique_obs(adata_, obs_key) for adata_ in adata])
-    return set(list(adata.obs[obs_key].dropna().unique()))
-
-
-def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:
-    leaves = unique_obs(adata, Keys.LEAVES)
-    return np.array([int(x[1:]) for x in leaves])

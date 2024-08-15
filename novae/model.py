@@ -109,6 +109,23 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._datamodule = None
         self.init_slide_queue(self.adatas)
 
+    def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
+        if adata is None:
+            return
+
+        slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
+        if len(slide_ids) > 1:
+            self.mode.queue_mode = True
+            self.swav_head.init_queue(slide_ids)
+
+    def __repr__(self) -> str:
+        info_dict = {
+            "known genes": self.cell_embedder.voc_size,
+            "parameters": utils.pretty_num_parameters(self),
+            "checkpoint": self._checkpoint,
+        }
+        return utils.pretty_model_repr(info_dict)
+
     @property
     def datamodule(self) -> NovaeDatamodule:
         assert (
@@ -130,13 +147,47 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if self._datamodule is not None:
             self._datamodule.num_workers = value
 
-    def __repr__(self) -> str:
-        info_dict = {
-            "known genes": self.cell_embedder.voc_size,
-            "parameters": utils.pretty_num_parameters(self),
-            "checkpoint": self._checkpoint,
-        }
-        return utils.pretty_model_repr(info_dict)
+    def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
+        if adata is None:
+            assert self.adatas is not None, "No AnnData object found. Please provide an AnnData object."
+            return self.adatas
+        elif isinstance(adata, AnnData):
+            return [adata]
+        elif isinstance(adata, list):
+            return adata
+        else:
+            raise ValueError(f"Invalid type for `adata`: {type(adata)}")
+
+    def _prepare_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
+        if adata is None:
+            return self.adatas
+        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
+
+    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None):
+        return NovaeDatamodule(
+            self._to_anndata_list(adata),
+            cell_embedder=self.cell_embedder,
+            batch_size=self.hparams.batch_size,
+            n_hops_local=self.hparams.n_hops_local,
+            n_hops_view=self.hparams.n_hops_view,
+            num_workers=self._num_workers,
+            sample_cells=sample_cells,
+        )
+
+    def configure_optimizers(self):
+        lr = self._lr if hasattr(self, "_lr") else 1e-3
+        return optim.Adam(self.parameters(), lr=lr)
+
+    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, use_device: bool = False) -> None:
+        if accelerator == "cpu" and num_workers:
+            log.warn("On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`.")
+
+        if num_workers is not None:
+            self.num_workers = num_workers
+
+        if use_device:
+            device = utils.parse_device_args(accelerator)
+            self.to(device)
 
     def _embed_pyg_data(self, data: Data) -> Data:
         if self.training:
@@ -157,53 +208,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         return loss
 
-    def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
-        self.log(
-            f"train/{name}",
-            value,
-            on_epoch=on_epoch,
-            on_step=True,
-            batch_size=self.hparams.batch_size,
-            prog_bar=True,
-            **kwargs,
-        )
-
-    def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
-        if adata is None:
-            return
-
-        slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
-        if len(slide_ids) > 1:
-            self.mode.queue_mode = True
-            self.swav_head.init_queue(slide_ids)
-
-    def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
-        if adata is None:
-            assert self.adatas is not None, "No AnnData object found. Please provide an AnnData object."
-            return self.adatas
-        elif isinstance(adata, AnnData):
-            return [adata]
-        elif isinstance(adata, list):
-            return adata
-        else:
-            raise ValueError(f"Invalid type for `adata`: {type(adata)}")
-
-    def _get_prepared_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
-        if adata is None:
-            return self.adatas
-        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
-
-    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None):
-        return NovaeDatamodule(
-            self._to_anndata_list(adata),
-            cell_embedder=self.cell_embedder,
-            batch_size=self.hparams.batch_size,
-            n_hops_local=self.hparams.n_hops_local,
-            n_hops_view=self.hparams.n_hops_view,
-            num_workers=self._num_workers,
-            sample_cells=sample_cells,
-        )
-
     def on_train_epoch_start(self):
         self.training = True
 
@@ -214,166 +218,16 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.swav_head.prototypes.requires_grad_(after_warm_up or not self.mode.freeze_mode)
         self.mode.use_queue = after_warm_up and self.mode.queue_mode
 
-    def configure_optimizers(self):
-        lr = self._lr if hasattr(self, "_lr") else 1e-3
-        return optim.Adam(self.parameters(), lr=lr)
-
-    @utils.format_docs
-    @utils.requires_fit
-    @torch.no_grad()
-    def compute_representation(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        slide_key: str | None = None,
-        zero_shot: bool = False,
-        accelerator: str = "cpu",
-        num_workers: int | None = None,
-    ) -> None:
-        """Compute the latent representation of Novae for all cells neighborhoods.
-
-        Note:
-            Representations are saved in `adata.obsm["novae_latent"]`
-
-        Args:
-            {adata}
-            {slide_key}
-            {accelerator}
-            num_workers: Number of workers for the dataloader.
-        """
-        self.mode.zero_shot = zero_shot
-        self.training = False
-        self._parse_hardware_args(accelerator, num_workers, use_device=True)
-
-        if adata is None and len(self.adatas) == 1:  # using existing datamodule
-            adatas = self.adatas
-            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
-        else:
-            adatas = self._get_prepared_adatas(adata, slide_key=slide_key)
-            for adata in adatas:
-                datamodule = self._init_datamodule(adata)
-                self._compute_representation_datamodule(adata, datamodule)
-
-        if self.mode.zero_shot:
-            latent = np.concatenate([adata.obsm[Keys.REPR][utils.get_valid_indices(adata)] for adata in adatas])
-            self.swav_head.set_kmeans_prototypes(latent)
-
-            for adata in adatas:
-                self._compute_leaves(adata, None, None)
-
-    @torch.no_grad()
-    def _compute_representation_datamodule(
-        self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
-    ) -> Tensor | None:
-        valid_indices = datamodule.dataset.valid_indices[0]
-        representations, projections = [], []
-
-        for batch in utils.tqdm(datamodule.predict_dataloader()):
-            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
-
-            representations.append(batch_repr)
-
-            if not self.mode.zero_shot:
-                batch_projections = self.swav_head.projection(batch_repr)
-                projections.append(batch_projections)
-
-        representations = torch.cat(representations)
-
-        if return_representations:
-            return representations
-
-        adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
-
-        if not self.mode.zero_shot:
-            projections = torch.cat(projections)
-            self._compute_leaves(adata, projections, valid_indices)
-
-    def _compute_leaves(self, adata: AnnData, projections: Tensor | None, valid_indices: np.ndarray | None):
-        assert (projections is None) is (valid_indices is None)
-
-        if projections is None:
-            valid_indices = utils.get_valid_indices(adata)
-            representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
-            projections = self.swav_head.projection(representations)
-
-        leaves_predictions = projections.argmax(dim=1).numpy(force=True)
-        leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
-        adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
-
-    def plot_domains_hierarchy(
-        self,
-        max_level: int = 10,
-        hline_level: int | list[int] | None = None,
-        leaf_font_size: int = 8,
-        **kwargs,
-    ):
-        """Plot the domains hierarchy as a dendogram.
-
-        Args:
-            max_level: Maximum level to be plot.
-            hline_level: If not `None`, a red line will ne drawn at this/these level(s).
-            leaf_font_size: The font size for the leaf labels.
-        """
-        plot._domains_hierarchy(
-            self.swav_head.clustering,
-            max_level=max_level,
-            hline_level=hline_level,
-            leaf_font_size=leaf_font_size,
+    def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
+        self.log(
+            f"train/{name}",
+            value,
+            on_epoch=on_epoch,
+            on_step=True,
+            batch_size=self.hparams.batch_size,
+            prog_bar=True,
             **kwargs,
         )
-
-    def plot_prototype_weights(self, **kwargs: int):
-        weights = self.swav_head.get_queue_weights().numpy(force=True)
-
-        where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
-        for i in np.where(where_enough_prototypes)[0]:
-            weights[i, weights[i] < Nums.QUEUE_WEIGHT_THRESHOLD] = 0
-        for i in np.where(~where_enough_prototypes)[0]:
-            indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
-            weights[i, indices_0] = 0
-
-        plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
-
-    @utils.format_docs
-    def assign_domains(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        level: int = 10,
-        n_domains: int | None = None,
-        key_added: str | None = None,
-    ) -> str:
-        """Assign a domain to each cell based on the "leaves" classes.
-
-        Note:
-            You'll need to run `model.compute_representation(...)` first.
-
-            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
-
-        Args:
-            {adata}
-            level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
-            n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
-            key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
-
-        Returns:
-            The name of the key added to `adata.obs`.
-        """
-        adatas = self._to_anndata_list(adata)
-
-        if n_domains is not None:
-            leaves_indices = utils.unique_leaves_indices(adatas)
-            level = self.swav_head.find_level(leaves_indices, n_domains)
-            return self.assign_domains(adatas, level=level, key_added=key_added)
-
-        key_added = f"{Keys.DOMAINS_PREFIX}{level}" if key_added is None else key_added
-
-        for adata in adatas:
-            assert (
-                Keys.LEAVES in adata.obs
-            ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representation(...)` first"
-            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.LEAVES], level)
-
-        return key_added
 
     @classmethod
     def from_pretrained(self, model_name_or_path: str, **kwargs: int) -> "Novae":
@@ -436,22 +290,168 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         model._checkpoint = name
         return model
 
+    @utils.format_docs
+    @utils.requires_fit
+    @torch.no_grad()
+    def compute_representation(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        slide_key: str | None = None,
+        zero_shot: bool = False,
+        accelerator: str = "cpu",
+        num_workers: int | None = None,
+    ) -> None:
+        """Compute the latent representation of Novae for all cells neighborhoods.
+
+        Note:
+            Representations are saved in `adata.obsm["novae_latent"]`
+
+        Args:
+            {adata}
+            {slide_key}
+            {accelerator}
+            num_workers: Number of workers for the dataloader.
+        """
+        self.mode.zero_shot = zero_shot
+        self.training = False
+        self._parse_hardware_args(accelerator, num_workers, use_device=True)
+
+        if adata is None and len(self.adatas) == 1:  # using existing datamodule
+            adatas = self.adatas
+            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
+        else:
+            adatas = self._prepare_adatas(adata, slide_key=slide_key)
+            for adata in adatas:
+                datamodule = self._init_datamodule(adata)
+                self._compute_representation_datamodule(adata, datamodule)
+
+        if self.mode.zero_shot:
+            latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas])
+            self.swav_head.set_kmeans_prototypes(latent)
+
+            for adata in adatas:
+                self._compute_leaves(adata, None, None)
+
+    @torch.no_grad()
+    def _compute_representation_datamodule(
+        self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
+    ) -> Tensor | None:
+        valid_indices = datamodule.dataset.valid_indices[0]
+        representations, projections = [], []
+
+        for batch in utils.tqdm(datamodule.predict_dataloader()):
+            batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
+            batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
+
+            representations.append(batch_repr)
+
+            if not self.mode.zero_shot:
+                batch_projections = self.swav_head.projection(batch_repr)
+                projections.append(batch_projections)
+
+        representations = torch.cat(representations)
+
+        if return_representations:
+            return representations
+
+        adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
+
+        if not self.mode.zero_shot:
+            projections = torch.cat(projections)
+            self._compute_leaves(adata, projections, valid_indices)
+
+    def _compute_leaves(self, adata: AnnData, projections: Tensor | None, valid_indices: np.ndarray | None):
+        assert (projections is None) is (valid_indices is None)
+
+        if projections is None:
+            valid_indices = utils.valid_indices(adata)
+            representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
+            projections = self.swav_head.projection(representations)
+
+        leaves_predictions = projections.argmax(dim=1).numpy(force=True)
+        leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
+        adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
+
+    def plot_domains_hierarchy(
+        self,
+        max_level: int = 10,
+        hline_level: int | list[int] | None = None,
+        leaf_font_size: int = 8,
+        **kwargs,
+    ):
+        """Plot the domains hierarchy as a dendogram.
+
+        Args:
+            max_level: Maximum level to be plot.
+            hline_level: If not `None`, a red line will ne drawn at this/these level(s).
+            leaf_font_size: The font size for the leaf labels.
+        """
+        plot._domains_hierarchy(
+            self.swav_head.clustering,
+            max_level=max_level,
+            hline_level=hline_level,
+            leaf_font_size=leaf_font_size,
+            **kwargs,
+        )
+
+    def plot_prototype_weights(self, **kwargs: int):
+        weights = self.swav_head.queue_weights().numpy(force=True)
+
+        where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
+        for i in np.where(where_enough_prototypes)[0]:
+            weights[i, weights[i] < Nums.QUEUE_WEIGHT_THRESHOLD] = 0
+        for i in np.where(~where_enough_prototypes)[0]:
+            indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
+            weights[i, indices_0] = 0
+
+        plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
+
+    @utils.format_docs
+    def assign_domains(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        level: int = 10,
+        n_domains: int | None = None,
+        key_added: str | None = None,
+    ) -> str:
+        """Assign a domain to each cell based on the "leaves" classes.
+
+        Note:
+            You'll need to run `model.compute_representation(...)` first.
+
+            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
+
+        Args:
+            {adata}
+            level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
+            n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
+            key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
+
+        Returns:
+            The name of the key added to `adata.obs`.
+        """
+        adatas = self._to_anndata_list(adata)
+
+        if n_domains is not None:
+            leaves_indices = utils.unique_leaves_indices(adatas)
+            level = self.swav_head.find_level(leaves_indices, n_domains)
+            return self.assign_domains(adatas, level=level, key_added=key_added)
+
+        key_added = f"{Keys.DOMAINS_PREFIX}{level}" if key_added is None else key_added
+
+        for adata in adatas:
+            assert (
+                Keys.LEAVES in adata.obs
+            ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representation(...)` first"
+            adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.LEAVES], level)
+
+        return key_added
+
     def batch_effect_correction(self, adata: AnnData | list[AnnData] | None = None, obs_key: str | None = None):
         adatas = self._to_anndata_list(adata)
         obs_key = utils.check_available_domains_key(adatas, obs_key)
 
         utils.batch_effect_correction(adatas, obs_key)
-
-    def _parse_hardware_args(self, accelerator: str, num_workers: int | None, use_device: bool = False) -> None:
-        if accelerator == "cpu" and num_workers:
-            log.warn("On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`.")
-
-        if num_workers is not None:
-            self.num_workers = num_workers
-
-        if use_device:
-            device = utils.parse_device_args(accelerator)
-            self.to(device)
 
     @utils.format_docs
     def fine_tune(
@@ -477,7 +477,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        datamodule = self._init_datamodule(self._get_prepared_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
+        datamodule = self._init_datamodule(self._prepare_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
         latent = self._compute_representation_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 

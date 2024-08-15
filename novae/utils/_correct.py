@@ -5,7 +5,7 @@ from anndata import AnnData
 from .._constants import Keys
 
 
-def _get_slides_indices(adatas: list[AnnData], only_valid_obs: bool = True) -> tuple[list[int], list[np.ndarray]]:
+def _slides_indices(adatas: list[AnnData], only_valid_obs: bool = True) -> tuple[list[int], list[np.ndarray]]:
     adata_indices, slides_obs_indices = [], []
 
     for i, adata in enumerate(adatas):
@@ -39,20 +39,20 @@ def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
             Keys.REPR in adata.obsm
         ), f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representation(...)` first"
 
-    adata_indices, slides_obs_indices = _get_slides_indices(adatas)
+    adata_indices, slides_obs_indices = _slides_indices(adatas)
 
     domains_counts_per_slide = _domains_counts_per_slide(adatas, obs_key)
     domains = domains_counts_per_slide.columns[:-1]
     ref_slide_ids: pd.Series = domains_counts_per_slide[domains].idxmax(axis=0)
 
-    def _get_centroid_reference(domain: str, slide_id: str, obs_key: str):
+    def _centroid_reference(domain: str, slide_id: str, obs_key: str):
         adata_ref_index: int = domains_counts_per_slide[Keys.ADATA_INDEX].loc[slide_id]
         adata_ref = adatas[adata_ref_index]
         where = (adata_ref.obs[Keys.SLIDE_ID] == slide_id) & (adata_ref.obs[obs_key] == domain)
         return adata_ref.obsm[Keys.REPR][where].mean(0)
 
     centroids_reference = pd.DataFrame(
-        {domain: _get_centroid_reference(domain, slide_id, obs_key) for domain, slide_id in ref_slide_ids.items()}
+        {domain: _centroid_reference(domain, slide_id, obs_key) for domain, slide_id in ref_slide_ids.items()}
     )
 
     for adata in adatas:

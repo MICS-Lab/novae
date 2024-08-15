@@ -10,7 +10,7 @@ from ._utils import (
     pretty_model_repr,
     parse_device_args,
     requires_fit,
-    get_valid_indices,
+    valid_indices,
     unique_leaves_indices,
     unique_obs,
     sparse_std,

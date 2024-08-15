@@ -85,7 +85,7 @@ class SwavHead(L.LightningModule):
         projections1 = self.projection(z1)  # (B, K)
         projections2 = self.projection(z2)  # (B, K)
 
-        ilocs = self.get_prototype_ilocs(projections1, slide_id)
+        ilocs = self.prototype_ilocs(projections1, slide_id)
 
         projections1, projections2 = projections1[:, ilocs], projections2[:, ilocs]
 
@@ -95,6 +95,9 @@ class SwavHead(L.LightningModule):
         loss = -0.5 * (self.cross_entropy_loss(q1, projections2) + self.cross_entropy_loss(q2, projections1))
 
         return loss, _mean_entropy_normalized(q1)
+
+    def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
+        return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
     @utils.format_docs
     def projection(self, z: Tensor) -> Tensor:
@@ -111,7 +114,7 @@ class SwavHead(L.LightningModule):
 
     @utils.format_docs
     @torch.no_grad()
-    def get_prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
+    def prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
         """Get the indices of the prototypes to use for the current slide.
 
         Args:
@@ -133,27 +136,18 @@ class SwavHead(L.LightningModule):
         if not self.mode.use_queue:
             return ...
 
-        weights = self.get_queue_weights()[slide_index]
+        weights = self.queue_weights()[slide_index]
         ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]
 
         return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
 
-    def get_queue_weights(self) -> Tensor:
+    def queue_weights(self) -> Tensor:
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
             A tensor of shape `(n_slides, K)`.
         """
         return self.sinkhorn(self.queue.mean(dim=1)) * self.num_prototypes
-
-    def set_kmeans_prototypes(self, latent: np.ndarray):
-        kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0, n_init="auto")
-        X = latent / (Nums.EPS + np.linalg.norm(latent, axis=1)[:, None])
-
-        kmeans_prototypes = kmeans.fit(X).cluster_centers_
-        kmeans_prototypes = kmeans_prototypes / (Nums.EPS + np.linalg.norm(kmeans_prototypes, axis=1)[:, None])
-
-        self._kmeans_prototypes = torch.nn.Parameter(torch.tensor(kmeans_prototypes))
 
     @utils.format_docs
     @torch.no_grad()
@@ -179,8 +173,44 @@ class SwavHead(L.LightningModule):
 
         return Q / Q.sum(dim=1, keepdim=True)  # ensure rows sum to 1 (for cross-entropy loss)
 
-    def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
-        return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
+    def set_kmeans_prototypes(self, latent: np.ndarray):
+        kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0, n_init="auto")
+        X = latent / (Nums.EPS + np.linalg.norm(latent, axis=1)[:, None])
+
+        kmeans_prototypes = kmeans.fit(X).cluster_centers_
+        kmeans_prototypes = kmeans_prototypes / (Nums.EPS + np.linalg.norm(kmeans_prototypes, axis=1)[:, None])
+
+        self._kmeans_prototypes = torch.nn.Parameter(torch.tensor(kmeans_prototypes))
+
+    @property
+    def prototypes(self) -> nn.Parameter:
+        return self._kmeans_prototypes if self.mode.zero_shot else self._prototypes
+
+    @property
+    def clustering(self) -> AgglomerativeClustering:
+        clustering_attr = self.mode.clustering_attr
+
+        if getattr(self, clustering_attr) is None:
+            self.hierarchical_clustering()
+
+        return getattr(self, clustering_attr)
+
+    @property
+    def clusters_levels(self) -> np.ndarray:
+        clusters_levels_attr = self.mode.clusters_levels_attr
+
+        if getattr(self, clusters_levels_attr) is None:
+            self.hierarchical_clustering()
+
+        return getattr(self, clusters_levels_attr)
+
+    def reset_clustering(self) -> None:
+        for attr in self.mode.all_clustering_attrs:
+            setattr(self, attr, None)
+
+    def set_clustering(self, clustering: None, clusters_levels: None) -> None:
+        setattr(self, self.mode.clustering_attr, clustering)
+        setattr(self, self.mode.clusters_levels_attr, clusters_levels)
 
     def hierarchical_clustering(self) -> None:
         """
@@ -207,28 +237,6 @@ class SwavHead(L.LightningModule):
 
         self.set_clustering(_clustering, _clusters_levels)
 
-    @property
-    def prototypes(self) -> nn.Parameter:
-        return self._kmeans_prototypes if self.mode.zero_shot else self._prototypes
-
-    @property
-    def clustering(self) -> AgglomerativeClustering:
-        clustering_attr = self.mode.clustering_attr
-
-        if getattr(self, clustering_attr) is None:
-            self.hierarchical_clustering()
-
-        return getattr(self, clustering_attr)
-
-    @property
-    def clusters_levels(self) -> np.ndarray:
-        clusters_levels_attr = self.mode.clusters_levels_attr
-
-        if getattr(self, clusters_levels_attr) is None:
-            self.hierarchical_clustering()
-
-        return getattr(self, clusters_levels_attr)
-
     def map_leaves_domains(self, series: pd.Series, level: int) -> pd.Series:
         """Map leaves to the parent domain from the corresponding level of the hierarchical tree.
 
@@ -248,14 +256,6 @@ class SwavHead(L.LightningModule):
             if _n_domains == n_domains:
                 return level
         raise ValueError(f"Could not find a level with {n_domains=}")
-
-    def reset_clustering(self) -> None:
-        for attr in self.mode.all_clustering_attrs:
-            setattr(self, attr, None)
-
-    def set_clustering(self, clustering: None, clusters_levels: None) -> None:
-        setattr(self, self.mode.clustering_attr, clustering)
-        setattr(self, self.mode.clusters_levels_attr, clusters_levels)
 
 
 @torch.no_grad()

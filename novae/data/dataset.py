@@ -86,7 +86,7 @@ class NovaeDataset(Dataset):
             if Keys.IS_VALID_OBS not in adata.obs:
                 adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
-        self.valid_indices = [utils.get_valid_indices(adata) for adata in self.adatas]
+        self.valid_indices = [utils.valid_indices(adata) for adata in self.adatas]
 
         self.obs_ilocs = None
         if self.single_adata:
@@ -174,13 +174,6 @@ class NovaeDataset(Dataset):
             counts_genes_indices=counts_genes_indices,
         )
 
-    def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
-        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
-        slides_metadata = obs_counts.to_frame()
-        slides_metadata[Keys.ADATA_INDEX] = adata_index
-        slides_metadata[Keys.N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
-        return slides_metadata
-
     def shuffle_obs_ilocs(self):
         """Shuffle the indices of the cells to be used in the dataset (for training only)."""
         if self.single_slide_mode:
@@ -212,6 +205,13 @@ class NovaeDataset(Dataset):
         obs_indices = batched_obs_indices[permutation].flatten()
 
         self.shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
+
+    def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
+        obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
+        slides_metadata = obs_counts.to_frame()
+        slides_metadata[Keys.ADATA_INDEX] = adata_index
+        slides_metadata[Keys.N_BATCHES] = (slides_metadata["count"] // self.batch_size).clip(1)
+        return slides_metadata
 
 
 def _to_adjacency_local(adjacency: csr_matrix, n_hops_local: int) -> csr_matrix:

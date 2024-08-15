@@ -60,7 +60,7 @@ def spatial_neighbors(
     assert pixel_size is None or technology is None, "You must choose argument between `pixel_size` and `technology`"
 
     if technology is not None:
-        adata.obsm["spatial"] = _get_technology_coords(adata, technology)
+        adata.obsm["spatial"] = _technology_coords(adata, technology)
 
     assert (
         "spatial" in adata.obsm
@@ -174,7 +174,7 @@ def _build_connectivity(
     return Adj, Dst
 
 
-def _get_technology_coords(adata: AnnData, technology: str) -> np.ndarray:
+def _technology_coords(adata: AnnData, technology: str) -> np.ndarray:
     VALID_TECHNOLOGIES = ["cosmx", "merscope", "xenium"]
     factor: float = 1.0
 

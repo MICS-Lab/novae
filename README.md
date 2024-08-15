@@ -44,9 +44,8 @@ Here is a minimal usage guide. For more details (e.g. how to load a pretrained m
 ```python
 import novae
 
-model = novae.Novae(adata)
+model = novae.Novae.from_pretrained("...")
 
-model.fit()
 model.compute_representation()
 model.assign_domains()
 ```
