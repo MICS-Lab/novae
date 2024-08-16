@@ -9,6 +9,7 @@ from . import utils
 from . import data
 from . import monitor
 from . import plot
+from ._constants import settings
 
 log = logging.getLogger("novae")
 configure_logger(log)
