@@ -28,7 +28,7 @@ Choose one of the following, depending on your needs. It should take at most a f
     cd novae
 
     pip install -e . # no extra
-    pip install -e '.[dev,monitor]' # all extra
+    pip install -e '.[dev]' # all extras
     ```
 
 === "Poetry (editable mode)"

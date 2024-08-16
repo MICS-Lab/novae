@@ -8,47 +8,73 @@ Contributions are welcome as we aim to continue improving `novae`. For instance,
 
 If you want to open a PR, follow the following instructions.
 
-## Installing `novae` in editable mode
-
-When contributing, installing `novae` in editable mode is recommended. Also, we recommend installing the 'dev' extra.
-
-For this, use one of the two following lines:
-
-```sh
-# with pip
-pip install -e '.[dev]'
-
-# or with poetry
-poetry install -E dev
-```
-
-## Coding guidelines
-
-We use `pre-commit` to run code quality controls before the commits. This includes running `black`, `isort`, `flake8`, and others.
-
-
-After installing `pre-commit`, you can set it up at the root of `novae` like this:
-```sh
-pre-commit install
-```
-
-Then, it will run the pre-commit automatically before commit. But you can also run the pre-commit manually:
-```sh
-pre-commit run --all-files
-```
-
-Apart from this, we also recommend to follow the standard styling conventions:
-- Follow the [PEP8](https://peps.python.org/pep-0008/) style guide.
-- Provide meaningful names to all your variables and functions.
-- Type your function inputs/outputs, and add docstrings in the Google style.
-- Try as much as possible to follow the same coding style as the rest of the repository.
-
-## Pull Requests
+## Making a Pull Request (PR)
 
 To add some new code to **novae**, you should:
 
 1. Fork the repository
-2. Install `novae` in editable mode with the 'dev' extra (see above)
+2. Install `novae` in editable mode with the `dev` extra (see below)
 3. Create your personal branch from `main`
-4. Implement your changes
-5. Create a pull request on the `main` branch. Add explanations about your developed features, and wait for discussion and validation of your pull request
+4. Implement your changes according to the 'Coding guidelines' below
+5. Create a pull request on the `main` branch of the original repository. Add explanations about your developed features, and wait for discussion and validation of your pull request
+
+## Installing `novae` in editable mode
+
+When contributing, installing `novae` in editable mode is recommended. We also recommend installing the `dev` extra.
+
+For that, choose between `pip` and `poetry` as below:
+
+```sh
+git clone https://github.com/MICS-Lab/novae.git
+cd novae
+
+pip install -e '.[dev]' # pip installation
+poetry install -E dev   # poetry installation
+```
+
+## Coding guidelines
+
+### Styling and formatting
+
+We use [`pre-commit`](https://pre-commit.com/) to run code quality controls before the commits. This includes running `black`, `isort`, `flake8`, and others.
+
+
+You can set it up at the root of the repository like this:
+```sh
+pre-commit install
+```
+
+Then, it will run the pre-commit automatically before each commit.
+
+You can also run the pre-commit manually:
+```sh
+pre-commit run --all-files
+```
+
+Apart from this, we recommend to follow the standard styling conventions:
+- Follow the [PEP8](https://peps.python.org/pep-0008/) style guide.
+- Provide meaningful names to all your variables and functions.
+- Provide type hints to your function inputs/outputs.
+- Add docstrings in the Google style.
+- Try as much as possible to follow the same coding style as the rest of the repository.
+
+### Testing
+
+When create a pull request, tests are run automatically. But you can also run the tests yourself before making the PR. For that, run `pytest` at the root of the repository. You can also add new tests in the `./tests` directory.
+
+To check the coverage of the tests:
+
+```sh
+coverage run -m pytest
+coverage report
+```
+
+### Documentation
+
+You can update the documentation in the `./docs` directory. Refer to the [mkdocs-material documentation](https://squidfunk.github.io/mkdocs-material/) for more help.
+
+To serve the documentation locally:
+
+```sh
+mkdocs serve
+```

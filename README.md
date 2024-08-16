@@ -40,7 +40,7 @@ To install `novae` in editable mode (e.g., to contribute), clone the repository 
 
 ```sh
 pip install -e .                 # pip, minimal dependencies
-pip install -e '.[dev,monitor]'  # pip, all extras
+pip install -e '.[dev]'          # pip, all extras
 poetry install                   # poetry, minimal dependencies
 poetry install --all-extras      # poetry, all extras
 ```

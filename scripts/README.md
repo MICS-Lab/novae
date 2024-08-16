@@ -4,10 +4,10 @@ These scripts are used to pretrain and monitor Novae with Weight & Biases. To se
 
 ## Setup
 
-For monitoring, `novae` must be installed with the `monitor` extra, for instance via pip:
+For monitoring, `novae` must be installed with the `dev` extra, for instance via pip:
 
 ```sh
-pip install -e ".[monitor]"
+pip install -e '.[dev]'
 ```
 
 ## Usage

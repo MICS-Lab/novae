@@ -26,7 +26,7 @@ def test_build():
 
     assert connectivities.shape[0] == adata.n_obs
 
-    assert (connectivities.A == true_connectivities).all()
+    assert (connectivities.todense() == true_connectivities).all()
 
 
 def test_set_unique_slide_ids():
@@ -79,7 +79,7 @@ def test_build_slide_key():
         ]
     )
 
-    assert (adata_.obsp["spatial_connectivities"].A == true_connectivities).all()
+    assert (adata_.obsp["spatial_connectivities"].todense() == true_connectivities).all()
 
 
 def test_build_slide_key_disjoint_indices():
@@ -112,13 +112,13 @@ def test_build_pixel_size():
     novae.utils.spatial_neighbors(adata_pixel, radius=5, pixel_size=10)
 
     connectivities = adata_pixel.obsp["spatial_connectivities"]
-    assert (connectivities.A == 0).all()
+    assert (connectivities.todense() == 0).all()
 
     adata_pixel = adata.copy()
     novae.utils.spatial_neighbors(adata_pixel, radius=15, pixel_size=10)
 
     connectivities = adata_pixel.obsp["spatial_connectivities"]
-    assert (connectivities.A == true_connectivities).all()
+    assert (connectivities.todense() == true_connectivities).all()
 
     # this should raise an error, because the function is being called twice with pixel_size
     with pytest.raises(AssertionError):
@@ -160,7 +160,7 @@ def test_to_adjacency_local():
     adjancency_local = _to_adjacency_local(adata.obsp["spatial_connectivities"], 1)
 
     assert (
-        (adjancency_local.A > 0)
+        (adjancency_local.todense() > 0)
         == np.array(
             [
                 [True, True, False, False, True],
@@ -175,7 +175,7 @@ def test_to_adjacency_local():
     adjancency_local = _to_adjacency_local(adata.obsp["spatial_connectivities"], 2)
 
     assert (
-        (adjancency_local.A > 0)
+        (adjancency_local.todense() > 0)
         == np.array(
             [
                 [True, True, True, False, True],
@@ -190,7 +190,7 @@ def test_to_adjacency_local():
     adjancency_local = _to_adjacency_local(adata_line.obsp["spatial_connectivities"], 1)
 
     assert (
-        (adjancency_local.A > 0)
+        (adjancency_local.todense() > 0)
         == np.array(
             [
                 [True, True, False, False, False, False],
@@ -206,7 +206,7 @@ def test_to_adjacency_local():
     adjancency_local = _to_adjacency_local(adata_line.obsp["spatial_connectivities"], 2)
 
     assert (
-        (adjancency_local.A > 0)
+        (adjancency_local.todense() > 0)
         == np.array(
             [
                 [True, True, True, False, False, False],
@@ -224,7 +224,7 @@ def test_to_adjacency_view():
     adjancency_view = _to_adjacency_view(adata.obsp["spatial_connectivities"], 2)
 
     assert (
-        (adjancency_view.A > 0)
+        (adjancency_view.todense() > 0)
         == np.array(
             [
                 [False, False, True, False, False],
@@ -243,7 +243,7 @@ def test_to_adjacency_view():
     adjancency_view = _to_adjacency_view(adata_line.obsp["spatial_connectivities"], 1)
 
     assert (
-        (adjancency_view.A > 0)
+        (adjancency_view.todense() > 0)
         == np.array(
             [
                 [False, True, False, False, False, False],
@@ -259,7 +259,7 @@ def test_to_adjacency_view():
     adjancency_view = _to_adjacency_view(adata_line.obsp["spatial_connectivities"], 2)
 
     assert (
-        (adjancency_view.A > 0)
+        (adjancency_view.todense() > 0)
         == np.array(
             [
                 [False, False, True, False, False, False],
