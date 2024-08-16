@@ -2,8 +2,21 @@
 name = "novae"
 version = "0.0.1"
 description = "Graph-based foundation model for spatial transcriptomics data"
-authors = ["Quentin Blampey <quentin.blampey@centralesupelec.fr>"]
+documentation = "https://mics-lab.github.io/novae/"
+homepage = "https://mics-lab.github.io/novae/"
+repository = "https://github.com/MICS-Lab/novae"
+authors = ["Quentin Blampey <quentin.blampey@gmail.com>"]
 packages = [{ include = "novae" }]
+license = "BSD-3-Clause"
+readme = "README.md"
+classifiers = [
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
