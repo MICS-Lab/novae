@@ -80,10 +80,22 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
     Returns:
         The Jensen-Shannon divergence score for all slides
     """
-    distributions = [
-        adata.obs[obs_key].value_counts(sort=False).values
-        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
-    ]
+    all_categories = set()
+    for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key):
+        all_categories.update(adata.obs[obs_key].cat.categories)
+    all_categories = sorted(all_categories)
+
+    distributions = []
+    for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key):
+
+        value_counts = adata.obs[obs_key].value_counts(sort=False)
+        distribution = np.zeros(len(all_categories))
+
+        for i, category in enumerate(all_categories):
+            if category in value_counts:
+                distribution[i] = value_counts[category]
+
+        distributions.append(distribution)
 
     return _jensen_shannon_divergence(np.array(distributions))
 
