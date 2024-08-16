@@ -17,6 +17,10 @@ true_distributions = np.array(
 true_jsd = _jensen_shannon_divergence(true_distributions)
 
 
+def test_heuristic():
+    novae.monitor.heuristic(adatas, "domain", n_classes=5)
+
+
 def test_jensen_shannon_divergence():
     jsd = novae.monitor.jensen_shannon_divergence(adatas, "domain")
 

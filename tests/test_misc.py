@@ -18,3 +18,10 @@ def test_settings():
 
     novae.settings.warmup_epochs = 2
     assert novae.settings.warmup_epochs == Nums.WARMUP_EPOCHS
+
+
+def test_repr():
+    model = novae.Novae(adata)
+
+    repr(model)
+    repr(model.mode)

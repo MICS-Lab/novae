@@ -47,17 +47,20 @@ def test_train():
     adatas = novae.utils.dummy_dataset(
         n_panels=2,
         n_slides_per_panel=2,
-        xmax=100,
+        xmax=60,
         n_domains=2,
     )
 
-    model = novae.Novae(adatas)
+    model = novae.Novae(adatas, num_prototypes=10)
 
     with pytest.raises(AssertionError):  # should raise an error because the model has not been trained
         model.compute_representations()
 
-    model.fit(max_epochs=1)
+    model.fit(max_epochs=3)
     model.compute_representations()
+    model.compute_representations(num_workers=2)
+
+    obs_key = model.assign_domains(n_domains=2)
     obs_key = model.assign_domains(level=2)
 
     adatas[0].obs.iloc[0][obs_key] = np.nan
@@ -70,11 +73,14 @@ def test_train():
     fide2 = novae.monitor.mean_fide_score(adatas, obs_key=obs_key, slide_key="slide_key")
     jsd2 = novae.monitor.jensen_shannon_divergence(adatas, obs_key=obs_key, slide_key="slide_key")
 
-    assert svg1 == -1000 or svg1 != svg2
+    assert svg1 == -1000 or svg1 == 0 or svg1 != svg2
     assert fide1 != fide2
     assert jsd1 != jsd2
 
     adatas[0].write_h5ad("tests/test.h5ad")  # ensures the output can be saved
+
+    model.compute_representations(adatas, zero_shot=True)
+    model.fine_tune(adatas, max_epochs=1)
 
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
