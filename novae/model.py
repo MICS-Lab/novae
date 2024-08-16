@@ -105,7 +105,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         ### Misc
         self._num_workers = 0
-        self._checkpoint = None
+        self._model_name = None
         self._datamodule = None
         self.init_slide_queue(self.adatas)
 
@@ -120,9 +120,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def __repr__(self) -> str:
         info_dict = {
-            "known genes": self.cell_embedder.voc_size,
-            "parameters": utils.pretty_num_parameters(self),
-            "checkpoint": self._checkpoint,
+            "Known genes": self.cell_embedder.voc_size,
+            "Parameters": utils.pretty_num_parameters(self),
+            "Model name": self._model_name,
         }
         return utils.pretty_model_repr(info_dict)
 
@@ -180,7 +180,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def _parse_hardware_args(self, accelerator: str, num_workers: int | None, use_device: bool = False) -> None:
         if accelerator == "cpu" and num_workers:
-            log.warn("On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`.")
+            log.warning(
+                "On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`."
+            )
 
         if num_workers is not None:
             self.num_workers = num_workers
@@ -242,7 +244,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         model = super().from_pretrained(model_name_or_path, **kwargs)
         model.mode.pretrained()
-        model._checkpoint = model_name_or_path
+        model._model_name = model_name_or_path
         return model
 
     def save_pretrained(
@@ -278,8 +280,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         return model
 
     @classmethod
-    def _load_wandb_artifact(cls, name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
-        artifact_path = utils.load_wandb_artifact(name) / "model.ckpt"
+    def _load_wandb_artifact(cls, model_name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
+        artifact_path = utils.load_wandb_artifact(model_name) / "model.ckpt"
 
         try:
             model = cls.load_from_checkpoint(artifact_path, map_location=map_location, strict=False, **kwargs)
@@ -287,7 +289,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             ckpt_version = torch.load(artifact_path, map_location=map_location).get(Keys.NOVAE_VERSION, "unknown")
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
-        model._checkpoint = name
+        model._model_name = model_name
         return model
 
     @utils.format_docs

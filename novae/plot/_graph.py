@@ -38,7 +38,7 @@ def _domains_hierarchy(
     if hline_level is not None:
         hline_level = [hline_level] if isinstance(hline_level, int) else hline_level
         for level in hline_level:
-            plt.hlines(original_ymax - hline_level, 0, 1e5, colors="r", linestyles="dashed")
+            plt.hlines(original_ymax - level, 0, 1e5, colors="r", linestyles="dashed")
 
     linkage_matrix = np.column_stack([clustering.children_, height.clip(0), _leaves_count(clustering)]).astype(float)
 

@@ -66,7 +66,8 @@ To check the coverage of the tests:
 
 ```sh
 coverage run -m pytest
-coverage report
+coverage report # command line report
+coverage html # html report
 ```
 
 ### Documentation

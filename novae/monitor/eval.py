@@ -134,7 +134,7 @@ def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
         The average SVG score.
     """
     if adata.obs[obs_key].value_counts().min() < 2:
-        log.warn(f"Skipping {obs_key=} because some domains have one or zero cell")
+        log.warning(f"Skipping {obs_key=} because some domains have one or zero cell")
         return -1000
 
     sc.tl.rank_genes_groups(adata, groupby=obs_key)

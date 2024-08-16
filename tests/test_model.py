@@ -35,8 +35,12 @@ def _generate_fake_scgpt_inputs():
 _generate_fake_scgpt_inputs()
 
 
-def test_load_model():
+def test_load_wandb_artifact():
     novae.Novae._load_wandb_artifact("novae/novae/model-4i8e9g2v:v17")
+
+
+def test_load_huggingface_model():
+    novae.Novae.from_pretrained("MICS-Lab/novae-test")
 
 
 def test_train():

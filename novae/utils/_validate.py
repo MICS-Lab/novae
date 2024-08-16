@@ -85,7 +85,7 @@ def _set_unique_slide_ids(adatas: list[AnnData], slide_key: str | None) -> None:
             adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
         return
 
-    log.warn("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
+    log.warning("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
 
     for adata in adatas:
         values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
@@ -105,7 +105,9 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
 
     for adata in adatas:
         if adata.X.min() < 0:
-            log.warn("Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)")
+            log.warning(
+                "Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)"
+            )
 
         if adata.X.max() >= 10:
             count_raw += 1
@@ -121,14 +123,14 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
 
         warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors. Read the documentation of `novae.utils.spatial_neighbors` to fix this."
         if mean_distance >= Nums.MEAN_DISTANCE_UPPER_TH_WARNING:
-            log.warn(f"The mean distance between neighborhood cells is {mean_distance}, which is high. {warning_cs}")
+            log.warning(f"The mean distance between neighborhood cells is {mean_distance}, which is high. {warning_cs}")
         elif mean_distance <= Nums.MEAN_DISTANCE_LOWER_TH_WARNING:
-            log.warn(f"The mean distance between neighborhood cells is {mean_distance}, which is low. {warning_cs}")
+            log.warning(f"The mean distance between neighborhood cells is {mean_distance}, which is low. {warning_cs}")
         else:
             mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
 
             if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
-                log.warn(
+                log.warning(
                     f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different `radius` threshold."
                 )
 
@@ -168,7 +170,7 @@ def _highly_variable_genes(adata: AnnData, set_default_true: bool = False):
     n_hvg = adata.var[Keys.HIGHLY_VARIABLE].sum()
 
     if n_hvg < Nums.MIN_GENES:
-        log.warn(f"Only {n_hvg} highly variable genes were found.")
+        log.warning(f"Only {n_hvg} highly variable genes were found.")
 
     if n_hvg < Nums.N_HVG_THRESHOLD and n_hvg < adata.n_vars // 2:
         sc.pp.highly_variable_genes(adata, n_top_genes=adata.n_vars // 2)  # keep at least half of the genes
@@ -195,7 +197,7 @@ def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None):
     n_known = sum(adata.var[Keys.IS_KNOWN_GENE])
     assert n_known >= Nums.MIN_GENES, f"Too few genes ({n_known}) are known by the model."
     if n_known / adata.n_vars < 0.50:
-        log.warn(f"Only {n_known / adata.n_vars:.1%} of genes are known by the model.")
+        log.warning(f"Only {n_known / adata.n_vars:.1%} of genes are known by the model.")
 
 
 def _genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:

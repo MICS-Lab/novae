@@ -106,7 +106,7 @@ def repository_root() -> Path:
     path = Path(__file__).parents[2]
 
     if path.name != "novae":
-        log.warn(f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}")
+        log.warning(f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}")
 
     return path
 
@@ -136,5 +136,5 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
 
 
 def pretty_model_repr(info_dict: dict[str, str], model_name: str = "Novae") -> str:
-    rows = [f"{model_name} model"] + [f"[{k}]: {v}" for k, v in info_dict.items()]
+    rows = [f"{model_name} model"] + [f"{k}: {v}" for k, v in info_dict.items()]
     return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
