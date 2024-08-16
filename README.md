@@ -46,7 +46,7 @@ import novae
 
 model = novae.Novae.from_pretrained("...")
 
-model.compute_representation()
+model.compute_representations()
 model.assign_domains()
 ```
 

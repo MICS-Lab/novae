@@ -11,6 +11,9 @@ theme:
     primary: white
 nav:
   - Home: index.md
+  - Getting started: getting_started.md
+  - Tutorials:
+    - Main usage: tutorials/main_usage.ipynb
   - API:
     - novae.Novae: api/novae.Novae.md
     - novae.utils: api/novae.utils.md
@@ -27,6 +30,8 @@ nav:
       - novae.data.NovaeDataset: api/novae.data.NovaeDataset.md
       - novae.data.NovaeDatamodule: api/novae.data.NovaeDatamodule.md
       - novae.data.AnnDataTorch: api/novae.data.AnnDataTorch.md
+  - FAQ: faq.md
+  - Cite us: cite_us.md
 
 plugins:
   - search

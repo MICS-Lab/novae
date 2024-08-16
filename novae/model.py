@@ -30,7 +30,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         model = novae.Novae(adata)
 
         model.fit()
-        model.compute_representation()
+        model.compute_representations()
         model.assign_domains()
         ```
     """
@@ -293,7 +293,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     @utils.format_docs
     @utils.requires_fit
     @torch.no_grad()
-    def compute_representation(
+    def compute_representations(
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
@@ -318,12 +318,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         if adata is None and len(self.adatas) == 1:  # using existing datamodule
             adatas = self.adatas
-            self._compute_representation_datamodule(self.adatas[0], self.datamodule)
+            self._compute_representations_datamodule(self.adatas[0], self.datamodule)
         else:
             adatas = self._prepare_adatas(adata, slide_key=slide_key)
             for adata in adatas:
                 datamodule = self._init_datamodule(adata)
-                self._compute_representation_datamodule(adata, datamodule)
+                self._compute_representations_datamodule(adata, datamodule)
 
         if self.mode.zero_shot:
             latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas])
@@ -333,7 +333,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 self._compute_leaves(adata, None, None)
 
     @torch.no_grad()
-    def _compute_representation_datamodule(
+    def _compute_representations_datamodule(
         self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
     ) -> Tensor | None:
         valid_indices = datamodule.dataset.valid_indices[0]
@@ -417,7 +417,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """Assign a domain to each cell based on the "leaves" classes.
 
         Note:
-            You'll need to run `model.compute_representation(...)` first.
+            You'll need to run `model.compute_representations(...)` first.
 
             The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
@@ -434,7 +434,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert all(
             Keys.LEAVES in adata.obs for adata in adatas
-        ), "Did not found `adata.obs['leaves']`. Please run `model.compute_representation(...)` first"
+        ), "Did not found `adata.obs['leaves']`. Please run `model.compute_representations(...)` first"
 
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)
@@ -479,7 +479,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
         datamodule = self._init_datamodule(self._prepare_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
-        latent = self._compute_representation_datamodule(None, datamodule, return_representations=True)
+        latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes

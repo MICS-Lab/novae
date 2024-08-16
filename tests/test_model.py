@@ -50,10 +50,10 @@ def test_train():
     model = novae.Novae(adatas)
 
     with pytest.raises(AssertionError):  # should raise an error because the model has not been trained
-        model.compute_representation()
+        model.compute_representations()
 
     model.fit(max_epochs=1)
-    model.compute_representation()
+    model.compute_representations()
     obs_key = model.assign_domains(level=2)
 
     adatas[0].obs.iloc[0][obs_key] = np.nan
@@ -86,15 +86,15 @@ def test_representation_single_panel(slide_key: str | None):
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
 
-    model.compute_representation()
+    model.compute_representations()
 
     domains = adata.obs[Keys.LEAVES].copy()
 
-    model.compute_representation()
+    model.compute_representations()
 
     assert domains.equals(adata.obs[Keys.LEAVES])
 
-    model.compute_representation([adata], slide_key=slide_key)
+    model.compute_representations([adata], slide_key=slide_key)
 
     assert domains.equals(adata.obs[Keys.LEAVES])
 
@@ -102,13 +102,13 @@ def test_representation_single_panel(slide_key: str | None):
         sids = adata.obs[slide_key].unique()
         adatas = [adata[adata.obs[slide_key] == sid] for sid in sids]
 
-        model.compute_representation(adatas)
+        model.compute_representations(adatas)
 
         adata_concat = anndata.concat(adatas)
 
         assert domains.equals(adata_concat.obs[Keys.LEAVES].loc[domains.index])
 
-        model.compute_representation(adatas, slide_key=slide_key)
+        model.compute_representations(adatas, slide_key=slide_key)
 
         adata_concat = anndata.concat(adatas)
 
@@ -128,11 +128,11 @@ def test_representation_multi_panel(slide_key: str | None):
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
 
-    model.compute_representation()
+    model.compute_representations()
 
     domains_series = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
-    model.compute_representation(adatas, slide_key=slide_key)
+    model.compute_representations(adatas, slide_key=slide_key)
 
     domains_series2 = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
@@ -142,7 +142,7 @@ def test_representation_multi_panel(slide_key: str | None):
         adata[adata.obs[Keys.SLIDE_ID] == sid].copy() for adata in adatas for sid in adata.obs[Keys.SLIDE_ID].unique()
     ]
 
-    model.compute_representation(adata_split)
+    model.compute_representations(adata_split)
 
     domains_series2 = pd.concat([adata.obs[Keys.LEAVES] for adata in adata_split])
 
@@ -182,7 +182,7 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
 
-    model.compute_representation()
+    model.compute_representations()
     model.assign_domains()
 
     domains = adata.obs[Keys.LEAVES].copy()
@@ -192,7 +192,7 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
 
     new_model = novae.Novae.from_pretrained("tests/test_model")
 
-    new_model.compute_representation(adata, slide_key=slide_key)
+    new_model.compute_representations(adata, slide_key=slide_key)
     new_model.assign_domains(adata)
 
     assert (adata.obsm[Keys.REPR] == representations).all()
