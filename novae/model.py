@@ -432,6 +432,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         adatas = self._to_anndata_list(adata)
 
+        assert all(
+            Keys.LEAVES in adata.obs for adata in adatas
+        ), "Did not found `adata.obs['leaves']`. Please run `model.compute_representation(...)` first"
+
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)
             level = self.swav_head.find_level(leaves_indices, n_domains)
@@ -440,9 +444,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         key_added = f"{Keys.DOMAINS_PREFIX}{level}" if key_added is None else key_added
 
         for adata in adatas:
-            assert (
-                Keys.LEAVES in adata.obs
-            ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representation(...)` first"
             adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.LEAVES], level)
 
         return key_added
