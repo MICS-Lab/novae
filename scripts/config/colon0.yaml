@@ -23,7 +23,8 @@ fit_kwargs:
   min_delta: 0.05
 
 post_training:
-  save_metrics: true
-  save_result: true
-  save_umap: 10
+  n_domains: [7, 10, 15]
+  log_metrics: true
+  save_h5ad: true
+  log_umap: true
   log_domains: true

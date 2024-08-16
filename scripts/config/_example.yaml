@@ -2,8 +2,9 @@ project: novae
 wandb_artefact: novae/novae/xxx
 
 post_training:
-  save_umap: 20
-  save_result: ../results
+  n_domains: [7, 10]
+  log_umap: true
+  save_h5ad: true
 
 data:
   train_dataset: all
