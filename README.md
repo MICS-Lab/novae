@@ -2,6 +2,7 @@
   <img src="docs/assets/banner.png" alt="novae_banner" width="100%"/>
 </p>
 <!-- TODO: when it becomes public: https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png -->
+
 [![PyPI](https://img.shields.io/pypi/v/novae.svg)](https://pypi.org/project/novae)
 [![Downloads](https://static.pepy.tech/badge/novae)](https://pepy.tech/project/novae)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://mics-lab.github.io/novae)
