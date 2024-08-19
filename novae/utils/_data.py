@@ -6,6 +6,7 @@ from pathlib import Path
 import anndata
 import numpy as np
 import pandas as pd
+import scanpy as sc
 from anndata import AnnData
 
 from . import repository_root, spatial_neighbors, wandb_log_dir
@@ -21,9 +22,9 @@ def dummy_dataset(
     n_vars: int = 100,
     n_drop: int = 20,
     step: int = 20,
-    panel_shift_lambda: float = 0.25,
-    slide_shift_lambda: float = 0.5,
-    domain_shift_lambda: float = 0.25,
+    panel_shift_lambda: float = 5,
+    slide_shift_lambda: float = 1.5,
+    domain_shift_lambda: float = 2.0,
     slide_ids_unique: bool = True,
     compute_spatial_neighbors: bool = False,
 ) -> list[AnnData]:
@@ -61,7 +62,7 @@ def dummy_dataset(
         TRUE_GENE_NAMES[:n_vars] if n_vars <= len(TRUE_GENE_NAMES) else [f"g{i}" for i in range(n_vars)]
     )
 
-    lambdas_per_domain = np.random.exponential(1, size=(n_domains, n_vars))
+    domains_shift = np.random.exponential(domain_shift_lambda, size=(n_domains, n_vars))
 
     for panel_index in range(n_panels):
         adatas_panel = []
@@ -86,10 +87,9 @@ def dummy_dataset(
                 condition = adata.obs["domain"] == "domain_" + str(i)
                 n_obs_domain = condition.sum()
 
-                domain_shift = np.random.exponential(domain_shift_lambda, size=n_vars)
-                lambdas = lambdas_per_domain[i] + domain_shift + slide_shift + panel_shift
+                lambdas = domains_shift[i] + slide_shift + panel_shift
                 X_domain = np.random.exponential(lambdas, size=(n_obs_domain, n_vars))
-                adata.X[condition] = X_domain.clip(0, 9)  # values should look like log1p values
+                adata.X[condition] = X_domain.astype(int)  # values should look like log1p values
 
             if n_drop:
                 size = n_vars - n_drop - panel_index  # different number of genes
@@ -103,6 +103,9 @@ def dummy_dataset(
         if compute_spatial_neighbors:
             spatial_neighbors(adata_panel, slide_key="slide_key")
             _drop_neighbors(adata_panel, index=3)  # ensure one node is not connected to any other
+
+        sc.pp.normalize_total(adata_panel)
+        sc.pp.log1p(adata_panel)
 
         adatas.append(adata_panel)
 
