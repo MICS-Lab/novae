@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import novae
 from novae._constants import Nums
 
