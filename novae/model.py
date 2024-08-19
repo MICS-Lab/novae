@@ -397,6 +397,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
     def plot_prototype_weights(self, **kwargs: int):
+        assert (
+            self.swav_head.queue is not None
+        ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
+
         weights = self.swav_head.queue_weights().numpy(force=True)
 
         where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
