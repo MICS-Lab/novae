@@ -3,9 +3,6 @@ from __future__ import annotations
 import lightning as L
 import torch
 import torch.nn.functional as F
-from anndata import AnnData
-from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
-from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, nn, optim
 from torch_geometric.data import Data
 from torch_geometric.nn.aggr import MeanAggregation
@@ -99,15 +96,13 @@ class InferenceModel(L.LightningModule):
         self,
         novae_model: L.LightningModule,
         poisson_head: bool = True,
-        counts_ratio: float = 0.25,
+        lr: float = 1e-3,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["novae_model"])
-
         self.novae_model = novae_model
         cls = InferenceHeadPoisson if poisson_head else InferenceHeadBaseline
         self.head = cls(novae_model.cell_embedder, novae_model.hparams.output_size + novae_model.hparams.embedding_size)
-        self._num_workers = 0
+        self.lr = lr
 
         self.novae_model.eval()
 
@@ -135,47 +130,4 @@ class InferenceModel(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        lr = self._lr if hasattr(self, "_lr") else 1e-3
-        return optim.Adam(self.parameters(), lr=lr)
-
-    def fit(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        slide_key: str | None = None,
-        max_epochs: int = 20,
-        accelerator: str = "cpu",
-        lr: float = 1e-3,
-        num_workers: int | None = None,
-        min_delta: float = 0.1,
-        patience: int = 3,
-        callbacks: list[Callback] | None = None,
-        enable_checkpointing: bool = False,
-        logger: Logger | list[Logger] | bool = False,
-        **kwargs: int,
-    ):
-        adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
-
-        ### Misc
-        self._lr = lr
-        self._num_workers = num_workers or self._num_workers
-
-        ### Callbacks
-        early_stopping = EarlyStopping(
-            monitor="train/loss_epoch",
-            min_delta=min_delta,
-            patience=patience,
-            check_on_train_epoch_end=True,
-        )
-        callbacks = [early_stopping] + (callbacks or [])
-        enable_checkpointing = enable_checkpointing or any(isinstance(c, ModelCheckpoint) for c in callbacks)
-
-        ### Training
-        trainer = L.Trainer(
-            max_epochs=max_epochs,
-            accelerator=accelerator,
-            callbacks=callbacks,
-            logger=logger,
-            enable_checkpointing=enable_checkpointing,
-            **kwargs,
-        )
-        trainer.fit(self, datamodule=self._init_datamodule(adatas))  # TODO: fix this
+        return optim.Adam(self.parameters(), lr=self.lr)

@@ -8,10 +8,11 @@ class Mode:
 
     def __init__(self):
         self.use_queue = False
-        self.queue_mode = False
+        self.queue_mode = False  # TODO: should we remove this queue_mode?
         self.zero_shot = False
         self.freeze_mode = True
         self.trained = False
+        self.inference_head_trained = False
 
     def __repr__(self) -> str:
         return f"Mode({dict(self.__dict__.items())})"
@@ -30,10 +31,12 @@ class Mode:
         self.queue_mode = False
         self.freeze_mode = False
         self.zero_shot = False
+        self.inference_head_trained = False
 
     def fit(self):
         self.zero_shot = False
         self.trained = False
+        self.inference_head_trained = False
 
     # Mode-specific attributes
 

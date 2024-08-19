@@ -104,6 +104,7 @@ def dummy_dataset(
             spatial_neighbors(adata_panel, slide_key="slide_key")
             _drop_neighbors(adata_panel, index=3)  # ensure one node is not connected to any other
 
+        adata_panel.layers["counts"] = adata_panel.X.copy()
         sc.pp.normalize_total(adata_panel)
         sc.pp.log1p(adata_panel)
 

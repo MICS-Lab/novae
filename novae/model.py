@@ -8,14 +8,19 @@ import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
-from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
 from torch_geometric.data import Data
 
 from . import __version__, plot, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
-from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
+from .module import (
+    CellEmbedder,
+    GraphAugmentation,
+    GraphEncoder,
+    InferenceModel,
+    SwavHead,
+)
 
 log = logging.getLogger(__name__)
 
@@ -27,10 +32,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```python
         import novae
 
-        model = novae.Novae(adata)
+        model = novae.Novae.from_pretrained("...")
 
-        model.fit()
-        model.compute_representations()
+        model.compute_representations(adata, zero_shot=True)
         model.assign_domains()
         ```
     """
@@ -107,6 +111,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._num_workers = 0
         self._model_name = None
         self._datamodule = None
+        self._inference_head = None
         self.init_slide_queue(self.adatas)
 
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
@@ -163,7 +168,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             return self.adatas
         return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
 
-    def _init_datamodule(self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None):
+    def _init_datamodule(
+        self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None, **kwargs: int
+    ):
         return NovaeDatamodule(
             self._to_anndata_list(adata),
             cell_embedder=self.cell_embedder,
@@ -172,6 +179,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             n_hops_view=self.hparams.n_hops_view,
             num_workers=self._num_workers,
             sample_cells=sample_cells,
+            **kwargs,
         )
 
     def configure_optimizers(self):
@@ -460,6 +468,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         utils.batch_effect_correction(adatas, obs_key)
 
+    def infer_gene_expression(self):
+        assert (
+            self._inference_head is not None
+        ), "The inference head was not trained. Please run `model.fit_inference_head(...)` first."
+
+        # TODO
+
     @utils.format_docs
     def fine_tune(
         self,
@@ -512,8 +527,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         min_delta: float = 0.1,
         patience: int = 3,
         callbacks: list[Callback] | None = None,
-        enable_checkpointing: bool = False,
-        logger: Logger | list[Logger] | bool = False,
         **trainer_kwargs: int,
     ):
         """Train a Novae model. The training will be stopped by early stopping.
@@ -528,8 +541,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
             callbacks: Optional list of Pytorch lightning callbacks.
-            enable_checkpointing: Whether to enable model checkpointing.
-            logger: The pytorch lightning logger.
             **trainer_kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
         self.mode.fit()
@@ -543,25 +554,72 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._parse_hardware_args(accelerator, num_workers)
         self._datamodule = self._init_datamodule()
 
-        ### Callbacks
-        early_stopping = EarlyStopping(
-            monitor="train/loss_epoch",
-            min_delta=min_delta,
-            patience=patience,
-            check_on_train_epoch_end=True,
-        )
-        callbacks = [early_stopping] + (callbacks or [])
-        enable_checkpointing = enable_checkpointing or any(isinstance(c, ModelCheckpoint) for c in callbacks)
-
-        ### Training
-        trainer = L.Trainer(
+        _train(
+            self,
+            self.datamodule,
+            accelerator,
             max_epochs=max_epochs,
-            accelerator=accelerator,
+            patience=patience,
+            min_delta=min_delta,
             callbacks=callbacks,
-            logger=logger,
-            enable_checkpointing=enable_checkpointing,
             **trainer_kwargs,
         )
-        trainer.fit(self, datamodule=self.datamodule)
 
         self.mode.trained = True
+
+    def fit_inference_head(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        slide_key: str | None = None,
+        poisson_head: bool = True,
+        counts_ratio: float = 0.25,
+        accelerator: str = "cpu",
+        lr: float = 1e-3,
+        num_workers: int | None = None,
+        min_delta: float = 1.0,
+        **kwargs: int,
+    ):
+        if adata is not None:
+            self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
+
+        self._parse_hardware_args(accelerator, num_workers)
+
+        inference_model = InferenceModel(self, poisson_head=poisson_head, lr=lr)
+        datamodule = self._init_datamodule(self.adatas, counts_ratio=counts_ratio)
+
+        _train(inference_model, datamodule, accelerator, min_delta=min_delta, **kwargs)
+
+        self._inference_head = inference_model.head
+        self.mode.inference_head_trained = True
+
+
+def _train(
+    model: L.LightningModule,
+    datamodule: L.LightningDataModule,
+    accelerator: str,
+    max_epochs: int = 50,
+    patience: int = 3,
+    min_delta: float = 0,
+    callbacks: list[Callback] | None = None,
+    **trainer_kwargs: int,
+):
+    """Internal function to train a LightningModule with early stopping."""
+
+    early_stopping = EarlyStopping(
+        monitor="train/loss_epoch",
+        min_delta=min_delta,
+        patience=patience,
+        check_on_train_epoch_end=True,
+    )
+    callbacks = [early_stopping] + (callbacks or [])
+    enable_checkpointing = any(isinstance(c, ModelCheckpoint) for c in callbacks)
+
+    trainer = L.Trainer(
+        max_epochs=max_epochs,
+        accelerator=accelerator,
+        callbacks=callbacks,
+        logger=False,
+        enable_checkpointing=enable_checkpointing,
+        **trainer_kwargs,
+    )
+    trainer.fit(model, datamodule=datamodule)
