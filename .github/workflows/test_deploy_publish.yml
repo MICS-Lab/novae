@@ -1,0 +1,54 @@
+name: test_deploy_publish
+on:
+  push:
+    tags:
+      - v*
+  pull_request:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - uses: pre-commit/action@v3.0.1
+
+  build:
+    needs: [pre-commit]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - run: pip install '.[dev]'
+
+      - name: Run tests
+        run: pytest --cov
+
+      - name: Deploy doc
+        if: matrix.python-version == '3.10' && contains(github.ref, 'tags')
+        run: mkdocs gh-deploy --force
+
+      - name: Upload results to Codecov
+        if: matrix.python-version == '3.10'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  publish:
+    needs: [build]
+    if: contains(github.ref, 'tags')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and publish to pypi
+        uses: JRubics/poetry-publish@v1.17
+        with:
+          python_version: "3.10"
+          pypi_token: ${{ secrets.PYPI_TOKEN }}

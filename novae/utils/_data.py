@@ -52,7 +52,8 @@ def dummy_dataset(
     spatial = spatial[(spatial**2).sum(1) <= xmax**2]
     n_obs = len(spatial)
 
-    domain = "domain_" + (np.sqrt((spatial**2).sum(1)) // (xmax / n_domains + 1e-8)).astype(int).astype(str)
+    int_domains = (np.sqrt((spatial**2).sum(1)) // (xmax / n_domains + 1e-8)).astype(int)
+    domain = "domain_" + int_domains.astype(str).astype(object)
 
     adatas = []
 
