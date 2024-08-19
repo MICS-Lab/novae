@@ -1,4 +1,4 @@
-name: ci
+name: test_deploy_publish
 on:
   push:
     tags:
@@ -21,18 +21,12 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Setup python
-        id: setup-python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-
-      - name: Install dependencies
-        run: pip install '.[dev]'
+      - run: pip install '.[dev]'
 
       - name: Run tests
         run: pytest --cov
@@ -47,14 +41,14 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  # publish:
-  #   needs: [build]
-  #   if: contains(github.ref, 'tags')
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Build and publish to pypi
-  #       uses: JRubics/poetry-publish@v1.17
-  #       with:
-  #         python_version: "3.10"
-  #         pypi_token: ${{ secrets.PYPI_TOKEN }}
+  publish:
+    needs: [build]
+    if: contains(github.ref, 'tags')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and publish to pypi
+        uses: JRubics/poetry-publish@v1.17
+        with:
+          python_version: "3.10"
+          pypi_token: ${{ secrets.PYPI_TOKEN }}
