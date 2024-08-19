@@ -218,7 +218,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
         self.swav_head.prototypes.requires_grad_(after_warm_up or not self.mode.freeze_mode)
-        self.mode.use_queue = after_warm_up and self.mode.queue_mode
+        self.mode.use_queue = self.mode.queue_mode  # after_warm_up and self.mode.queue_mode
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
