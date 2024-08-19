@@ -160,6 +160,9 @@ def _lookup_highly_variable_genes(adatas: list[AnnData]):
 
 
 def _highly_variable_genes(adata: AnnData, set_default_true: bool = False):
+    if Keys.HIGHLY_VARIABLE in adata.var:  # already computed
+        return
+
     if adata.n_vars <= Nums.MIN_GENES_FOR_HVG:  # if too few genes, keep all genes
         if set_default_true:
             adata.var[Keys.HIGHLY_VARIABLE] = True
