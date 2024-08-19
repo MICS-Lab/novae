@@ -6,13 +6,13 @@ import lightning as L
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import wandb
 import yaml
 from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 import novae
-import wandb
 from novae import log
 from novae._constants import Keys
 from novae.monitor import jensen_shannon_divergence, mean_fide_score, mean_svg_score

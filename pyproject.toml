@@ -91,6 +91,7 @@ exclude = '''
 
 [tool.isort]
 profile = "black"
+known_third_party = ["wandb"]
 skip_glob = ["*/__init__.py"]
 
 [tool.coverage.run]
