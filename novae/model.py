@@ -482,7 +482,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self._inference_head is not None
         ), "The inference head was not trained. Please run `model.fit_inference_head(...)` first."
 
-        gene_names = gene_names if isinstance(gene_names, list) else [gene_names]
+        gene_names = [gene_names] if isinstance(gene_names, str) else gene_names
         self.cell_embedder.check_gene_names(gene_names)
 
         gene_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(gene_names))
@@ -616,10 +616,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         inference_model = InferenceModel(self, poisson_head=poisson_head, lr=lr)
         datamodule = self._init_datamodule(self.adatas, counts_ratio=counts_ratio)
+        self._inference_head = inference_model.head
 
         _train(inference_model, datamodule, accelerator, min_delta=min_delta, logger=logger, **kwargs)
 
-        self._inference_head = inference_model.head
         self.mode.inference_head_trained = True
 
 

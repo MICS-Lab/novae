@@ -1,19 +1,14 @@
 project: novae_tests
+wandb_artefact: novae/novae/model-73gex5vi:v4
+train_inference: true
 
 data:
-  train_dataset: dummy_train
-  val_dataset: dummy_val
+  train_dataset: dummy_counts
+  val_dataset: dummy_counts_val
 
 model_kwargs:
   embedding_size: 50
 
 fit_kwargs:
-  max_epochs: 1
+  max_epochs: 2
   accelerator: "cpu"
-
-
-post_training:
-  n_domains: [2, 3]
-  log_umap: true
-  log_metrics: true
-  log_domains: true

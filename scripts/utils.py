@@ -17,6 +17,7 @@ from novae import log
 from novae._constants import Keys
 from novae.monitor import jensen_shannon_divergence, mean_fide_score, mean_svg_score
 from novae.monitor.callback import (
+    GeneInferenceValidation,
     LogProtoCovCallback,
     LogTissuePrototypeWeights,
     ValidationCallback,
@@ -64,12 +65,18 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
     if config.wandb_init_kwargs.get("mode") == "disabled":
         return None
 
-    callbacks = [ValidationCallback(adatas_val, **_get_hardware_kwargs(config))] if adatas_val else []
+    validation_callback = [ValidationCallback(adatas_val, **_get_hardware_kwargs(config))] if adatas_val else []
 
     if config.sweep:
-        return callbacks
+        return validation_callback
 
-    return callbacks + [
+    if config.train_inference:
+        return [
+            ModelCheckpoint(monitor="metrics/mean_corr", mode="max", save_last=True, save_top_k=4),
+            GeneInferenceValidation(adatas_val, **_get_hardware_kwargs(config)),
+        ]
+
+    return validation_callback + [
         ModelCheckpoint(monitor="metrics/val_heuristic", mode="max", save_last=True, save_top_k=4),
         LogProtoCovCallback(),
         LogTissuePrototypeWeights(),

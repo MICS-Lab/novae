@@ -122,7 +122,7 @@ def _drop_neighbors(adata: AnnData, index: int):
         adata.obsp[key].eliminate_zeros()
 
 
-def load_dataset(relative_path: str) -> list[AnnData]:
+def load_dataset(relative_path: str, files_black_list: list[str] = None) -> list[AnnData]:
     """Load one or multiple AnnData objects based on a relative path from the data directory
 
     Args:
@@ -134,16 +134,21 @@ def load_dataset(relative_path: str) -> list[AnnData]:
     data_dir = repository_root() / "data"
     full_path = data_dir / relative_path
 
+    files_black_list = files_black_list or []
+
     if full_path.is_file():
+        assert full_path.name not in files_black_list, f"File {full_path} is in the black list"
         log.info(f"Loading one adata: {full_path}")
         return [anndata.read_h5ad(full_path)]
 
     if ".h5ad" in relative_path:
-        all_paths = list(map(str, data_dir.rglob(relative_path)))
+        all_paths = list(data_dir.rglob(relative_path))
     else:
-        all_paths = list(map(str, full_path.rglob("*.h5ad")))
+        all_paths = list(full_path.rglob("*.h5ad"))
 
-    log.info(f"Loading {len(all_paths)} adata(s): {', '.join(all_paths)}")
+    all_paths = [path for path in all_paths if path.name not in files_black_list]
+
+    log.info(f"Loading {len(all_paths)} adata(s): {', '.join([str(path) for path in all_paths])}")
     return [anndata.read_h5ad(path) for path in all_paths]
 
 

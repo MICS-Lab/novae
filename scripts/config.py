@@ -7,6 +7,8 @@ class DataConfig(BaseModel):
     train_dataset: str = "all"
     val_dataset: str | None = None
 
+    files_black_list: list[str] = []
+
 
 class PostTrainingConfig(BaseModel):
     n_domains: list[int] = [7, 10]
@@ -20,6 +22,8 @@ class Config(BaseModel):
     project: str = "novae"
     wandb_artefact: str | None = None
     sweep: bool = False
+    train_inference: bool = False
+
     data: DataConfig = DataConfig()
     post_training: PostTrainingConfig = PostTrainingConfig()
 

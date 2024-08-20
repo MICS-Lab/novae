@@ -15,7 +15,7 @@ from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.utils.load_dataset(config.data.train_dataset)
+    adatas = novae.utils.load_dataset(config.data.train_dataset, files_black_list=config.data.files_black_list)
     adatas_val = novae.utils.load_dataset(config.data.val_dataset) if config.data.val_dataset else None
 
     logger = init_wandb_logger(config)
@@ -23,7 +23,11 @@ def main(args: argparse.Namespace) -> None:
 
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
-        model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
+
+        if config.train_inference:
+            model.fit_inference_head(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
+        else:
+            model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
         model = novae.Novae(adatas, **config.model_kwargs)
         model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)

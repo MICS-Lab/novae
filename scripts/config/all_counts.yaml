@@ -1,0 +1,16 @@
+project: novae_infer
+wandb_artefact: novae/novae/model-73gex5vi:v4
+train_inference: true
+
+data:
+  train_dataset: all
+  val_dataset: infer
+  files_black_list: ["Xenium_V1_hLung_cancer_section_outs.h5ad"]
+
+fit_kwargs:
+  max_epochs: 30
+  lr: 0.0001
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 6
+  min_delta: 0.025

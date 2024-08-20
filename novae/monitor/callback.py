@@ -7,9 +7,11 @@ import seaborn as sns
 from anndata import AnnData
 from lightning import Trainer
 from lightning.pytorch.callbacks import Callback
+from scipy.stats import spearmanr
 
 from .._constants import Keys
 from ..model import Novae
+from ..module import InferenceModel
 from .eval import heuristic, mean_fide_score
 from .log import log_plt_figure
 
@@ -30,6 +32,56 @@ class LogTissuePrototypeWeights(Callback):
 
         model.plot_prototype_weights()
         log_plt_figure("tissue_prototype_weights")
+
+
+class GeneInferenceValidation(Callback):
+    def __init__(
+        self,
+        adatas: list[AnnData] | None,
+        n_genes: int = 2,
+        accelerator: str = "cpu",
+        num_workers: int = 0,
+        slide_name_key: str = "slide_id",
+    ):
+        assert adatas is None or len(adatas) == 1, "GeneInferenceValidation only supports single slide mode for now"
+        self.adata = adatas[0] if adatas is not None else None
+        self.accelerator = accelerator
+        self.num_workers = num_workers
+        self.slide_name_key = slide_name_key
+        self.n_genes = n_genes
+
+        if self.adata is not None:
+            assert "counts_test_names" in self.adata.uns
+
+            self.gene_names = self.adata.uns["counts_test_names"][:n_genes]
+
+    def on_train_epoch_end(self, trainer: Trainer, model: InferenceModel):
+        if self.adata is None:
+            return
+
+        model.novae_model.mode.inference_head_trained = True
+
+        model.novae_model.compute_representations(
+            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, zero_shot=True
+        )
+
+        model.novae_model.infer_gene_expression(self.adata, self.gene_names)
+
+        color = self.gene_names[0]
+        temp_key = f"inferred_{color}"
+        self.adata.obs[temp_key] = self.adata.obsm[Keys.INFERRED][color]
+        sc.pl.spatial(self.adata, color=temp_key, spot_size=10, vmax="p98", vmin="p02", show=False)
+        slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
+        log_plt_figure(f"val_{temp_key}_{self.adata.obs[slide_name_key].iloc[0]}")
+
+        inferred = self.adata.obsm[Keys.INFERRED].values
+        counts = np.asarray(self.adata.obsm["counts_test"][:, : self.n_genes].todense())
+
+        corrs = np.array([spearmanr(inferred[:, i], counts[:, i])[0] for i in range(counts.shape[1])])
+        sns.boxplot(corrs)
+        log_plt_figure(f"val_corr_{self.n_genes}_genes")
+
+        model.log("metrics/mean_corr", corrs.mean())
 
 
 class ValidationCallback(Callback):
