@@ -8,6 +8,7 @@ import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
 from torch_geometric.data import Data
 
@@ -527,6 +528,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         min_delta: float = 0.1,
         patience: int = 3,
         callbacks: list[Callback] | None = None,
+        logger: Logger | list[Logger] | bool = False,
         **trainer_kwargs: int,
     ):
         """Train a Novae model. The training will be stopped by early stopping.
@@ -541,6 +543,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
             callbacks: Optional list of Pytorch lightning callbacks.
+            logger: The pytorch lightning logger.
             **trainer_kwargs: Optional kwargs for the Pytorch Lightning `Trainer` class.
         """
         self.mode.fit()
@@ -562,6 +565,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             patience=patience,
             min_delta=min_delta,
             callbacks=callbacks,
+            logger=logger,
             **trainer_kwargs,
         )
 
@@ -577,6 +581,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         lr: float = 1e-3,
         num_workers: int | None = None,
         min_delta: float = 1.0,
+        logger: Logger | list[Logger] | bool = False,
         **kwargs: int,
     ):
         if adata is not None:
@@ -587,7 +592,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         inference_model = InferenceModel(self, poisson_head=poisson_head, lr=lr)
         datamodule = self._init_datamodule(self.adatas, counts_ratio=counts_ratio)
 
-        _train(inference_model, datamodule, accelerator, min_delta=min_delta, **kwargs)
+        _train(inference_model, datamodule, accelerator, min_delta=min_delta, logger=logger, **kwargs)
 
         self._inference_head = inference_model.head
         self.mode.inference_head_trained = True
@@ -601,6 +606,7 @@ def _train(
     patience: int = 3,
     min_delta: float = 0,
     callbacks: list[Callback] | None = None,
+    logger: Logger | list[Logger] | bool = False,
     **trainer_kwargs: int,
 ):
     """Internal function to train a LightningModule with early stopping."""
@@ -618,7 +624,7 @@ def _train(
         max_epochs=max_epochs,
         accelerator=accelerator,
         callbacks=callbacks,
-        logger=False,
+        logger=logger,
         enable_checkpointing=enable_checkpointing,
         **trainer_kwargs,
     )
