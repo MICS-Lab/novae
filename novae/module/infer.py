@@ -29,7 +29,7 @@ def _combine_embeddings(z: Tensor, genes_embeddings: Tensor) -> Tensor:
 
 
 class InferenceHeadPoisson(L.LightningModule):
-    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
+    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 64, n_layers: int = 5):
         super().__init__()
         self.cell_embedder = cell_embedder
         self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
@@ -72,7 +72,7 @@ class InferenceHeadPoisson(L.LightningModule):
 
 
 class InferenceHeadBaseline(L.LightningModule):
-    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 32, n_layers: int = 5):
+    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 64, n_layers: int = 5):
         super().__init__()
         self.cell_embedder = cell_embedder
         self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
