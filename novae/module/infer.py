@@ -104,16 +104,14 @@ class InferenceModel(L.LightningModule):
         self.head = cls(novae_model.cell_embedder, novae_model.hparams.output_size + novae_model.hparams.embedding_size)
         self.lr = lr
 
-        self.novae_model.eval()
-
         self.mean_aggregation = MeanAggregation()
 
     def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
-        data = batch["main"]
         with torch.no_grad():
+            data = batch["main"]
             z = self.novae_model(batch)["main"]  # (B, O)
-        x = self.mean_aggregation(data.counts, index=data.batch)  # (B, G)
-        genes_indices = data.counts_genes_indices  # (B, G)
+            x = self.mean_aggregation(data.counts, index=data.batch)  # (B, G)
+            genes_indices = data.counts_genes_indices  # (B, G)
 
         return sum([self.head.loss(x[[i]], z[[i]], genes_indices[i]) for i in range(len(x))])
 

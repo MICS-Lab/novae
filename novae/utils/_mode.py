@@ -25,6 +25,7 @@ class Mode:
         self.queue_mode = False
         self.trained = True
         self.zero_shot = False
+        self.inference_head_trained = True
 
     def fine_tune(self):
         self.use_queue = False

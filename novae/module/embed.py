@@ -90,7 +90,7 @@ class CellEmbedder(L.LightningModule):
 
         return cls(gene_to_index, None, embedding=embedding)
 
-    def genes_to_indices(self, gene_names: pd.Index, as_torch: bool = True) -> torch.Tensor | np.ndarray:
+    def genes_to_indices(self, gene_names: pd.Index | list[str], as_torch: bool = True) -> torch.Tensor | np.ndarray:
         """Convert gene names to their corresponding indices.
 
         Args:
@@ -106,6 +106,13 @@ class CellEmbedder(L.LightningModule):
             return torch.tensor(indices, dtype=torch.long)
 
         return np.array(indices, dtype=np.int16)
+
+    def check_gene_names(self, gene_names: pd.Index | list[str]):
+        gene_names = utils.lower_var_names(gene_names)
+
+        missing_genes = list(set(gene_names) - set(self.gene_names))
+        if missing_genes:
+            raise ValueError(f"Gene names not found in the model vocabulary: {', '.join(missing_genes)}")
 
     @utils.format_docs
     def forward(self, data: Data) -> Data:

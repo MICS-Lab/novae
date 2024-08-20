@@ -4,6 +4,7 @@ import logging
 
 import lightning as L
 import numpy as np
+import pandas as pd
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
@@ -449,7 +450,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert all(
             Keys.LEAVES in adata.obs for adata in adatas
-        ), "Did not found `adata.obs['leaves']`. Please run `model.compute_representations(...)` first"
+        ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
 
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)
@@ -469,12 +470,36 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         utils.batch_effect_correction(adatas, obs_key)
 
-    def infer_gene_expression(self):
+    def infer_gene_expression(
+        self,
+        adata: AnnData | list[AnnData] | None,
+        gene_names: list[str] | str | pd.Index,
+        key_added: str | None = None,
+    ):
+        key_added = Keys.INFERRED if key_added is None else key_added
+
         assert (
             self._inference_head is not None
         ), "The inference head was not trained. Please run `model.fit_inference_head(...)` first."
 
-        # TODO
+        gene_names = gene_names if isinstance(gene_names, list) else [gene_names]
+        self.cell_embedder.check_gene_names(gene_names)
+
+        gene_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(gene_names))
+
+        adatas = self._to_anndata_list(adata)
+
+        assert all(
+            Keys.REPR in adata.obsm for adata in adatas
+        ), f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representations(...)` first."
+
+        for adata in adatas:
+            z = torch.tensor(adata.obsm[Keys.REPR])
+            predictions = torch.exp(self._inference_head(z, gene_embeddings))
+
+            adata.obsm[key_added] = pd.DataFrame(
+                predictions.numpy(force=True), columns=gene_names, index=adata.obs_names
+            )
 
     @utils.format_docs
     def fine_tune(
