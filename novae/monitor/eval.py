@@ -101,7 +101,13 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
 
 
 @utils.format_docs
-def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_top_genes: int = 3) -> float:
+def mean_svg_score(
+    adata: AnnData | list[AnnData],
+    obs_key: str,
+    slide_key: str = None,
+    n_top_genes: int = 3,
+    n_classes: int | None = None,
+) -> float:
     """Mean SVG score over all slides. A high score indicates better domain-specific genes, or spatial variable genes.
 
     Args:
@@ -115,14 +121,14 @@ def mean_svg_score(adata: AnnData | list[AnnData], obs_key: str, slide_key: str 
     """
     return np.mean(
         [
-            svg_score(adata, obs_key, n_top_genes=n_top_genes)
+            svg_score(adata, obs_key, n_top_genes=n_top_genes, n_classes=n_classes)
             for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
         ]
     )
 
 
 @utils.format_docs
-def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
+def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3, n_classes: int | None = None) -> float:
     """Average score of the top differentially expressed genes for each domain.
 
     Args:
@@ -138,8 +144,11 @@ def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3) -> float:
         return -1000
 
     sc.tl.rank_genes_groups(adata, groupby=obs_key)
+
     sub_recarray: np.recarray = adata.uns["rank_genes_groups"]["scores"][:n_top_genes]
-    return np.mean([sub_recarray[field].mean() for field in sub_recarray.dtype.names])
+    mean_per_domain = [sub_recarray[field].mean() for field in sub_recarray.dtype.names]
+
+    return np.mean(mean_per_domain) if n_classes is None else np.sum(mean_per_domain) / n_classes
 
 
 def _jensen_shannon_divergence(distributions: np.ndarray) -> float:

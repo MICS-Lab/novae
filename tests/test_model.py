@@ -68,6 +68,7 @@ def test_train():
     adatas[0].obs.iloc[0][obs_key] = np.nan
 
     novae.monitor.mean_svg_score(adatas, obs_key=obs_key)
+    novae.monitor.mean_svg_score(adatas, obs_key=obs_key, n_classes=10)
     novae.monitor.mean_fide_score(adatas, obs_key=obs_key)
     novae.monitor.jensen_shannon_divergence(adatas, obs_key=obs_key)
 
