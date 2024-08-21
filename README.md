@@ -26,8 +26,10 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 
 ## Overview
 
-TODO
-<!-- TODO: when it becomes public: update image link -->
+<p align="center">
+  <img src="docs/assets/Figure1.png" alt="novae_overview" width="100%"/>
+</p>
+
 
 ## Installation
 
