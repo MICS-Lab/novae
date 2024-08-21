@@ -494,7 +494,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ), f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representations(...)` first."
 
         for adata in adatas:
-            z = torch.tensor(adata.obsm[Keys.REPR])
+            z = torch.tensor(adata.obsm[Keys.REPR], device=self.device, dtype=torch.float32)
             predictions = torch.exp(self._inference_head(z, gene_embeddings))
 
             adata.obsm[key_added] = pd.DataFrame(

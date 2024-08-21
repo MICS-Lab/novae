@@ -61,9 +61,10 @@ class GeneInferenceValidation(Callback):
 
         model.novae_model.mode.inference_head_trained = True
 
-        model.novae_model.compute_representations(
-            self.adata, accelerator=self.accelerator, num_workers=self.num_workers, zero_shot=True
-        )
+        if Keys.REPR not in self.adata.obsm:
+            model.novae_model.compute_representations(
+                self.adata, accelerator=self.accelerator, num_workers=self.num_workers, zero_shot=True
+            )
 
         model.novae_model.infer_gene_expression(self.adata, self.gene_names)
 
