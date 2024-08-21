@@ -602,7 +602,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
-        poisson_head: bool = True,
+        poisson_head: bool = False,
         counts_ratio: float = 0.25,
         accelerator: str = "cpu",
         lr: float = 1e-3,
