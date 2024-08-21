@@ -66,7 +66,7 @@ class GeneInferenceValidation(Callback):
 
         model.novae_model.infer_gene_expression(self.adata, self.gene_names)
 
-        for color in self.gene_names[:2]:
+        for color in self.gene_names:
             temp_key = f"inferred_{color}"
             self.adata.obs[temp_key] = self.adata.obsm[Keys.INFERRED][color]
             sc.pl.spatial(self.adata, color=temp_key, spot_size=10, vmax="p98", vmin="p02", show=False)
