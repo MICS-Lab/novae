@@ -485,7 +485,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         gene_names = [gene_names] if isinstance(gene_names, str) else gene_names
         self.cell_embedder.check_gene_names(gene_names)
 
-        gene_embeddings = self.cell_embedder.embedding(self.cell_embedder.genes_to_indices(gene_names))
+        print(f"Device {self.device=}")
+        gene_indices = self.cell_embedder.genes_to_indices(gene_names).to(self.device)
+        gene_embeddings = self.cell_embedder.embedding(gene_indices)
 
         adatas = self._to_anndata_list(adata)
 
