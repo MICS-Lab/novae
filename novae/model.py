@@ -497,7 +497,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         for adata in adatas:
             z = torch.tensor(adata.obsm[Keys.REPR], device=self.device, dtype=torch.float32)
-            predictions = torch.exp(self._inference_head(z, gene_embeddings))
+            predictions = self._inference_head.infer(z, gene_embeddings)
 
             adata.obsm[key_added] = pd.DataFrame(
                 predictions.numpy(force=True), columns=gene_names, index=adata.obs_names

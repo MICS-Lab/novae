@@ -70,6 +70,10 @@ class InferenceHeadPoisson(L.LightningModule):
 
         return self.poisson_nllloss(logits, x)
 
+    def infer(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
+        logits = self(z, genes_embeddings)
+        return torch.exp(logits)
+
 
 class InferenceHeadBaseline(L.LightningModule):
     def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 64, n_layers: int = 5):
@@ -89,6 +93,9 @@ class InferenceHeadBaseline(L.LightningModule):
         predictions = self(z, genes_embeddings)
 
         return F.mse_loss(x, predictions)
+
+    def infer(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
+        return torch.clip(self(z, genes_embeddings), min=0)
 
 
 class InferenceModel(L.LightningModule):
