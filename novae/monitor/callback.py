@@ -38,7 +38,6 @@ class GeneInferenceValidation(Callback):
     def __init__(
         self,
         adatas: list[AnnData] | None,
-        n_genes: int = 2,
         accelerator: str = "cpu",
         num_workers: int = 0,
         slide_name_key: str = "slide_id",
@@ -48,12 +47,11 @@ class GeneInferenceValidation(Callback):
         self.accelerator = accelerator
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
-        self.n_genes = n_genes
 
         if self.adata is not None:
             assert "counts_test_names" in self.adata.uns
 
-            self.gene_names = self.adata.uns["counts_test_names"][:n_genes]
+            self.gene_names = self.adata.uns["counts_test_names"]
 
     def on_train_epoch_end(self, trainer: Trainer, model: InferenceModel):
         if self.adata is None:
@@ -68,19 +66,19 @@ class GeneInferenceValidation(Callback):
 
         model.novae_model.infer_gene_expression(self.adata, self.gene_names)
 
-        color = self.gene_names[0]
-        temp_key = f"inferred_{color}"
-        self.adata.obs[temp_key] = self.adata.obsm[Keys.INFERRED][color]
-        sc.pl.spatial(self.adata, color=temp_key, spot_size=10, vmax="p98", vmin="p02", show=False)
-        slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
-        log_plt_figure(f"val_{temp_key}_{self.adata.obs[slide_name_key].iloc[0]}")
+        for color in self.gene_names[:2]:
+            temp_key = f"inferred_{color}"
+            self.adata.obs[temp_key] = self.adata.obsm[Keys.INFERRED][color]
+            sc.pl.spatial(self.adata, color=temp_key, spot_size=10, vmax="p98", vmin="p02", show=False)
+            slide_name_key = self.slide_name_key if self.slide_name_key in self.adata.obs else Keys.SLIDE_ID
+            log_plt_figure(f"val_{temp_key}_{self.adata.obs[slide_name_key].iloc[0]}")
 
         inferred = self.adata.obsm[Keys.INFERRED].values
-        counts = np.asarray(self.adata.obsm["counts_test"][:, : self.n_genes].todense())
+        counts = np.asarray(self.adata.obsm["counts_test"].todense())
 
         corrs = np.array([spearmanr(inferred[:, i], counts[:, i])[0] for i in range(counts.shape[1])])
         sns.boxplot(corrs)
-        log_plt_figure(f"val_corr_{self.n_genes}_genes")
+        log_plt_figure(f"val_corr_{len(self.gene_names)}_genes")
 
         model.log("metrics/mean_corr", corrs.mean())
 
