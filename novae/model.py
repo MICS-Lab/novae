@@ -253,8 +253,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             A pretrained `Novae` model.
         """
         model = super().from_pretrained(model_name_or_path, **kwargs)
+
         model.mode.pretrained()
         model._model_name = model_name_or_path
+        model.cell_embedder.embedding.weight.requires_grad_(False)
+
         return model
 
     def save_pretrained(
@@ -485,7 +488,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         gene_names = [gene_names] if isinstance(gene_names, str) else gene_names
         self.cell_embedder.check_gene_names(gene_names)
 
-        print(f"Device {self.device=}")
         gene_indices = self.cell_embedder.genes_to_indices(gene_names).to(self.device)
         gene_embeddings = self.cell_embedder.embedding(gene_indices)
 
@@ -602,10 +604,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
-        poisson_head: bool = False,
         counts_ratio: float = 0.25,
         accelerator: str = "cpu",
-        lr: float = 1e-3,
+        lr: float = 1e-4,
         num_workers: int | None = None,
         min_delta: float = 1.0,
         logger: Logger | list[Logger] | bool = False,
@@ -616,7 +617,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self._parse_hardware_args(accelerator, num_workers)
 
-        inference_model = InferenceModel(self, poisson_head=poisson_head, lr=lr)
+        inference_model = InferenceModel(self, lr=lr)
         datamodule = self._init_datamodule(self.adatas, counts_ratio=counts_ratio)
         self._inference_head = inference_model.head
 

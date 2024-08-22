@@ -9,8 +9,8 @@ data:
 
 fit_kwargs:
   max_epochs: 30
-  lr: 0.001
+  lr: 0.0001
   accelerator: "gpu"
   num_workers: 8
-  patience: 3
-  min_delta: 10
+  patience: 2
+  min_delta: 4

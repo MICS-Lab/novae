@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import lightning as L
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn, optim
 from torch_geometric.data import Data
-from torch_geometric.nn.aggr import MeanAggregation
+from torch_geometric.nn.aggr import MaxAggregation
 
 from .. import utils
 from . import CellEmbedder
@@ -75,49 +74,26 @@ class InferenceHeadPoisson(L.LightningModule):
         return torch.exp(logits)
 
 
-class InferenceHeadBaseline(L.LightningModule):
-    def __init__(self, cell_embedder: CellEmbedder, input_size: int, hidden_size: int = 64, n_layers: int = 5):
-        super().__init__()
-        self.cell_embedder = cell_embedder
-        self.mlp = _mlp(input_size, hidden_size, n_layers, 1)
-
-    def forward(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        combined_embeddings = _combine_embeddings(z, genes_embeddings)  # (B, G, (C + E)
-
-        return self.mlp(combined_embeddings).squeeze(-1)  # predictions (B, G)
-
-    def loss(self, x: Tensor, z: Tensor, genes_indices: Tensor) -> Tensor:
-        with torch.no_grad():
-            genes_embeddings = self.cell_embedder.embedding(genes_indices)
-
-        predictions = self(z, genes_embeddings)
-
-        return F.mse_loss(x, predictions)
-
-    def infer(self, z: Tensor, genes_embeddings: Tensor) -> Tensor:
-        return torch.clip(self(z, genes_embeddings), min=0)
-
-
 class InferenceModel(L.LightningModule):
     def __init__(
         self,
         novae_model: L.LightningModule,
-        poisson_head: bool = True,
-        lr: float = 1e-3,
+        lr: float = 1e-4,
     ):
         super().__init__()
         self.novae_model = novae_model
-        cls = InferenceHeadPoisson if poisson_head else InferenceHeadBaseline
-        self.head = cls(novae_model.cell_embedder, novae_model.hparams.output_size + novae_model.hparams.embedding_size)
+        self.head = InferenceHeadPoisson(
+            novae_model.cell_embedder, novae_model.hparams.output_size + novae_model.hparams.embedding_size
+        )
         self.lr = lr
 
-        self.mean_aggregation = MeanAggregation()
+        self.max_aggregation = MaxAggregation()
 
     def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
         with torch.no_grad():
             data = batch["main"]
             z = self.novae_model(batch)["main"]  # (B, O)
-            x = self.mean_aggregation(data.counts, index=data.batch)  # (B, G)
+            x = self.max_aggregation(data.counts, index=data.batch)  # (B, G)
             genes_indices = data.counts_genes_indices  # (B, G)
 
         return sum([self.head.loss(x[[i]], z[[i]], genes_indices[i]) for i in range(len(x))])

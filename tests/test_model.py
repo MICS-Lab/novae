@@ -42,7 +42,9 @@ _generate_fake_scgpt_inputs()
 
 
 def test_load_huggingface_model():
-    novae.Novae.from_pretrained("MICS-Lab/novae-test")
+    model = novae.Novae.from_pretrained("MICS-Lab/novae-test")
+
+    assert model.cell_embedder.embedding.weight.requires_grad is False
 
 
 def test_train():
@@ -187,6 +189,8 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
         sensitivity_noise_std=0.042,
         scgpt_model_dir=scgpt_model_dir,
     )
+
+    assert model.cell_embedder.embedding.weight.requires_grad is (scgpt_model_dir is None)
 
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
