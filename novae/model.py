@@ -36,8 +36,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         model = novae.Novae.from_pretrained("...")
 
-        model.compute_representations(adata, zero_shot=True)
-        model.assign_domains()
+        model.compute_representations(adata)
+        model.assign_domains(adata)
         ```
     """
 
