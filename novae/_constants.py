@@ -57,7 +57,7 @@ class Nums:
     # swav head constants
     SWAV_EPSILON: float = 0.05
     SINKHORN_ITERATIONS: int = 3
-    QUEUE_SIZE: int = 5
+    QUEUE_SIZE: int = 3
     QUEUE_WEIGHT_THRESHOLD: float = 0.99
 
     # misc nums
