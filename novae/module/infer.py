@@ -4,7 +4,7 @@ import lightning as L
 import torch
 from torch import Tensor, nn, optim
 from torch_geometric.data import Data
-from torch_geometric.nn.aggr import MaxAggregation
+from torch_geometric.nn.aggr import SoftmaxAggregation
 
 from .. import utils
 from . import CellEmbedder
@@ -87,14 +87,16 @@ class InferenceModel(L.LightningModule):
         )
         self.lr = lr
 
-        self.max_aggregation = MaxAggregation()
+        self.aggregation = SoftmaxAggregation(t=0.5, learn=True)
 
     def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
+        data = batch["main"]
+
         with torch.no_grad():
-            data = batch["main"]
             z = self.novae_model(batch)["main"]  # (B, O)
-            x = self.max_aggregation(data.counts, index=data.batch)  # (B, G)
-            genes_indices = data.counts_genes_indices  # (B, G)
+
+        genes_indices = data.counts_genes_indices  # (B, G)
+        x = self.aggregation(data.counts, index=data.batch)  # (B, G)
 
         return sum([self.head.loss(x[[i]], z[[i]], genes_indices[i]) for i in range(len(x))])
 

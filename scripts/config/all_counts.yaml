@@ -1,5 +1,5 @@
 project: novae_infer
-wandb_artefact: novae/novae/model-73gex5vi:v4
+wandb_artefact: novae/novae/model-9tddhyx4:v30 # novae/novae/model-73gex5vi:v4
 train_inference: true
 
 data:

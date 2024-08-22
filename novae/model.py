@@ -623,6 +623,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         _train(inference_model, datamodule, accelerator, min_delta=min_delta, logger=logger, **kwargs)
 
+        print(inference_model.aggregation.t)
+
         self.mode.inference_head_trained = True
 
 
