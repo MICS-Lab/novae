@@ -1,0 +1,22 @@
+project: novae_eval
+wandb_artefact: novae/novae/model-i1l9s8cc:v5
+
+model_kwargs:
+  lambda_regularization: 0.001
+
+data:
+  train_dataset: brain
+
+fit_kwargs:
+  max_epochs: 10
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 3
+  min_delta: 0.05
+
+post_training:
+  n_domains: [7, 10, 15]
+  log_metrics: true
+  save_h5ad: true
+  log_umap: true
+  log_domains: true

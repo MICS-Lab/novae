@@ -110,7 +110,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.init_slide_queue(self.adatas)
 
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
-        if adata is None:
+        if adata is None or self.hparams.min_prototypes_ratio == 1:
             return
 
         slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))

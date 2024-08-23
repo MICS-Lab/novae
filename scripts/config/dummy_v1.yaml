@@ -1,7 +1,7 @@
 project: novae_eval
 
 data:
-  train_dataset: dummy_ari/v0
+  train_dataset: dummy_ari/v1
 
 model_kwargs:
   n_hops_view: 3
