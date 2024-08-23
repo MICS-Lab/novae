@@ -24,10 +24,7 @@ def main(args: argparse.Namespace) -> None:
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
 
-        if config.train_inference:
-            model.fit_inference_head(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
-        else:
-            model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
+        model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
         model = novae.Novae(adatas, **config.model_kwargs)
         model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)

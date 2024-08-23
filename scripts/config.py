@@ -22,7 +22,6 @@ class Config(BaseModel):
     project: str = "novae"
     wandb_artefact: str | None = None
     sweep: bool = False
-    train_inference: bool = False
 
     data: DataConfig = DataConfig()
     post_training: PostTrainingConfig = PostTrainingConfig()
