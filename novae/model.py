@@ -4,7 +4,6 @@ import logging
 
 import lightning as L
 import numpy as np
-import pandas as pd
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
@@ -16,13 +15,7 @@ from torch_geometric.data import Data
 from . import __version__, plot, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
-from .module import (
-    CellEmbedder,
-    GraphAugmentation,
-    GraphEncoder,
-    InferenceModel,
-    SwavHead,
-)
+from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
 
@@ -473,38 +466,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         utils.batch_effect_correction(adatas, obs_key)
 
-    def infer_gene_expression(
-        self,
-        adata: AnnData | list[AnnData] | None,
-        gene_names: list[str] | str | pd.Index,
-        key_added: str | None = None,
-    ):
-        key_added = Keys.INFERRED if key_added is None else key_added
-
-        assert (
-            self._inference_head is not None
-        ), "The inference head was not trained. Please run `model.fit_inference_head(...)` first."
-
-        gene_names = [gene_names] if isinstance(gene_names, str) else gene_names
-        self.cell_embedder.check_gene_names(gene_names)
-
-        gene_indices = self.cell_embedder.genes_to_indices(gene_names).to(self.device)
-        gene_embeddings = self.cell_embedder.embedding(gene_indices)
-
-        adatas = self._to_anndata_list(adata)
-
-        assert all(
-            Keys.REPR in adata.obsm for adata in adatas
-        ), f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representations(...)` first."
-
-        for adata in adatas:
-            z = torch.tensor(adata.obsm[Keys.REPR], device=self.device, dtype=torch.float32)
-            predictions = self._inference_head.infer(z, gene_embeddings)
-
-            adata.obsm[key_added] = pd.DataFrame(
-                predictions.numpy(force=True), columns=gene_names, index=adata.obs_names
-            )
-
     @utils.format_docs
     def fine_tune(
         self,
@@ -599,33 +560,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
         self.mode.trained = True
-
-    def fit_inference_head(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        slide_key: str | None = None,
-        counts_ratio: float = 0.25,
-        accelerator: str = "cpu",
-        lr: float = 1e-4,
-        num_workers: int | None = None,
-        min_delta: float = 1.0,
-        logger: Logger | list[Logger] | bool = False,
-        **kwargs: int,
-    ):
-        if adata is not None:
-            self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
-
-        self._parse_hardware_args(accelerator, num_workers)
-
-        inference_model = InferenceModel(self, lr=lr)
-        datamodule = self._init_datamodule(self.adatas, counts_ratio=counts_ratio)
-        self._inference_head = inference_model.head
-
-        _train(inference_model, datamodule, accelerator, min_delta=min_delta, logger=logger, **kwargs)
-
-        print(inference_model.aggregation.t)
-
-        self.mode.inference_head_trained = True
 
 
 def _train(

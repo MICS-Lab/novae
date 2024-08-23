@@ -64,13 +64,12 @@ class AnnDataTorch:
 
         return means, stds, label_encoder
 
-    def to_tensor(self, adata: AnnData, where_counts: Tensor | None = None) -> Tensor | tuple[Tensor, Tensor]:
+    def to_tensor(self, adata: AnnData) -> Tensor:
         """Get the normalized gene expressions of the cells in the dataset.
         Only the genes of interest are kept (known genes and highly variable).
 
         Args:
             adata: An `AnnData` object.
-            where_counts: Where to keep expression as counts.
 
         Returns:
             A `Tensor` containing the normalized gene expresions.
@@ -89,13 +88,7 @@ class AnnDataTorch:
         X = torch.tensor(X, dtype=torch.float32)
         X = (X - mean) / (std + Nums.EPS)
 
-        if where_counts is None:
-            return X
-
-        counts = adata.layers[Keys.COUNTS_LAYER][:, where_counts]
-        counts = counts if isinstance(counts, np.ndarray) else counts.toarray()
-
-        return X[:, ~where_counts], torch.tensor(counts, dtype=torch.float32)
+        return X
 
     def __getitem__(self, item: tuple[int, slice]) -> tuple[Tensor, Tensor]:
         """Get the expression values for a subset of cells (corresponding to a subgraph).
@@ -115,29 +108,3 @@ class AnnDataTorch:
         adata_view = adata[obs_indices]
 
         return self.to_tensor(adata_view), self.genes_indices_list[adata_index]
-
-    def item_with_counts(
-        self, adata_index: int, obs_indices: slice, counts_ratio: float
-    ) -> tuple[Tensor, Tensor, Tensor]:
-        adata = self.adatas[adata_index]
-        adata_view = adata[obs_indices]
-
-        genes_indices = self.genes_indices_list[adata_index]
-
-        where_counts = _where_count(counts_ratio, len(genes_indices[0]))
-
-        X, counts = self.to_tensor(adata_view, where_counts)
-
-        return X, counts, genes_indices[:, ~where_counts], genes_indices[:, where_counts]
-
-
-def _where_count(counts_ratio: float, n_vars: int) -> Tensor:
-    n_vars_counts = int(counts_ratio * n_vars)
-    where_counts = torch.cat(
-        [
-            torch.ones(n_vars_counts, dtype=torch.bool),
-            torch.zeros(n_vars - n_vars_counts, dtype=torch.bool),
-        ]
-    )
-    where_counts = where_counts[torch.randperm(where_counts.size(0))]
-    return where_counts
