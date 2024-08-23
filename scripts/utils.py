@@ -21,7 +21,7 @@ from novae.monitor.callback import (
     LogTissuePrototypeWeights,
     ValidationCallback,
 )
-from novae.monitor.log import log_plt_figure
+from novae.monitor.log import log_plt_figure, wandb_results_dir
 
 from .config import Config
 
@@ -87,15 +87,14 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
     keys_repr = ["log_umap", "log_metrics", "log_domains"]
     if any(getattr(config.post_training, key) for key in keys_repr):
         model.compute_representations(**_get_hardware_kwargs(config))
+        for n_domains in config.post_training.n_domains:
+            model.assign_domains(n_domains=n_domains)
 
     if config.post_training.log_domains:
         for n_domains in config.post_training.n_domains:
             obs_key = model.assign_domains(n_domains=n_domains)
             novae.plot.domains(adatas, obs_key)
             log_plt_figure(f"domains_{n_domains=}")
-
-    if config.post_training.save_h5ad:
-        _save_h5ad(model, config)
 
     if config.post_training.log_metrics:
         for n_domains in config.post_training.n_domains:
@@ -107,6 +106,12 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
 
     if config.post_training.log_umap:
         _log_umap(model, config)
+
+    if config.post_training.save_h5ad:
+        for adata in model.adatas:
+            if config.post_training.delete_X:
+                del adata.X
+            _save_h5ad(adata)
 
 
 def _log_umap(model: novae.Novae, config: Config, n_obs_th: int = 500_000):
@@ -136,15 +141,16 @@ def _log_umap(model: novae.Novae, config: Config, n_obs_th: int = 500_000):
         sc.pl.umap(adata_conc, color=colors, show=False)
         log_plt_figure(f"umap_{n_domains=}")
 
+        _save_h5ad(adata_conc, "adata_conc")
 
-def _save_h5ad(model: novae.Novae, config: Config):
-    for n_domains in config.post_training.n_domains:
-        model.assign_domains(n_domains=n_domains)
 
-    res_dir = novae.utils.repository_root() / "data" / "results" / wandb.run.name
-    res_dir.mkdir(parents=True, exist_ok=True)
+def _save_h5ad(adata: AnnData, stem: str | None = None):
+    if stem is None:
+        if "slide_id" in adata.obs:
+            stem = adata.obs["slide_id"].iloc[0]
+        else:
+            stem = str(id(adata))
 
-    for adata in model.adatas:
-        out_path = res_dir / f"{id(adata)}.h5ad"
-        log.info(f"Writing adata file to {out_path}: {adata}")
-        adata.write_h5ad(out_path)
+    out_path = wandb_results_dir() / f"{stem}.h5ad"
+    log.info(f"Writing adata file to {out_path}: {adata}")
+    adata.write_h5ad(out_path)

@@ -16,6 +16,7 @@ class PostTrainingConfig(BaseModel):
     log_metrics: bool = False
     log_domains: bool = False
     save_h5ad: bool = False
+    delete_X: bool = False
 
 
 class Config(BaseModel):

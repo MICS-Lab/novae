@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +11,8 @@ import seaborn as sns
 from anndata import AnnData
 
 from .._constants import Keys
+
+log = logging.getLogger(__name__)
 
 
 def _weights_clustermap(
@@ -35,6 +39,7 @@ def _weights_clustermap(
                     break
             else:
                 row_colors.append("gray")
+        log.info(f"Using {row_colors=}")
 
     sns.clustermap(
         weights,

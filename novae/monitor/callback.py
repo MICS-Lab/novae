@@ -11,7 +11,7 @@ from lightning.pytorch.callbacks import Callback
 from .._constants import Keys
 from ..model import Novae
 from .eval import heuristic, mean_fide_score
-from .log import log_plt_figure
+from .log import log_plt_figure, save_pdf_figure
 
 
 class LogProtoCovCallback(Callback):
@@ -29,6 +29,7 @@ class LogTissuePrototypeWeights(Callback):
             return
 
         model.plot_prototype_weights()
+        save_pdf_figure(f"tissue_prototype_weights_e{model.current_epoch}")
         log_plt_figure("tissue_prototype_weights")
 
 
