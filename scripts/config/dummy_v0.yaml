@@ -5,7 +5,7 @@ model_kwargs:
   lambda_regularization: 0.001
 
 data:
-  train_dataset: dummy/dummy_ari_v0.h5ad
+  train_dataset: dummy_ari/v0
 
 fit_kwargs:
   max_epochs: 10
@@ -20,3 +20,4 @@ post_training:
   save_h5ad: true
   log_umap: true
   log_domains: true
+  delete_X: true
