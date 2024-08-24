@@ -111,6 +111,8 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
         for adata in model.adatas:
             if config.post_training.delete_X:
                 del adata.X
+                if "counts" in adata.layers:
+                    del adata.layers["counts"]
             _save_h5ad(adata)
 
 
