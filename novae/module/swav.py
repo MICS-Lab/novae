@@ -28,9 +28,8 @@ class SwavHead(L.LightningModule):
         num_prototypes: int,
         temperature: float,
         temperature_weight_proto: float,
-        min_prototypes_ratio: float,
     ):
-        """SwavHead module, adapted from the paper "Unsupervised Learning of Visual Features by Contrasting Cluster Assignments".
+        """SwavHead module, adapted from the paper ["Unsupervised Learning of Visual Features by Contrasting Cluster Assignments"](https://arxiv.org/abs/2006.09882).
 
         Args:
             {output_size}
@@ -47,11 +46,14 @@ class SwavHead(L.LightningModule):
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
-        self.min_prototypes = int(num_prototypes * min_prototypes_ratio)
+        self.min_prototypes = 0
 
         self.queue = None
 
         self.reset_clustering()
+
+    def set_min_prototypes(self, min_prototypes_ratio: float):
+        self.min_prototypes = int(self.num_prototypes * min_prototypes_ratio)
 
     def init_queue(self, slide_ids: list[str]) -> None:
         """Initialize the slide-queue.
@@ -71,14 +73,14 @@ class SwavHead(L.LightningModule):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
     def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
-        """Compute the SWAV loss for two batches of neighborhood graph views.
+        """Compute the SwAV loss for two batches of neighborhood graph views.
 
         Args:
             z1: Batch containing graphs representations `(B, output_size)`
             z2: Batch containing graphs representations `(B, output_size)`
 
         Returns:
-            The SWAV loss, and the mean entropy normalized (for monitoring).
+            The SwAV loss, and the mean entropy normalized (for monitoring).
         """
         self.normalize_prototypes()
 

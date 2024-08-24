@@ -21,6 +21,8 @@ _format_doc_dict = {
     "num_prototypes": "Number of prototypes (`K` in the article).",
     "temperature": "Temperature used in the cross-entropy loss.",
     "embedding_size": "Size of the embeddings of the genes (`E` in the article).",
+    "max_epochs": "Maximum number of training epochs.",
+    "min_prototypes_ratio": "Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.",
 }
 
 _format_doc_map = {k: f"{k}: {v}" for k, v in _format_doc_dict.items()}

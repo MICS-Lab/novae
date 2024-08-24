@@ -27,9 +27,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```python
         import novae
 
-        model = novae.Novae.from_pretrained("...")
+        model = novae.Novae.from_pretrained("MICS-Lab/novae-1-medium")
 
-        model.compute_representations(adata)
+        model.compute_representations(adata, zero_shot=True)
         model.assign_domains(adata)
         ```
     """
@@ -77,6 +77,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {panel_subset_size}
             {background_noise_lambda}
             {sensitivity_noise_std}
+            {min_prototypes_ratio}
         """
         super().__init__()
         self.slide_key = slide_key
@@ -98,24 +99,32 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-        self.swav_head = SwavHead(
-            self.mode, output_size, num_prototypes, temperature, temperature_weight_proto, min_prototypes_ratio
-        )
+        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature, temperature_weight_proto)
 
         ### Misc
         self._num_workers = 0
         self._model_name = None
         self._datamodule = None
         self._inference_head = None
-        self.init_slide_queue(self.adatas)
+        self.init_slide_queue(self.adatas, min_prototypes_ratio)
 
-    def init_slide_queue(self, adata: AnnData | list[AnnData] | None) -> None:
+    @utils.format_docs
+    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float = 0.8) -> None:
+        """
+        Initialize the slide-queue for the SwAV head.
+        This can be used before training (`fit` or `fine_tune`) when there are potentially slide-specific or condition-specific prototypes.
+
+        Args:
+            {adata}
+            {min_prototypes_ratio}
+        """
         if adata is None or self.hparams.min_prototypes_ratio == 1:
             return
 
         slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
         if len(slide_ids) > 1:
             self.mode.queue_mode = True
+            self.swav_head.set_min_prototypes(min_prototypes_ratio)
             self.swav_head.init_queue(slide_ids)
 
     def __repr__(self) -> str:
@@ -236,10 +245,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @classmethod
     def from_pretrained(self, model_name_or_path: str, **kwargs: int) -> "Novae":
-        """Load a pretrained `Novae` model from HuggingFace Hub. See [here](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd) the available Novae model names.
+        """Load a pretrained `Novae` model from HuggingFace Hub.
+
+        !!! info "Available model names"
+            See [here](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd) the available Novae model names.
 
         Args:
-            model_name_or_path: Name of the model, e.g. `MICS-Lab/novae-example-v0`, or path to the local model.
+            model_name_or_path: Name of the model, e.g. `"MICS-Lab/novae-1-medium"`, or path to the local model.
             **kwargs: Optional kwargs for Hugging Face [`from_pretrained`](https://huggingface.co/docs/huggingface_hub/v0.24.0/en/package_reference/mixins#huggingface_hub.ModelHubMixin.from_pretrained) method.
 
         Returns:
@@ -403,6 +415,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
     def plot_prototype_weights(self, **kwargs: int):
+        """Plot the weights of the prototypes per slide."""
+
         assert (
             self.swav_head.queue is not None
         ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
@@ -429,7 +443,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """Assign a domain to each cell based on the "leaves" classes.
 
         Note:
-            You'll need to run `model.compute_representations(...)` first.
+            You'll need to run [novae.Novae.compute_representations][] first.
 
             The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
@@ -476,13 +490,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         max_epochs: int = 1,
         **fit_kwargs: int,
     ):
-        """Fine tune a Novae model.
+        """Fine tune a pretrained Novae model. This will update the prototypes with the new data, and `fit` for one or a few epochs.
 
         Args:
             {adata}
             {slide_key}
-            max_epochs: Maximum number of training epochs.
             {accelerator}
+            {num_workers}
+            {max_epochs}
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """
         self.mode.fine_tune()
@@ -523,13 +538,16 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     ):
         """Train a Novae model. The training will be stopped by early stopping.
 
+        !!! warn
+            If you loaded a pretrained model, use [novae.Novae.fine_tune][] instead.
+
         Args:
             {adata}
             {slide_key}
-            max_epochs: Maximum number of training epochs.
+            {max_epochs}
             {accelerator}
             lr: Model learning rate.
-            num_workers: Number of workers for the dataloader.
+            {num_workers}
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
             callbacks: Optional list of Pytorch lightning callbacks.

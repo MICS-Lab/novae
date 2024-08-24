@@ -25,7 +25,6 @@ nav:
       - novae.module.GraphAugmentation: api/novae.module.GraphAugmentation.md
       - novae.module.GraphEncoder: api/novae.module.GraphEncoder.md
       - novae.module.AttentionAggregation: api/novae.module.AttentionAggregation.md
-      - novae.module.InferenceHeadZIE: api/novae.module.InferenceHeadZIE.md
     - novae.data:
       - novae.data.NovaeDataset: api/novae.data.NovaeDataset.md
       - novae.data.NovaeDatamodule: api/novae.data.NovaeDatamodule.md

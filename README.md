@@ -61,14 +61,14 @@ Here is a minimal usage example. For more details, refer to the [documentation](
 ```python
 import novae
 
-model = novae.Novae.from_pretrained("...")
+model = novae.Novae.from_pretrained("MICS-Lab/novae-1-medium")
 
-model.compute_representations(adata)
+model.compute_representations(adata, zero_shot=True)
 model.assign_domains(adata)
 ```
 
 ## Cite us
 
 ```txt
-TODO
+TODO: submit preprint
 ```
