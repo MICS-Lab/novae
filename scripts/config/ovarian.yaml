@@ -1,9 +1,6 @@
 project: novae_eval
 wandb_artefact: novae/novae/model-i1l9s8cc:v5
 
-model_kwargs:
-  lambda_regularization: 0.001
-
 data:
   train_dataset: ovarian
 

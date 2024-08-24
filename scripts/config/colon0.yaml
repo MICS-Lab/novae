@@ -10,7 +10,6 @@ model_kwargs:
   num_prototypes: 512
   background_noise_lambda: 5
   panel_subset_size: 0.8
-  lambda_regularization: 0.01
 
 data:
   train_dataset: colon

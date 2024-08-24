@@ -20,8 +20,6 @@ parameters:
   temperature_weight_proto:
     min: 0.04
     max: 0.12
-  lambda_regularization:
-    values: [0, 0.005, 0.01]
 
 command:
   - python
