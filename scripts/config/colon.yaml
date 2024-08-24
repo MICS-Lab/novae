@@ -1,5 +1,5 @@
 project: novae_eval
-wandb_artefact: novae/novae/model-i1l9s8cc:v5
+wandb_artefact: novae/novae/model-a1nwsa59:v23
 
 data:
   train_dataset: colon
