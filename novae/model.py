@@ -487,6 +487,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         slide_key: str | None = None,
         accelerator: str = "cpu",
         num_workers: int | None = None,
+        lr: float = 1e-3,
         max_epochs: int = 1,
         **fit_kwargs: int,
     ):
@@ -497,6 +498,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {slide_key}
             {accelerator}
             {num_workers}
+            lr: Model learning rate.
             {max_epochs}
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """
@@ -518,6 +520,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             max_epochs=max_epochs,
             accelerator=accelerator,
             num_workers=num_workers,
+            lr=lr,
             **fit_kwargs,
         )
 
@@ -528,8 +531,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         slide_key: str | None = None,
         max_epochs: int = 20,
         accelerator: str = "cpu",
-        lr: float = 1e-3,
         num_workers: int | None = None,
+        lr: float = 1e-3,
         min_delta: float = 0.1,
         patience: int = 3,
         callbacks: list[Callback] | None = None,
@@ -546,8 +549,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {slide_key}
             {max_epochs}
             {accelerator}
-            lr: Model learning rate.
             {num_workers}
+            lr: Model learning rate.
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).
             callbacks: Optional list of Pytorch lightning callbacks.
