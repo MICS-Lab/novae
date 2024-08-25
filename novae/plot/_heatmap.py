@@ -67,17 +67,17 @@ def pathway_scores(
     **kwargs: int,
 ) -> pd.DataFrame | None:
     scores = {}
+    lower_var_names = adata.var_names.str.lower()
 
     for key, gene_names in pathways.items():
-        vars = np.array(gene_names)
-        vars = vars[np.isin(vars, adata.var_names)]
+        vars = np.array([gene_name.lower() for gene_name in gene_names])
+        vars = adata.var_names[np.isin(lower_var_names, vars)]
         if len(vars):
             sc.tl.score_genes(adata, vars, score_name="_temp")
             scores[key] = adata.obs["_temp"]
-
-    assert len(scores) > 0, "No valid pathways found"
-
     del adata.obs["_temp"]
+
+    assert len(scores) > 1, f"Found {len(scores)} valid pathway. Minimum 2 required."
 
     df = pd.DataFrame(scores)
     df[obs_key] = adata.obs[obs_key]
