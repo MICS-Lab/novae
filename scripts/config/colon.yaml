@@ -17,3 +17,4 @@ post_training:
   save_h5ad: true
   log_umap: true
   log_domains: true
+  delete_X: true
