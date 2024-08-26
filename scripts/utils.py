@@ -126,8 +126,10 @@ def _log_umap(model: novae.Novae, config: Config, n_obs_th: int = 500_000):
         model.batch_effect_correction(obs_key=obs_key)
 
         latent_conc = np.concat([adata.obsm[Keys.REPR_CORRECTED] for adata in model.adatas], axis=0)
-        obs_conc = pd.concat([adata.obs for adata in model.adatas], axis=0)
+        obs_conc = pd.concat([adata.obs for adata in model.adatas], axis=0, join="inner")
         adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
+
+        _save_h5ad(adata_conc, "adata_conc")
 
         if adata_conc.n_obs > n_obs_th:
             sc.pp.subsample(adata_conc, n_obs=n_obs_th)
@@ -142,8 +144,6 @@ def _log_umap(model: novae.Novae, config: Config, n_obs_th: int = 500_000):
 
         sc.pl.umap(adata_conc, color=colors, show=False)
         log_plt_figure(f"umap_{n_domains=}")
-
-        _save_h5ad(adata_conc, "adata_conc")
 
 
 def _save_h5ad(adata: AnnData, stem: str | None = None):
