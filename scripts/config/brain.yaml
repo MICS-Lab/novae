@@ -1,5 +1,5 @@
 project: novae_eval
-wandb_artefact: novae/novae/model-a1nwsa59:v23
+wandb_artefact: novae/novae/model-zao5sof8:v30
 
 data:
   train_dataset: brain
