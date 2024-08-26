@@ -55,7 +55,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
-        min_prototypes_ratio: float = 0.8,
+        min_prototypes_ratio: float = 0.7,
     ) -> None:
         """
 
@@ -108,7 +108,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
 
     @utils.format_docs
-    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float = 0.8) -> None:
+    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float = 0.7) -> None:
         """
         Initialize the slide-queue for the SwAV head.
         This can be used before training (`fit` or `fine_tune`) when there are potentially slide-specific or condition-specific prototypes.
@@ -226,9 +226,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.datamodule.dataset.shuffle_obs_ilocs()
 
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
-
         self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
-        self.mode.use_queue = after_warm_up and (self.swav_head.queue is not None)
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
@@ -290,12 +288,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
     @classmethod
-    def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
-        model = super().load_from_checkpoint(*args, **kwargs)
-        model.mode.from_pretrained()
-        return model
-
-    @classmethod
     def _load_wandb_artifact(cls, model_name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
         artifact_path = utils.load_wandb_artifact(model_name) / "model.ckpt"
 
@@ -305,6 +297,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             ckpt_version = torch.load(artifact_path, map_location=map_location).get(Keys.NOVAE_VERSION, "unknown")
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
+        model.mode.from_pretrained()
         model._model_name = model_name
         return model
 
@@ -488,7 +481,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         accelerator: str = "cpu",
         num_workers: int | None = None,
         lr: float = 1e-3,
-        max_epochs: int = 1,
+        max_epochs: int = 4,
         **fit_kwargs: int,
     ):
         """Fine tune a pretrained Novae model. This will update the prototypes with the new data, and `fit` for one or a few epochs.
@@ -568,6 +561,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.swav_head.reset_clustering()  # ensure we don't re-use old clusters
         self._parse_hardware_args(accelerator, num_workers)
         self._datamodule = self._init_datamodule()
+        if self.swav_head.queue is None:
+            self.init_slide_queue(self.adatas)
 
         _train(
             self,

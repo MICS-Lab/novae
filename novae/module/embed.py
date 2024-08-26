@@ -107,13 +107,6 @@ class CellEmbedder(L.LightningModule):
 
         return np.array(indices, dtype=np.int16)
 
-    def check_gene_names(self, gene_names: pd.Index | list[str]):
-        gene_names = utils.lower_var_names(gene_names)
-
-        missing_genes = list(set(gene_names) - set(self.gene_names))
-        if missing_genes:
-            raise ValueError(f"Gene names not found in the model vocabulary: {', '.join(missing_genes)}")
-
     @utils.format_docs
     def forward(self, data: Data) -> Data:
         """Embed the input data.

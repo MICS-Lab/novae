@@ -7,7 +7,6 @@ class Mode:
     all_clustering_attrs: list[str] = ["_clustering", "_clustering_zero", "_clusters_levels", "_clusters_levels_zero"]
 
     def __init__(self):
-        self.use_queue = False
         self.zero_shot = False
         self.trained = False
         self.pretrained = False

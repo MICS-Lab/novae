@@ -126,7 +126,7 @@ class SwavHead(L.LightningModule):
         Returns:
             The indices of the prototypes to use, or an `Ellipsis` if all prototypes.
         """
-        if self.queue is None or slide_id is None or self.mode.zero_shot:
+        if (self.queue is None) or (slide_id is None) or self.mode.zero_shot:
             return ...
 
         slide_index = self.slide_label_encoder[slide_id]
@@ -134,9 +134,6 @@ class SwavHead(L.LightningModule):
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
         self.queue[slide_index, 0] = slide_weights
-
-        if not self.mode.use_queue:
-            return ...
 
         weights = self.queue_weights()[slide_index]
         ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]

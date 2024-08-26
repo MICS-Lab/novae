@@ -67,6 +67,8 @@ def test_train():
     obs_key = model.assign_domains(n_domains=2)
     obs_key = model.assign_domains(level=2)
 
+    model.batch_effect_correction()
+
     adatas[0].obs.iloc[0][obs_key] = np.nan
 
     novae.monitor.mean_svg_score(adatas, obs_key=obs_key)
