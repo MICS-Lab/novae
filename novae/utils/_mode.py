@@ -8,7 +8,6 @@ class Mode:
 
     def __init__(self):
         self.use_queue = False
-        self.queue_mode = False  # TODO: should we remove this queue_mode?
         self.zero_shot = False
         self.trained = False
         self.pretrained = False
@@ -19,8 +18,6 @@ class Mode:
     ### Mode modifiers
 
     def from_pretrained(self):
-        self.use_queue = False
-        self.queue_mode = False
         self.zero_shot = False
         self.trained = True
         self.pretrained = True

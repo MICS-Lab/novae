@@ -126,7 +126,7 @@ class SwavHead(L.LightningModule):
         Returns:
             The indices of the prototypes to use, or an `Ellipsis` if all prototypes.
         """
-        if slide_id is None or self.mode.zero_shot or not self.mode.queue_mode:
+        if self.queue is None or slide_id is None or self.mode.zero_shot:
             return ...
 
         slide_index = self.slide_label_encoder[slide_id]

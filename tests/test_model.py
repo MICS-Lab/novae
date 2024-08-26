@@ -81,6 +81,12 @@ def test_train():
     adatas[0].write_h5ad("tests/test.h5ad")  # ensures the output can be saved
 
     model.compute_representations(adatas, zero_shot=True)
+
+    with pytest.raises(AssertionError):
+        model.fine_tune(adatas, max_epochs=1)
+
+    model.mode.pretrained = True
+
     model.fine_tune(adatas, max_epochs=1)
 
 

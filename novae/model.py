@@ -122,7 +122,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
         if len(slide_ids) > 1:
-            self.mode.queue_mode = True
             self.swav_head.set_min_prototypes(min_prototypes_ratio)
             self.swav_head.init_queue(slide_ids)
 
@@ -229,7 +228,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
         self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
-        self.mode.use_queue = after_warm_up and self.mode.queue_mode
+        self.mode.use_queue = after_warm_up and (self.swav_head.queue is not None)
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
@@ -316,6 +315,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         slide_key: str | None = None,
+        *,
         zero_shot: bool = False,
         accelerator: str = "cpu",
         num_workers: int | None = None,
@@ -484,6 +484,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData],
         slide_key: str | None = None,
+        *,
         accelerator: str = "cpu",
         num_workers: int | None = None,
         lr: float = 1e-3,
