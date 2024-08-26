@@ -105,7 +105,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._num_workers = 0
         self._model_name = None
         self._datamodule = None
-        self._inference_head = None
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
 
     @utils.format_docs
@@ -229,7 +228,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
 
-        self.swav_head.prototypes.requires_grad_(after_warm_up or not self.mode.freeze_mode)
+        self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
         self.mode.use_queue = after_warm_up and self.mode.queue_mode
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
@@ -259,7 +258,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         model = super().from_pretrained(model_name_or_path, **kwargs)
 
-        model.mode.pretrained()
+        model.mode.from_pretrained()
         model._model_name = model_name_or_path
         model.cell_embedder.embedding.weight.requires_grad_(False)
 
@@ -294,7 +293,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     @classmethod
     def load_from_checkpoint(cls, *args, **kwargs) -> "Novae":
         model = super().load_from_checkpoint(*args, **kwargs)
-        model.mode.pretrained()
+        model.mode.from_pretrained()
         return model
 
     @classmethod
@@ -359,7 +358,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, projections = [], []
 
-        for batch in utils.tqdm(datamodule.predict_dataloader()):
+        for batch in utils.tqdm(datamodule.predict_dataloader(), desc="Computing representations"):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
             batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
 

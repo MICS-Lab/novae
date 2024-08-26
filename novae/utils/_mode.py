@@ -10,36 +10,30 @@ class Mode:
         self.use_queue = False
         self.queue_mode = False  # TODO: should we remove this queue_mode?
         self.zero_shot = False
-        self.freeze_mode = True
         self.trained = False
-        self.inference_head_trained = False
+        self.pretrained = False
 
     def __repr__(self) -> str:
         return f"Mode({dict(self.__dict__.items())})"
 
     ### Mode modifiers
 
-    def pretrained(self):
+    def from_pretrained(self):
         self.use_queue = False
-        self.freeze_mode = False
         self.queue_mode = False
-        self.trained = True
         self.zero_shot = False
-        self.inference_head_trained = True
+        self.trained = True
+        self.pretrained = True
 
     def fine_tune(self):
-        self.use_queue = False
-        self.queue_mode = False
-        self.freeze_mode = False
+        assert self.pretrained, "Fine-tuning requires a pretrained model."
         self.zero_shot = False
-        self.inference_head_trained = False
 
     def fit(self):
         self.zero_shot = False
         self.trained = False
-        self.inference_head_trained = False
 
-    # Mode-specific attributes
+    ### Mode-specific attributes
 
     @property
     def clustering_attr(self):

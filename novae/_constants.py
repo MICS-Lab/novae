@@ -11,7 +11,6 @@ class Keys:
     # obsm keys
     REPR: str = "novae_latent"
     REPR_CORRECTED: str = "novae_latent_corrected"
-    INFERRED: str = "novae_inferred"
 
     # obsp keys
     ADJ: str = "spatial_distances"
