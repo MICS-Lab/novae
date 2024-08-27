@@ -14,7 +14,7 @@ data:
   train_dataset: colon
 
 fit_kwargs:
-  max_epochs: 10
+  max_epochs: 20
   accelerator: "gpu"
   num_workers: 8
   patience: 3
