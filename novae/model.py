@@ -382,7 +382,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         leaves_predictions = projections.argmax(dim=1).numpy(force=True)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
-        adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"N{int(x)}" for x in leaves_predictions]
+        adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"D{int(x)}" for x in leaves_predictions]
 
     def plot_domains_hierarchy(
         self,

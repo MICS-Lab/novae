@@ -246,7 +246,7 @@ class SwavHead(L.LightningModule):
         Returns:
             Series of classes.
         """
-        return series.map(lambda x: f"N{self.clusters_levels[-level, int(x[1:])]}" if isinstance(x, str) else x)
+        return series.map(lambda x: f"D{self.clusters_levels[-level, int(x[1:])]}" if isinstance(x, str) else x)
 
     def find_level(self, leaves_indices: np.ndarray, n_domains: int):
         sub_clusters_levels = self.clusters_levels[:, leaves_indices]

@@ -55,7 +55,7 @@ def _domains_hierarchy(
     for i, d in zip(ddata["icoord"][::-1], ddata["dcoord"][::-1]):
         x, y = 0.5 * sum(i[1:3]), d[1]
         plt.plot(x, y, "ko")
-        plt.annotate(f"N{size - 1 + int(y)}", (x, y), xytext=(0, -8), textcoords="offset points", va="top", ha="center")
+        plt.annotate(f"D{size - 1 + int(y)}", (x, y), xytext=(0, -8), textcoords="offset points", va="top", ha="center")
 
     plt.yticks(original_ticks, original_ymax - original_ticks)
 
