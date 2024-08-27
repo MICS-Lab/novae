@@ -15,8 +15,8 @@ from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.utils.load_dataset(config.data.train_dataset, files_black_list=config.data.files_black_list)
-    adatas_val = novae.utils.load_dataset(config.data.val_dataset) if config.data.val_dataset else None
+    adatas = novae.utils.load_local_dataset(config.data.train_dataset, files_black_list=config.data.files_black_list)
+    adatas_val = novae.utils.load_local_dataset(config.data.val_dataset) if config.data.val_dataset else None
 
     logger = init_wandb_logger(config)
     callbacks = get_callbacks(config, adatas_val)

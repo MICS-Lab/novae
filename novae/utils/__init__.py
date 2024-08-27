@@ -16,6 +16,6 @@ from ._utils import (
     sparse_std,
 )
 from ._validate import check_available_domains_key, prepare_adatas
-from ._data import load_dataset, load_wandb_artifact, dummy_dataset
+from ._data import load_local_dataset, load_wandb_artifact, dummy_dataset, load_dataset
 from ._mode import Mode
 from ._correct import batch_effect_correction
