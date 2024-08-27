@@ -86,7 +86,7 @@ def read_config(args: argparse.Namespace) -> Config:
 def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
     keys_repr = ["log_umap", "log_metrics", "log_domains"]
     if any(getattr(config.post_training, key) for key in keys_repr):
-        model.compute_representations(**_get_hardware_kwargs(config))
+        model.compute_representations(**_get_hardware_kwargs(config), zero_shot=config.zero_shot)
         for n_domains in config.post_training.n_domains:
             model.assign_domains(n_domains=n_domains)
 

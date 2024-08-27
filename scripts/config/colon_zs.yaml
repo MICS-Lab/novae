@@ -1,0 +1,14 @@
+project: novae_eval
+wandb_artefact: novae/novae/model-y8i2da7y:v30
+zero_shot: true
+
+data:
+  train_dataset: colon
+
+post_training:
+  n_domains: [7, 10, 15]
+  log_metrics: true
+  save_h5ad: true
+  log_umap: true
+  log_domains: true
+  delete_X: true

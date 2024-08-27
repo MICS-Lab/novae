@@ -22,6 +22,7 @@ class PostTrainingConfig(BaseModel):
 class Config(BaseModel):
     project: str = "novae"
     wandb_artefact: str | None = None
+    zero_shot: bool = False
     sweep: bool = False
 
     data: DataConfig = DataConfig()
