@@ -130,23 +130,25 @@ class SwavHead(L.LightningModule):
         slide_index = self.slide_label_encoder[slide_id]
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
-        self.queue[slide_index, 0] = projections.max(0).values
+        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]
 
-        weights = self.queue_weights()[slide_index]
-        ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]
+        weights, thresholds = self.queue_weights()
+        slide_weights = weights[slide_index]
 
-        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
+        ilocs = torch.where(slide_weights >= thresholds)[0]
+        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(slide_weights, self.min_prototypes).indices
 
-    def queue_weights(self) -> Tensor:
+    def queue_weights(self) -> tuple[Tensor, Tensor]:
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
             A tensor of shape `(n_slides, K)`.
         """
         max_projections = self.queue.max(dim=1).values
-        unused_prototypes = max_projections.max(dim=0).values < Nums.QUEUE_WEIGHT_THRESHOLD
-        max_projections[:, unused_prototypes] = 1  # ensure all prototypes are used
-        return max_projections
+
+        thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
+
+        return max_projections, thresholds
 
     @utils.format_docs
     @torch.no_grad()

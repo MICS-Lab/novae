@@ -412,11 +412,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.swav_head.queue is not None
         ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
 
-        weights = self.swav_head.queue_weights().numpy(force=True)
+        weights, thresholds = self.swav_head.queue_weights()
+        weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
 
-        where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
+        where_enough_prototypes = (weights >= thresholds).sum(1) >= self.swav_head.min_prototypes
         for i in np.where(where_enough_prototypes)[0]:
-            weights[i, weights[i] < Nums.QUEUE_WEIGHT_THRESHOLD] = 0
+            weights[i, weights[i] < thresholds] = 0
         for i in np.where(~where_enough_prototypes)[0]:
             indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
             weights[i, indices_0] = 0

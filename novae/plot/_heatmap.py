@@ -23,7 +23,7 @@ def _weights_clustermap(
     show_tissue_legend: bool = True,
     figsize: tuple[int] = (6, 4),
     vmin: float = 0,
-    vmax: float = 0.5,
+    vmax: float = 1,
     **kwargs: int,
 ) -> None:
     row_colors = None
