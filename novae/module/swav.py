@@ -27,7 +27,6 @@ class SwavHead(L.LightningModule):
         output_size: int,
         num_prototypes: int,
         temperature: float,
-        temperature_weight_proto: float,
     ):
         """SwavHead module, adapted from the paper ["Unsupervised Learning of Visual Features by Contrasting Cluster Assignments"](https://arxiv.org/abs/2006.09882).
 
@@ -41,7 +40,6 @@ class SwavHead(L.LightningModule):
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
-        self.temperature_weight_proto = temperature_weight_proto
 
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
@@ -130,10 +128,9 @@ class SwavHead(L.LightningModule):
             return ...
 
         slide_index = self.slide_label_encoder[slide_id]
-        slide_weights = F.softmax(projections / self.temperature_weight_proto, dim=1).mean(0)
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
-        self.queue[slide_index, 0] = slide_weights
+        self.queue[slide_index, 0] = projections.max(0).values
 
         weights = self.queue_weights()[slide_index]
         ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]
@@ -146,7 +143,10 @@ class SwavHead(L.LightningModule):
         Returns:
             A tensor of shape `(n_slides, K)`.
         """
-        return self.sinkhorn(self.queue.mean(dim=1)) * self.num_prototypes
+        max_projections = self.queue.max(dim=1).values
+        unused_prototypes = max_projections.max(dim=0).values < Nums.QUEUE_WEIGHT_THRESHOLD
+        max_projections[:, unused_prototypes] = 1  # ensure all prototypes are used
+        return max_projections
 
     @utils.format_docs
     @torch.no_grad()

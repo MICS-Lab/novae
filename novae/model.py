@@ -50,7 +50,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         num_layers: int = 10,
         batch_size: int = 512,
         temperature: float = 0.1,
-        temperature_weight_proto: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
@@ -99,7 +98,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature, temperature_weight_proto)
+        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
 
         ### Misc
         self._num_workers = 0
