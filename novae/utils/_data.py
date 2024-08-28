@@ -27,6 +27,7 @@ def dummy_dataset(
     domain_shift_lambda: float = 2.0,
     slide_ids_unique: bool = True,
     compute_spatial_neighbors: bool = False,
+    merge_last_domain_even_slide: bool = False,
 ) -> list[AnnData]:
     """Creates a dummy dataset, useful for debugging or testing.
 
@@ -55,6 +56,7 @@ def dummy_dataset(
 
     int_domains = (np.sqrt((spatial**2).sum(1)) // (xmax / n_domains + 1e-8)).astype(int)
     domain = "domain_" + int_domains.astype(str).astype(object)
+    merge_domain = "domain_" + int_domains.clip(0, n_domains - 2).astype(str).astype(object)
 
     adatas = []
 
@@ -71,10 +73,14 @@ def dummy_dataset(
         for slide_index in range(n_slides_per_panel):
             slide_shift = np.random.exponential(slide_shift_lambda, size=n_vars)
 
+            merge = merge_last_domain_even_slide and (slide_index % 2 == 0)
+
             adata = AnnData(
                 np.zeros((n_obs, n_vars)),
                 obsm={"spatial": spatial + panel_index + slide_index},  # ensure the locs are different
-                obs=pd.DataFrame({"domain": domain}, index=[f"cell_{i}" for i in range(spatial.shape[0])]),
+                obs=pd.DataFrame(
+                    {"domain": merge_domain if merge else domain}, index=[f"cell_{i}" for i in range(spatial.shape[0])]
+                ),
             )
 
             adata.var_names = var_names
