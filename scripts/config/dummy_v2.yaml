@@ -10,13 +10,13 @@ model_kwargs:
   temperature: 0.1
   temperature_weight_proto: 0.025
   num_prototypes: 512
-  background_noise_lambda: 5
-  panel_subset_size: 0.8
+  background_noise_lambda: 2
+  panel_subset_size: 0.9
   min_prototypes_ratio: 1
 
 fit_kwargs:
   max_epochs: 30
-  lr: 0.0001
+  lr: 0.0005
   accelerator: "gpu"
   num_workers: 8
   patience: 6
