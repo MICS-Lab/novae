@@ -1,0 +1,30 @@
+data:
+  train_dataset: /gpfs/workdir/shared/prime/spatial/brain
+  val_dataset: igr/202305031337_hBreast-slide-B-4h-photobleach_VMSC09302
+
+model_kwargs:
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_brain
+  n_hops_view: 3
+  heads: 16
+  hidden_size: 128
+  temperature: 0.1
+  num_prototypes: 512
+  background_noise_lambda: 5
+  panel_subset_size: 0.8
+  min_prototypes_ratio: 0.4
+
+fit_kwargs:
+  max_epochs: 30
+  lr: 0.0001
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 6
+  min_delta: 0.025
+
+post_training:
+  n_domains: [15, 20, 25]
+  log_metrics: true
+  save_h5ad: true
+  log_umap: true
+  log_domains: true
+  delete_X: true
