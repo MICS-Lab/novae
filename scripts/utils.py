@@ -80,6 +80,10 @@ def read_config(args: argparse.Namespace) -> Config:
     with open(novae.utils.repository_root() / "scripts" / "config" / args.config, "r") as f:
         config = yaml.safe_load(f)
         config = Config(**config, sweep=args.sweep)
+
+        log.info(f"Using {config.seed}")
+        L.seed_everything(config.seed)
+
         return config
 
 
