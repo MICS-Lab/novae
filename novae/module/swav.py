@@ -131,7 +131,7 @@ class SwavHead(L.LightningModule):
 
         slide_index = self.slide_label_encoder[slide_id]
 
-        softmax_projection = F.softmax(projections, dim=1)
+        softmax_projection = F.softmax(projections / self.temperature_weight_proto, dim=1)
         self.queue[slide_index] = softmax_projection.topk(3, dim=0).values[-1]  # top-3 more robust than max
 
         weights = self.queue_weights()[slide_index]

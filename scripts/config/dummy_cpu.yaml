@@ -4,7 +4,7 @@ data:
   train_dataset: dummy_ari/v2
 
 model_kwargs:
-  n_hops_view: 2
+  n_hops_view: 1
   n_hops_local: 1
   heads: 16
   hidden_size: 128

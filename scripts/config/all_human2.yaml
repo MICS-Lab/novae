@@ -4,7 +4,7 @@ data:
 
 model_kwargs:
   scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
-  n_hops_view: 3
+  n_hops_view: 2
   heads: 16
   hidden_size: 128
   temperature: 0.1
