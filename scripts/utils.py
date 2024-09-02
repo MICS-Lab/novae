@@ -125,7 +125,7 @@ def _log_umap(model: novae.Novae, adatas: list[AnnData], config: Config, n_obs_t
         obs_key = model.assign_domains(adatas, n_domains=n_domains)
         model.batch_effect_correction(adatas, obs_key=obs_key)
 
-        latent_conc = np.concat([adata.obsm[Keys.REPR_CORRECTED] for adata in adatas], axis=0)
+        latent_conc = np.concatenate([adata.obsm[Keys.REPR_CORRECTED] for adata in adatas], axis=0)
         obs_conc = pd.concat([adata.obs for adata in adatas], axis=0, join="inner")
         adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
 
