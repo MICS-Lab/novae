@@ -8,7 +8,7 @@
 module purge
 module load anaconda3/2022.10/gcc-11.2.0 && source activate novae
 
-cd /gpfs/workdir/blampeyq/novae/scripts
+cd /gpfs/workdir/blampeyq/novae
 
 # Get config
 DEFAULT_CONFIG=swav_cpu_0.yaml
@@ -19,4 +19,4 @@ WANDB__SERVICE_WAIT=300
 export WANDB__SERVICE_WAIT
 
 # Execute training
-python -u train.py --config $CONFIG
+python -u -m scripts.train --config $CONFIG
