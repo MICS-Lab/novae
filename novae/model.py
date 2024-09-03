@@ -50,7 +50,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         num_layers: int = 10,
         batch_size: int = 512,
         temperature: float = 0.1,
-        temperature_weight_proto: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
@@ -99,7 +98,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
         self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
-        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature, temperature_weight_proto)
+        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
 
         ### Misc
         self._num_workers = 0
@@ -413,11 +412,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.swav_head.queue is not None
         ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
 
-        weights = self.swav_head.queue_weights().numpy(force=True)
+        weights, thresholds = self.swav_head.queue_weights()
+        weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
 
-        where_enough_prototypes = (weights >= Nums.QUEUE_WEIGHT_THRESHOLD).sum(1) >= self.swav_head.min_prototypes
+        where_enough_prototypes = (weights >= thresholds).sum(1) >= self.swav_head.min_prototypes
         for i in np.where(where_enough_prototypes)[0]:
-            weights[i, weights[i] < Nums.QUEUE_WEIGHT_THRESHOLD] = 0
+            weights[i, weights[i] < thresholds] = 0
         for i in np.where(~where_enough_prototypes)[0]:
             indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
             weights[i, indices_0] = 0

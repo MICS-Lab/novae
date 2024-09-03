@@ -27,7 +27,6 @@ class SwavHead(L.LightningModule):
         output_size: int,
         num_prototypes: int,
         temperature: float,
-        temperature_weight_proto: float,
     ):
         """SwavHead module, adapted from the paper ["Unsupervised Learning of Visual Features by Contrasting Cluster Assignments"](https://arxiv.org/abs/2006.09882).
 
@@ -41,7 +40,6 @@ class SwavHead(L.LightningModule):
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
-        self.temperature_weight_proto = temperature_weight_proto
 
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
@@ -63,7 +61,7 @@ class SwavHead(L.LightningModule):
         """
         del self.queue
 
-        shape = (len(slide_ids), self.num_prototypes)
+        shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
         self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
 
         self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}
@@ -131,20 +129,26 @@ class SwavHead(L.LightningModule):
 
         slide_index = self.slide_label_encoder[slide_id]
 
-        self.queue[slide_index] = projections.topk(3, dim=0).values[-1]  # top-3 more robust than max
+        self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
+        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]
 
-        weights = self.queue_weights()[slide_index]
-        ilocs = torch.where(weights >= Nums.QUEUE_WEIGHT_THRESHOLD)[0]
+        weights, thresholds = self.queue_weights()
+        slide_weights = weights[slide_index]
 
-        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(weights, self.min_prototypes).indices
+        ilocs = torch.where(slide_weights >= thresholds)[0]
+        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(slide_weights, self.min_prototypes).indices
 
-    def queue_weights(self) -> Tensor:
+    def queue_weights(self) -> tuple[Tensor, Tensor]:
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
             A tensor of shape `(n_slides, K)`.
         """
-        return self.sinkhorn(self.queue) * self.num_prototypes
+        max_projections = self.queue.max(dim=1).values
+
+        thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
+
+        return max_projections, thresholds
 
     @utils.format_docs
     @torch.no_grad()
