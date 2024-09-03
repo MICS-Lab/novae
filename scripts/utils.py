@@ -80,6 +80,10 @@ def read_config(args: argparse.Namespace) -> Config:
     with open(novae.utils.repository_root() / "scripts" / "config" / args.config, "r") as f:
         config = yaml.safe_load(f)
         config = Config(**config, sweep=args.sweep)
+
+        log.info(f"Using {config.seed}")
+        L.seed_everything(config.seed)
+
         return config
 
 
@@ -129,6 +133,8 @@ def _log_umap(model: novae.Novae, adatas: list[AnnData], config: Config, n_obs_t
         obs_conc = pd.concat([adata.obs for adata in adatas], axis=0, join="inner")
         adata_conc = AnnData(obsm={Keys.REPR_CORRECTED: latent_conc}, obs=obs_conc)
 
+        if "cell_id" in adata_conc.obs:
+            del adata_conc.obs["cell_id"]  # can't be saved for some reasons
         _save_h5ad(adata_conc, "adata_conc")
 
         if adata_conc.n_obs > n_obs_th:

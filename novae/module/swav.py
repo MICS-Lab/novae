@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    queue: None | Tensor  # (n_slides, queue_size, num_prototypes)
+    queue: None | Tensor  # (n_slides, num_prototypes)
 
     @utils.format_docs
     def __init__(
@@ -61,7 +61,7 @@ class SwavHead(L.LightningModule):
         """
         del self.queue
 
-        shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
+        shape = (len(slide_ids), self.num_prototypes)
         self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
 
         self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}

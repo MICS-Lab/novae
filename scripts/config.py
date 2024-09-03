@@ -24,6 +24,7 @@ class Config(BaseModel):
     wandb_artefact: str | None = None
     zero_shot: bool = False
     sweep: bool = False
+    seed: int = 0
 
     data: DataConfig = DataConfig()
     post_training: PostTrainingConfig = PostTrainingConfig()

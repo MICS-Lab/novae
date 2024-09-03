@@ -24,7 +24,7 @@ fit_kwargs:
 post_training:
   n_domains: [15, 20, 25]
   log_metrics: true
-  save_h5ad: false
+  save_h5ad: true
   log_umap: true
   log_domains: true
   delete_X: true
