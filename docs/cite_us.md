@@ -1,7 +1,7 @@
 You can cite our preprint as below:
 
 ```txt
-TODO: submit preprint
+TODO: submit preprint (coming soon)
 ```
 
 This library has been developed by Quentin Blampey, PhD student in Biomathematics / Deep Learning. The following institutions funded this work:

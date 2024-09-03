@@ -70,5 +70,5 @@ model.assign_domains(adata)
 ## Cite us
 
 ```txt
-TODO: submit preprint
+TODO: submit preprint (coming soon)
 ```

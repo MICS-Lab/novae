@@ -130,7 +130,7 @@ class SwavHead(L.LightningModule):
         slide_index = self.slide_label_encoder[slide_id]
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
-        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]
+        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]  # top3 more robust than max
 
         weights, thresholds = self.queue_weights()
         slide_weights = weights[slide_index]
