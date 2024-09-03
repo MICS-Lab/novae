@@ -8,7 +8,6 @@ model_kwargs:
   heads: 16
   hidden_size: 128
   temperature: 0.1
-  temperature_weight_proto: 0.1
   num_prototypes: 64
   background_noise_lambda: 5
   panel_subset_size: 0.8
