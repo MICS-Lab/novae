@@ -61,7 +61,7 @@ class SwavHead(L.LightningModule):
         """
         del self.queue
 
-        shape = (len(slide_ids), self.num_prototypes)
+        shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
         self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
 
         self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}
