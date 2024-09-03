@@ -72,7 +72,7 @@ def _domains_hierarchy(
     sns.despine(offset=10, trim=True, bottom=True)
 
 
-def paga(adata: AnnData, obs_key: str | None = None):
+def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs):
     assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
@@ -88,4 +88,5 @@ def paga(adata: AnnData, obs_key: str | None = None):
         adata.uns["paga"] = adata_clean.uns["paga"]
         adata.uns[f"{obs_key}_sizes"] = adata_clean.uns[f"{obs_key}_sizes"]
 
-    sc.pl.paga(adata_clean, title=f"PAGA graph ({obs_key})")
+    sc.pl.paga(adata_clean, title=f"PAGA graph ({obs_key})", show=False, **paga_plot_kwargs)
+    sns.despine(offset=10, trim=True, bottom=True)
