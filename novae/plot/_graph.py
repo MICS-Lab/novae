@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scanpy as sc
 import seaborn as sns
+from anndata import AnnData
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
+
+from .. import utils
+from .._constants import Keys
+from ._utils import get_categorical_color_palette
 
 
 def _leaves_count(clustering: AgglomerativeClustering) -> np.ndarray:
@@ -64,3 +70,22 @@ def _domains_hierarchy(
     plt.title("Domains hierarchy")
     plt.xlabel("Number of domains in node (or prototype ID if no parenthesis)")
     sns.despine(offset=10, trim=True, bottom=True)
+
+
+def paga(adata: AnnData, obs_key: str | None = None):
+    assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
+
+    obs_key = utils.check_available_domains_key([adata], obs_key)
+
+    get_categorical_color_palette([adata], obs_key)
+
+    adata_clean = adata[~adata.obs[obs_key].isna()]
+
+    if "paga" not in adata.uns or adata.uns["paga"]["groups"] != obs_key:
+        sc.pp.neighbors(adata_clean, use_rep=Keys.REPR)
+        sc.tl.paga(adata_clean, groups=obs_key)
+
+        adata.uns["paga"] = adata_clean.uns["paga"]
+        adata.uns[f"{obs_key}_sizes"] = adata_clean.uns[f"{obs_key}_sizes"]
+
+    sc.pl.paga(adata_clean, title=f"PAGA graph ({obs_key})")

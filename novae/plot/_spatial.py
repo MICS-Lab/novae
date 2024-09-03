@@ -11,6 +11,7 @@ from scanpy._utils import sanitize_anndata
 
 from .. import utils
 from .._constants import Keys
+from ._utils import get_categorical_color_palette
 
 log = logging.getLogger(__name__)
 
@@ -53,13 +54,7 @@ def domains(
     for adata in adatas:
         sanitize_anndata(adata)
 
-    all_domains = sorted(list(set.union(*[set(adata.obs[obs_key].cat.categories) for adata in adatas])))
-
-    n_colors = len(all_domains)
-    colors = list(sns.color_palette("tab10" if n_colors <= 10 else "tab20", n_colors=n_colors).as_hex())
-    for adata in adatas:
-        adata.obs[obs_key] = adata.obs[obs_key].cat.set_categories(all_domains)
-        adata.uns[f"{obs_key}_colors"] = colors
+    all_domains, colors = get_categorical_color_palette(adatas, obs_key)
 
     n_slides = sum(len(adata.obs[slide_name_key].cat.categories) for adata in adatas)
     ncols = n_slides if n_slides < ncols else ncols
@@ -100,7 +95,7 @@ def domains(
         bbox_to_anchor=(0.5, 1.1) if i > 1 else (1.04, 0.5),
         borderaxespad=0,
         frameon=False,
-        ncol=n_colors // (3 if i > 1 else 10) + 1,
+        ncol=len(colors) // (3 if i > 1 else 10) + 1,
     )
 
     if show:
