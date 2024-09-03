@@ -248,6 +248,9 @@ def _shared_domains_keys(adatas: list[AnnData]) -> set[int]:
 
 def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> str:
     available_obs_keys = _shared_domains_keys(adatas)
+
+    assert len(available_obs_keys), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
+
     if obs_key is not None:
         assert all(
             obs_key in adata.obs for adata in adatas

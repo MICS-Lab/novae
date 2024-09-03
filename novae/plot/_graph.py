@@ -72,7 +72,14 @@ def _domains_hierarchy(
     sns.despine(offset=10, trim=True, bottom=True)
 
 
-def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs):
+def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
+    """Plot a PAGA graph.
+
+    Args:
+        adata: An AnnData object.
+        obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
+        **paga_plot_kwargs: Additional arguments for `sc.pl.paga`.
+    """
     assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
