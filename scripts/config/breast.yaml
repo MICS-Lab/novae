@@ -1,5 +1,5 @@
 project: novae_eval
-wandb_artefact: novae/novae/model-zao5sof8:v30
+wandb_artefact: novae/novae/model-y8i2da7y:v30
 
 data:
   train_dataset: breast
