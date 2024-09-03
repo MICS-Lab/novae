@@ -1,0 +1,31 @@
+project: novae_eval
+seed: 3
+
+data:
+  train_dataset: dummy_ari/v2
+
+model_kwargs:
+  n_hops_view: 1
+  n_hops_local: 1
+  heads: 16
+  hidden_size: 128
+  temperature: 0.1
+  temperature_weight_proto: 1
+  num_prototypes: 256
+  background_noise_lambda: 5
+  panel_subset_size: 0.8
+  min_prototypes_ratio: 1
+
+fit_kwargs:
+  max_epochs: 30
+  lr: 0.0005
+  patience: 6
+  min_delta: 0.025
+
+post_training:
+  n_domains: [7, 10, 15]
+  log_metrics: true
+  save_h5ad: true
+  log_umap: true
+  log_domains: true
+  delete_X: true
