@@ -14,6 +14,7 @@ from ._utils import (
     unique_leaves_indices,
     unique_obs,
     sparse_std,
+    iter_slides,
 )
 from ._validate import check_available_domains_key, prepare_adatas
 from ._data import load_local_dataset, load_wandb_artifact, dummy_dataset, load_dataset

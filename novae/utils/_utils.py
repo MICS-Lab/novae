@@ -138,3 +138,26 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
 def pretty_model_repr(info_dict: dict[str, str], model_name: str = "Novae") -> str:
     rows = [f"{model_name} model"] + [f"{k}: {v}" for k, v in info_dict.items()]
     return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
+
+
+def iter_slides(adatas: AnnData | list[AnnData]):
+    """Iterate over all slides.
+
+    Args:
+        adatas: One or a list of AnnData object(s).
+
+    Yields:
+        One `AnnData` per slide.
+    """
+    if isinstance(adatas, AnnData):
+        adatas = [adatas]
+
+    for adata in adatas:
+        slide_ids = adata.obs[Keys.SLIDE_ID].unique()
+
+        if len(slide_ids) == 1:
+            yield adata
+            continue
+
+        for slide_id in slide_ids:
+            yield adata[adata.obs[Keys.SLIDE_ID] == slide_id]

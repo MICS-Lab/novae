@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 
 import matplotlib.patches as mpatches
@@ -60,14 +61,20 @@ def _weights_clustermap(
 
 def pathway_scores(
     adata: AnnData,
-    pathways: dict[str, list[str]],
+    pathways: dict[str, list[str]] | str,
     obs_key: str,
     return_df: bool = False,
     figsize: tuple[int, int] = (10, 5),
     **kwargs: int,
 ) -> pd.DataFrame | None:
+    assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
+
     scores = {}
     lower_var_names = adata.var_names.str.lower()
+
+    if isinstance(pathways, str):
+        pathways = _load_gsea_json(pathways)
+        log.info(f"Loaded {len(pathways)} pathway(s)")
 
     for key, gene_names in pathways.items():
         vars = np.array([gene_name.lower() for gene_name in gene_names])
@@ -82,9 +89,19 @@ def pathway_scores(
     df = pd.DataFrame(scores)
     df[obs_key] = adata.obs[obs_key]
     df = df.groupby(obs_key).mean()
+    df = df.fillna(0)
 
     g = sns.clustermap(df, figsize=figsize, **kwargs)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
 
     if return_df:
         return df
+
+
+def _load_gsea_json(path: str) -> dict[str, list[str]]:
+    with open(path, "r") as f:
+        content: dict = json.load(f)
+        assert all(
+            "geneSymbols" in value for value in content.values()
+        ), "Missing 'geneSymbols' key in JSON file. Expected a valid GSEA JSON file."
+        return {key: value["geneSymbols"] for key, value in content.items()}
