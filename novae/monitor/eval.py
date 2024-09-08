@@ -232,9 +232,6 @@ def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs
             continue
 
         for slide_id in adata.obs[slide_key].unique():
-            adata_yield = adata[adata.obs[slide_key] == slide_id].copy()
-
-            if obs_key is not None:
-                adata_yield.obs[obs_key] = adata_yield.obs[obs_key].cat.set_categories(categories)
+            adata_yield = adata[adata.obs[slide_key] == slide_id]
 
             yield adata_yield
