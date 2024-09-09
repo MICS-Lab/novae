@@ -5,7 +5,7 @@ import pytest
 import novae
 from novae._constants import Keys
 
-adatas = novae.utils.dummy_dataset(n_panels=2, xmax=200)
+adatas = novae.utils.toy_dataset(n_panels=2, xmax=200)
 
 model = novae.Novae(adatas)
 

@@ -1,8 +1,8 @@
 project: novae_eval
-seed: 1
+seed: 0
 
 data:
-  train_dataset: dummy_ari/v2
+  train_dataset: toy_ari/v2
 
 model_kwargs:
   n_hops_view: 1

@@ -3,7 +3,7 @@ from __future__ import annotations
 import novae
 from novae._constants import Nums
 
-adata = novae.utils.dummy_dataset(xmax=200)[0]
+adata = novae.utils.toy_dataset(xmax=200)[0]
 
 
 def test_settings():

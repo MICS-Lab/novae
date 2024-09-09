@@ -1,8 +1,8 @@
 project: novae_tests
 
 data:
-  train_dataset: dummy_train
-  val_dataset: dummy_val
+  train_dataset: toy_train
+  val_dataset: toy_val
 
 model_kwargs:
   embedding_size: 50

@@ -32,7 +32,7 @@ def test_build():
 
 
 def test_set_unique_slide_ids():
-    adatas = novae.utils.dummy_dataset(
+    adatas = novae.utils.toy_dataset(
         xmax=200,
         n_panels=2,
         n_slides_per_panel=1,
@@ -44,7 +44,7 @@ def test_set_unique_slide_ids():
 
     assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == f"{id(adatas[0])}_slide_0"
 
-    adatas = novae.utils.dummy_dataset(
+    adatas = novae.utils.toy_dataset(
         xmax=200,
         n_panels=2,
         n_slides_per_panel=1,
@@ -85,7 +85,7 @@ def test_build_slide_key():
 
 
 def test_build_slide_key_disjoint_indices():
-    adata = novae.utils.dummy_dataset(
+    adata = novae.utils.toy_dataset(
         n_panels=1,
         n_slides_per_panel=1,
         xmax=100,

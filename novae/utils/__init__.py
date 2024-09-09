@@ -17,6 +17,6 @@ from ._utils import (
     iter_slides,
 )
 from ._validate import check_available_domains_key, prepare_adatas
-from ._data import load_local_dataset, load_wandb_artifact, dummy_dataset, load_dataset
+from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_dataset
 from ._mode import Mode
 from ._correct import batch_effect_correction

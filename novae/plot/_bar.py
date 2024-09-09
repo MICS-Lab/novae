@@ -11,6 +11,13 @@ from ._utils import get_categorical_color_palette
 
 
 def domains_proportions(adata: AnnData | list[AnnData], obs_key: str | None, figsize: tuple[int, int] = (2, 5)):
+    """Show the proportion of each domain in the slide(s).
+
+    Args:
+        adata: One `AnnData` object, or a list of `AnnData` objects.
+        obs_key: The key in `adata.obs` that contains the Novae domains. By default, the last available domain key is shown.
+        figsize: Matplotlib figure size.
+    """
     adatas = [adata] if isinstance(adata, AnnData) else adata
 
     obs_key = utils.check_available_domains_key(adatas, obs_key)

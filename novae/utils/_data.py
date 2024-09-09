@@ -14,7 +14,7 @@ from . import repository_root, spatial_neighbors, tqdm, wandb_log_dir
 log = logging.getLogger(__name__)
 
 
-def dummy_dataset(
+def toy_dataset(
     n_panels: int = 3,
     n_domains: int = 4,
     n_slides_per_panel: int = 1,
@@ -29,7 +29,7 @@ def dummy_dataset(
     compute_spatial_neighbors: bool = False,
     merge_last_domain_even_slide: bool = False,
 ) -> list[AnnData]:
-    """Creates a dummy dataset, useful for debugging or testing.
+    """Creates a toy dataset, useful for debugging or testing.
 
     Args:
         n_panels: Number of panels. Each panel will correspond to one output `AnnData` object.

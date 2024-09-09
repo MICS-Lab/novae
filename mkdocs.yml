@@ -14,6 +14,9 @@ nav:
   - Getting started: getting_started.md
   - Tutorials:
     - Main usage: tutorials/main_usage.ipynb
+    - Different input modes: tutorials/input_modes.ipynb
+    - Spot vs single-cell resolution: tutorials/spot_vs_sc.ipynb
+    - Multi tissue/condition mode: tutorials/multi_tissue.ipynb
   - API:
     - novae.Novae: api/novae.Novae.md
     - novae.utils: api/novae.utils.md
