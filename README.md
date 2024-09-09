@@ -1,7 +1,6 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="novae_banner" width="100%"/>
+  <img src="https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png" alt="novae_banner" width="100%"/>
 </p>
-<!-- TODO: when it becomes public: https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png -->
 
 <div align="center">
 
@@ -20,6 +19,8 @@
   💫 Graph-based foundation model for spatial transcriptomics data
 </b></i></p>
 
+Novae is a deep learning model for spatial domain assignments of spatial transcriptomics data (at both single-cell or spot resolution). It works across multiple gene panels, tissues, and technologies. Novae offers several additional features, including: (i) native batch-effect correction, (ii) analysis of spatially variable genes and pathways, and (iii) architecture analysis of tissue slides.
+
 ## Documentation
 
 Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started. It contains installation explanations, API details, and tutorials.
@@ -27,7 +28,7 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 ## Overview
 
 <p align="center">
-  <img src="docs/assets/Figure1.png" alt="novae_overview" width="100%"/>
+  <img src="https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/Figure1.png" alt="novae_overview" width="100%"/>
 </p>
 
 > **(a)** Novae was trained on a large dataset, and is shared on [Hugging Face Hub](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd). **(b)** Illustration of the main tasks and properties of Novae. **(c)** Illustration of the method behing Novae (self-supervision on graphs, adapted from [SwAV](https://arxiv.org/abs/2006.09882)).
