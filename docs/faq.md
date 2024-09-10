@@ -17,8 +17,7 @@ We highly recommend to load a pretrained Novae model instead of re-training from
 ```python
 from novae import Novae
 
-model = Novae.from_pretrained("MICS-Lab/novae-v0") # or any valid model name
-#TODO: update with a real model name
+model = Novae.from_pretrained("MICS-Lab/novae-human-0") # or any valid model name
 ```
 
 

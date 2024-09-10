@@ -27,7 +27,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```python
         import novae
 
-        model = novae.Novae.from_pretrained("MICS-Lab/novae-1-medium")
+        model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
         model.compute_representations(adata, zero_shot=True)
         model.assign_domains(adata)
