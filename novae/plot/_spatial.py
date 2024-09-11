@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from anndata import AnnData
@@ -100,3 +102,40 @@ def domains(
 
     if show:
         plt.show()
+
+
+def spatially_variable_genes(
+    adata: AnnData,
+    obs_key: str | None = None,
+    top_k: int = 5,
+    show: bool = False,
+    cell_size: int = 10,
+    min_positive_ratio: float = 0.05,
+    return_list: bool = False,
+    **kwargs: int,
+) -> list[str]:
+    assert isinstance(adata, AnnData), f"Received adata of type {type(adata)}. Currently only AnnData is supported."
+
+    obs_key = utils.check_available_domains_key([adata], obs_key)
+
+    sc.tl.rank_genes_groups(adata, groupby=obs_key)
+    df = pd.concat(
+        [
+            sc.get.rank_genes_groups_df(adata, domain).set_index("names")["logfoldchanges"]
+            for domain in adata.obs[obs_key].cat.categories
+        ],
+        axis=1,
+    )
+
+    where = (adata.X > 0).mean(0) > min_positive_ratio
+    valid_vars = adata.var_names[where.A1 if isinstance(where, np.matrix) else where]
+    assert (
+        len(valid_vars) >= top_k
+    ), f"Only {len(valid_vars)} genes are available. Please decrease `top_k` or `min_positive_ratio`."
+
+    svg = df.std(1).loc[valid_vars].sort_values(ascending=False).head(top_k).index
+
+    if return_list:
+        return svg.tolist()
+
+    sc.pl.spatial(adata, color=svg, spot_size=cell_size, show=show, **kwargs)

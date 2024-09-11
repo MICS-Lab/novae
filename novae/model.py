@@ -463,6 +463,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         for adata in adatas:
             adata.obs[key_added] = self.swav_head.map_leaves_domains(adata.obs[Keys.LEAVES], level)
+            adata.obs[key_added] = adata.obs[key_added].astype("category")
 
         return key_added
 

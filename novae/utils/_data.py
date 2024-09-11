@@ -9,7 +9,7 @@ import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 
-from . import repository_root, spatial_neighbors, tqdm, wandb_log_dir
+from . import repository_root, spatial_neighbors, wandb_log_dir
 
 log = logging.getLogger(__name__)
 
@@ -131,40 +131,40 @@ def _drop_neighbors(adata: AnnData, index: int):
 def _read_h5ad_from_hub(name: str, row: pd.Series):
     from huggingface_hub import hf_hub_download
 
-    file_path = f"{row['specie']}/{row['tissue']}/{name}.h5ad"
+    file_path = f"{row['species']}/{row['tissue']}/{name}.h5ad"
     local_file = hf_hub_download(repo_id="MICS-Lab/novae", filename=file_path, repo_type="dataset")
 
     return sc.read_h5ad(local_file)
 
 
 def load_dataset(
-    pattern: str | None = None, tissue: list[str] | str | None = None, specie: list[str] | str | None = None
+    pattern: str | None = None, tissue: list[str] | str | None = None, species: list[str] | str | None = None
 ) -> list[AnnData]:
     """Automatically load slides from the Novae dataset repository.
 
     !!! info "Selecting slides"
-        The function arguments allow to filter the slides based on the tissue, specie, and name pattern.
+        The function arguments allow to filter the slides based on the tissue, species, and name pattern.
         Internally, the function reads [this dataset metadata file](https://huggingface.co/datasets/MICS-Lab/novae/blob/main/metadata.csv) to select the slides that match the provided filters.
 
     Args:
         pattern: Optional pattern to match the slides names.
         tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain", "colon"`.
-        specie: Otional specie (or specie list) to filter the slides. E.g., `"human", "mouse"`.
+        species: Optional species (or species list) to filter the slides. E.g., `"human", "mouse"`.
 
     Returns:
         A list of `AnnData` objects, each object corresponds to one slide.
     """
     metadata = pd.read_csv("hf://datasets/MICS-Lab/novae/metadata.csv", index_col=0)
 
-    valid_species = metadata["specie"].unique()
+    valid_species = metadata["species"].unique()
     valid_tissues = metadata["tissue"].unique()
 
-    if specie is not None:
-        species = [specie] if isinstance(specie, str) else specie
+    if species is not None:
+        species = [species] if isinstance(species, str) else species
         assert all(
-            specie in valid_species for specie in species
+            s in valid_species for s in species
         ), f"Found invalid species in {species}. Valid species are {valid_species}."
-        metadata = metadata[metadata["specie"].isin(species)]
+        metadata = metadata[metadata["species"].isin(species)]
 
     if tissue is not None:
         tissues = [tissue] if isinstance(tissue, str) else tissue
@@ -173,15 +173,17 @@ def load_dataset(
         ), f"Found invalid tissues in {tissues}. Valid tissues for the provided species are {valid_tissues}."
         metadata = metadata[metadata["tissue"].isin(tissues)]
 
+    assert not metadata.empty, "No dataset found for the provided filters."
+
     if pattern is not None:
-        metadata = metadata[metadata.index.str.match(pattern)]
+        where = metadata.index.str.match(pattern)
+        assert len(where), f"No dataset found for the provided pattern ({', '.join(list(metadata.index))})."
+        metadata = metadata[where]
 
     assert not metadata.empty, "No dataset found for the provided filters."
 
-    return [
-        _read_h5ad_from_hub(name, row)
-        for name, row in tqdm(metadata.iterrows(), desc="Downloading files", total=len(metadata))
-    ]
+    log.info(f"Found {len(metadata)} h5ad file(s) matching the filters.")
+    return [_read_h5ad_from_hub(name, row) for name, row in metadata.iterrows()]
 
 
 def load_local_dataset(relative_path: str, files_black_list: list[str] = None) -> list[AnnData]:
