@@ -1,3 +1,3 @@
-## [0.1.0] - tbd
+## [0.1.0] - 2024-09-11
 
-tbd
+First official `novae` release. Preprint coming soon.

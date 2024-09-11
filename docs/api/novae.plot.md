@@ -5,3 +5,5 @@
 ::: novae.plot.pathway_scores
 
 ::: novae.plot.paga
+
+::: novae.plot.spatially_variable_genes

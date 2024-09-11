@@ -71,6 +71,9 @@ def pathway_scores(
 ) -> pd.DataFrame | None:
     """Show a heatmap of pathway scores for each domain.
 
+    Info:
+        Currently, this function only supports one slide per call.
+
     Args:
         adata: An `AnnData` object.
         pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gane names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.

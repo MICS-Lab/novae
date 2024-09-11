@@ -82,6 +82,9 @@ def _domains_hierarchy(
 def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
     """Plot a PAGA graph.
 
+    Info:
+        Currently, this function only supports one slide per call.
+
     Args:
         adata: An AnnData object.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.

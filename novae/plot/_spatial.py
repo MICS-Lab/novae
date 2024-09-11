@@ -34,7 +34,6 @@ def domains(
     Info:
         Make sure you have already your Novae domains assigned to the `AnnData` object. You can use `model.assign_domains(...)` to do so.
 
-
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
@@ -113,7 +112,25 @@ def spatially_variable_genes(
     min_positive_ratio: float = 0.05,
     return_list: bool = False,
     **kwargs: int,
-) -> list[str]:
+) -> None | list[str]:
+    """Plot the most spatially variable genes (SVG) for a given `AnnData` object.
+
+    !!! info
+        Currently, this function only supports one slide per call.
+
+    Args:
+        adata: An `AnnData` object corresponding to one slide.
+        obs_key: Key in `adata.obs` that contains the domains. By default, it will use the last available Novae domain key.
+        top_k: Number of SVG to be shown.
+        show: Whether to show the plot.
+        cell_size: Size of the cells or spots (`spot_size` argument of `sc.pl.spatial`).
+        min_positive_ratio: Genes whose "ratio of cells expressing it" is lower than this threshold are not considered.
+        return_list: Whether to return the list of SVG instead of plotting them.
+        **kwargs: Additional arguments for `sc.pl.spatial`.
+
+    Returns:
+        A list of SVG names if `return_list` is `True`.
+    """
     assert isinstance(adata, AnnData), f"Received adata of type {type(adata)}. Currently only AnnData is supported."
 
     obs_key = utils.check_available_domains_key([adata], obs_key)

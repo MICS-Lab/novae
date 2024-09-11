@@ -1,8 +1,15 @@
 # Public datasets
 
-We detail below how to download public spatial transcriptomics datasets. The data will be saved in this directory, and will be used to train `novae`.
+We detail below how to download public spatial transcriptomics datasets.
 
-## Download
+## Option 1: Hugging Face Hub
+
+We store our dataset on [Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae).
+To automatically download these slides, you can use the [`novae.utils.load_dataset`](https://mics-lab.github.io/novae/api/novae.utils/#novae.utils.load_dataset) function.
+
+NB: not all slides are uploaded on Hugging Face yet, but we are progressively adding new slides. To get the full dataset right now, use the "Option 2" below.
+
+## Option 2: Download
 
 For consistency, all the scripts below need to be executed at the root of the `data` directory (i.e., `novae/data`).
 
@@ -50,7 +57,7 @@ All above datasets can be downloaded using a single command line. Make sure you 
 sh _scripts/1_download_all.sh
 ```
 
-## Preprocess and prepare for training
+### Preprocess and prepare for training
 
 The script bellow will copy all `adata.h5ad` files into a single directory, compute UMAPs, and minor preprocessing. See the `argparse` helper of this script for more details.
 
@@ -58,7 +65,7 @@ The script bellow will copy all `adata.h5ad` files into a single directory, comp
 python _scripts/2_prepare.py
 ```
 
-## Usage
+### Usage
 
 These datasets can be used during training (see the `scripts` directory at the root of the `novae` repository).
 

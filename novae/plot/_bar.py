@@ -10,7 +10,7 @@ from .._constants import Keys
 from ._utils import get_categorical_color_palette
 
 
-def domains_proportions(adata: AnnData | list[AnnData], obs_key: str | None, figsize: tuple[int, int] = (2, 5)):
+def domains_proportions(adata: AnnData | list[AnnData], obs_key: str | None = None, figsize: tuple[int, int] = (2, 5)):
     """Show the proportion of each domain in the slide(s).
 
     Args:
