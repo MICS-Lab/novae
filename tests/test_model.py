@@ -64,7 +64,7 @@ def test_train():
     model.compute_representations()
     model.compute_representations(num_workers=2)
 
-    obs_key = model.assign_domains(n_domains=2)
+    # obs_key = model.assign_domains(n_domains=2)
     obs_key = model.assign_domains(level=2)
 
     model.batch_effect_correction()
