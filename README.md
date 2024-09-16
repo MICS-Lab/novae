@@ -70,6 +70,15 @@ model.assign_domains(adata)
 
 ## Cite us
 
+You can cite our [preprint](https://www.biorxiv.org/content/10.1101/2024.09.09.612009v1) as below:
+
 ```txt
-TODO: submit preprint (coming soon)
+@article{blampeyNovae2024,
+  title = {Novae: A Graph-Based Foundation Model for Spatial Transcriptomics Data},
+  author = {Blampey, Quentin and Benkirane, Hakim and Bercovici, Nadege and Andre, Fabrice and Cournede, Paul-Henry},
+  year = {2024},
+  pages = {2024.09.09.612009},
+  publisher = {bioRxiv},
+  doi = {10.1101/2024.09.09.612009},
+}
 ```
