@@ -95,7 +95,7 @@ def toy_dataset(
 
                 lambdas = domains_shift[i] + slide_shift + panel_shift
                 X_domain = np.random.exponential(lambdas, size=(n_obs_domain, n_vars))
-                adata.X[condition] = X_domain.astype(int)  # values should look like log1p values
+                adata.X[condition] = X_domain.astype(int)  # values should look like counts
 
             if n_drop:
                 size = n_vars - n_drop - panel_index  # different number of genes
