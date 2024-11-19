@@ -27,6 +27,7 @@ def domains(
     fig_size_per_slide: tuple[int, int] = (5, 5),
     na_color: str = "#ccc",
     show: bool = False,
+    library_id: str | None = None,
     **kwargs: int,
 ):
     """Show the Novae spatial domains for all slides in the `AnnData` object.
@@ -43,6 +44,7 @@ def domains(
         fig_size_per_slide: Size of the figure for each slide.
         na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
         show: Whether to show the plot.
+        library_id: `library_id` argument for `sc.pl.spatial`.
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
     if obs_key is not None:
@@ -70,7 +72,15 @@ def domains(
         for slide_name in adata.obs[slide_name_key].cat.categories:
             ax = axes[i // ncols, i % ncols]
             adata_ = adata[adata.obs[slide_name_key] == slide_name]
-            sc.pl.spatial(adata_, spot_size=cell_size, color=obs_key, ax=ax, show=False, **kwargs)
+            sc.pl.spatial(
+                adata_,
+                spot_size=cell_size,
+                color=obs_key,
+                ax=ax,
+                show=False,
+                library_id=library_id,
+                **kwargs,
+            )
             sns.despine(ax=ax, offset=10, trim=True)
             ax.get_legend().remove()
             ax.set_title(slide_name)
