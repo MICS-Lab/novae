@@ -18,20 +18,13 @@ nav:
     - Spot vs single-cell resolution: tutorials/spot_vs_sc.ipynb
     - Multi tissue/condition mode: tutorials/multi_tissue.ipynb
   - API:
-    - novae.Novae: api/novae.Novae.md
-    - novae.utils: api/novae.utils.md
-    - novae.plot: api/novae.plot.md
-    - novae.monitor: api/novae.monitor.md
-    - novae.module:
-      - novae.module.SwavHead: api/novae.module.SwavHead.md
-      - novae.module.CellEmbedder: api/novae.module.CellEmbedder.md
-      - novae.module.GraphAugmentation: api/novae.module.GraphAugmentation.md
-      - novae.module.GraphEncoder: api/novae.module.GraphEncoder.md
-      - novae.module.AttentionAggregation: api/novae.module.AttentionAggregation.md
-    - novae.data:
-      - novae.data.NovaeDataset: api/novae.data.NovaeDataset.md
-      - novae.data.NovaeDatamodule: api/novae.data.NovaeDatamodule.md
-      - novae.data.AnnDataTorch: api/novae.data.AnnDataTorch.md
+    - Novae model: api/Novae.md
+    - Utils: api/utils.md
+    - Plotting: api/plot.md
+    - Advanced:
+      - Metrics: api/metrics.md
+      - Modules: api/modules.md
+      - Dataloader: api/dataloader.md
   - FAQ: faq.md
   - Cite us: cite_us.md
 

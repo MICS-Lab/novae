@@ -576,6 +576,22 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.mode.trained = True
 
+    def to_spot_resolution(self):
+        """
+        Set `n_hops_local` and `n_hops_view` to 1, so that the model is
+        suited for spot-resolution techniques (e.g., Visium data).
+        """
+        self.hparams["n_hops_local"] = 1
+        self.hparams["n_hops_view"] = 1
+
+    def to_cell_resolution(self):
+        """
+        Set `n_hops_local` and `n_hops_view` to 2, so that the model is
+        suited for single-cell-resolution techniques (e.g., MERSCOPE data).
+        """
+        self.hparams["n_hops_local"] = 2
+        self.hparams["n_hops_view"] = 2
+
 
 def _train(
     model: L.LightningModule,
