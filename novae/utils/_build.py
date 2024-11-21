@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import logging
 import warnings
+from enum import Enum
 from functools import partial
 from itertools import chain
-from typing import Iterable
+from typing import Iterable, Literal, get_args
 
 import numpy as np
 from anndata import AnnData
@@ -17,17 +18,29 @@ from anndata.utils import make_index_unique
 from scipy.sparse import SparseEfficiencyWarning, block_diag, csr_matrix, spmatrix
 from scipy.spatial import Delaunay
 from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.neighbors import NearestNeighbors
 
 log = logging.getLogger(__name__)
 __all__ = ["spatial_neighbors"]
 
+SpatialTechnology = Literal["cosmx", "merscope", "xenium", "visium", "visium_hd"]
+
+
+class CoordType(Enum):
+    GRID = "grid"
+    GENERIC = "generic"
+
 
 def spatial_neighbors(
     adata: AnnData,
-    radius: tuple[float, float] | float | None = 100,
     slide_key: str | None = None,
+    radius: tuple[float, float] | float | None = None,
     pixel_size: float | None = None,
-    technology: str | None = None,
+    technology: str | SpatialTechnology | None = None,
+    coord_type: str | CoordType | None = None,
+    n_neighs: int | None = None,
+    delaunay: bool | None = None,
+    n_rings: int = 1,
     percentile: float | None = None,
     set_diag: bool = False,
 ):
@@ -48,9 +61,13 @@ def spatial_neighbors(
         radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]` microns. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
         slide_key: Optional key in `adata.obs` indicating the slide ID of each cell. If provided, the graph is computed for each slide separately.
         pixel_size: Number of microns in one pixel of the image (use this argument if `adata.obsm["spatial"]` is in pixels). If `None`, the coordinates are assumed to be in microns.
-        technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium"`. If `None`, the coordinates are assumed to be in microns.
-        percentile: Percentile of the distances to use as threshold.
-        set_diag: Whether to set the diagonal of the spatial connectivities to `1.0`.
+        technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium", "visium", "visium_hd"`. If `None`, the coordinates are assumed to be in microns.
+        coord_type: Either `"grid"` or `"generic"`. If `"grid"`, the graph is built on a grid. If `"generic"`, the graph is built using the coordinates as they are. By default, uses `"grid"` for Visium/VisiumHD and `"generic"` for other technologies.
+        n_neighs: Number of neighbors to consider. If `None`, uses `6` for Visium, `4` for Visium HD, and `None` for generic graphs.
+        delaunay: Whether to use Delaunay triangulation to build the graph. If `None`, uses `False` for grid-based graphs and `True` for generic graphs.
+        n_rings: See `squidpy.gr.spatial_neighbors` documentation.
+        percentile: See `squidpy.gr.spatial_neighbors` documentation.
+        set_diag: See `squidpy.gr.spatial_neighbors` documentation.
     """
     if isinstance(radius, float) or isinstance(radius, int):
         radius = [0.0, float(radius)]
@@ -59,21 +76,30 @@ def spatial_neighbors(
 
     assert pixel_size is None or technology is None, "You must choose argument between `pixel_size` and `technology`"
 
-    if technology is not None:
+    if technology == "visium":
+        n_neighs = 6 if n_neighs is None else n_neighs
+        coord_type, delaunay = CoordType.GRID, False
+    elif technology == "visium_hd":
+        n_neighs = 8 if n_neighs is None else n_neighs
+        coord_type, delaunay = CoordType.GRID, False
+    elif technology is not None:
         adata.obsm["spatial"] = _technology_coords(adata, technology)
 
     assert (
         "spatial" in adata.obsm
     ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
 
+    spatial_key = "spatial_microns" if pixel_size is not None else "spatial"
     if pixel_size is not None:
-        assert (
-            "spatial_pixel" not in adata.obsm
-        ), "Do not run `novae.utils.spatial_neighbors` twice ('spatial_pixel' already present in `adata.obsm`)."
-        adata.obsm["spatial_pixel"] = adata.obsm["spatial"].copy()
-        adata.obsm["spatial"] = adata.obsm["spatial"] * pixel_size
+        adata.obsm["spatial_microns"] = adata.obsm["spatial"] * pixel_size
 
-    log.info(f"Computing delaunay graph on {adata.n_obs:,} cells (radius threshold: {radius} microns)")
+    coord_type = CoordType(coord_type or "generic")
+    delaunay = True if delaunay is None else delaunay
+    n_neighs = 6 if (n_neighs is None and not delaunay) else n_neighs
+
+    log.info(
+        f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=} microns, {n_neighs=})"
+    )
 
     if slide_key is not None:
         adata.obs[slide_key] = adata.obs[slide_key].astype("category")
@@ -84,8 +110,13 @@ def spatial_neighbors(
 
     _build_fun = partial(
         _spatial_neighbor,
-        set_diag=set_diag,
+        spatial_key=spatial_key,
+        coord_type=coord_type,
+        n_neighs=n_neighs,
         radius=radius,
+        delaunay=delaunay,
+        n_rings=n_rings,
+        set_diag=set_diag,
         percentile=percentile,
     )
 
@@ -107,29 +138,35 @@ def spatial_neighbors(
     adata.uns["spatial_neighbors"] = {
         "connectivities_key": "spatial_connectivities",
         "distances_key": "spatial_distances",
-        "params": {"radius": radius, "set_diag": set_diag},
+        "params": {"radius": radius, "set_diag": set_diag, "n_neighbors": n_neighs, "coord_type": coord_type.value},
     }
 
 
 def _spatial_neighbor(
     adata: AnnData,
+    spatial_key: str = "spatial",
+    coord_type: str | CoordType | None = None,
+    n_neighs: int = 6,
     radius: float | tuple[float, float] | None = None,
+    delaunay: bool = False,
+    n_rings: int = 1,
     set_diag: bool = False,
     percentile: float | None = None,
 ) -> tuple[csr_matrix, csr_matrix]:
-    coords = adata.obsm["spatial"]
-
-    assert coords.shape[1] == 2, f"adata.obsm['spatial'] has {coords.shape[1]} dimension(s). Expected 2."
-
+    coords = adata.obsm[spatial_key]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SparseEfficiencyWarning)
-        Adj, Dst = _build_connectivity(
-            coords,
-            set_diag=set_diag,
-        )
+        if coord_type == CoordType.GRID:
+            Adj, Dst = _build_grid(coords, n_neighs=n_neighs, n_rings=n_rings, delaunay=delaunay, set_diag=set_diag)
+        elif coord_type == CoordType.GENERIC:
+            Adj, Dst = _build_connectivity(
+                coords, n_neighs=n_neighs, radius=radius, delaunay=delaunay, return_distance=True, set_diag=set_diag
+            )
+        else:
+            raise NotImplementedError(f"Coordinate type `{coord_type}` is not yet implemented.")
 
-    if isinstance(radius, Iterable):
-        minn, maxx = sorted(radius)[:2]  # type: ignore[var-annotated]
+    if coord_type == CoordType.GENERIC and isinstance(radius, Iterable):
+        minn, maxx = sorted(radius)[:2]
         mask = (Dst.data < minn) | (Dst.data > maxx)
         a_diag = Adj.diagonal()
 
@@ -137,7 +174,7 @@ def _spatial_neighbor(
         Adj.data[mask] = 0.0
         Adj.setdiag(a_diag)
 
-    if percentile is not None:
+    if percentile is not None and coord_type == CoordType.GENERIC:
         threshold = np.percentile(Dst.data, percentile)
         Adj[Dst > threshold] = 0.0
         Dst[Dst > threshold] = 0.0
@@ -148,37 +185,105 @@ def _spatial_neighbor(
     return Adj, Dst
 
 
-def _build_connectivity(
-    coords: np.ndarray,
-    set_diag: bool = False,
-) -> csr_matrix | tuple[csr_matrix, csr_matrix]:
-    N = coords.shape[0]
+def _build_grid(
+    coords: np.ndarray, n_neighs: int, n_rings: int, delaunay: bool = False, set_diag: bool = False
+) -> tuple[csr_matrix, csr_matrix]:
+    if n_rings > 1:
+        Adj: csr_matrix = _build_connectivity(
+            coords,
+            n_neighs=n_neighs,
+            neigh_correct=True,
+            set_diag=True,
+            delaunay=delaunay,
+            return_distance=False,
+        )
+        Res, Walk = Adj, Adj
+        for i in range(n_rings - 1):
+            Walk = Walk @ Adj
+            Walk[Res.nonzero()] = 0.0
+            Walk.eliminate_zeros()
+            Walk.data[:] = i + 2.0
+            Res = Res + Walk
+        Adj = Res
+        Adj.setdiag(float(set_diag))
+        Adj.eliminate_zeros()
 
-    tri = Delaunay(coords)
-    indptr, indices = tri.vertex_neighbor_vertices
-    Adj = csr_matrix((np.ones_like(indices, dtype=np.float64), indices, indptr), shape=(N, N))
+        Dst = Adj.copy()
+        Adj.data[:] = 1.0
+    else:
+        Adj = _build_connectivity(coords, n_neighs=n_neighs, neigh_correct=True, delaunay=delaunay, set_diag=set_diag)
+        Dst = Adj.copy()
 
-    # fmt: off
-    dists = np.array(list(chain(*(
-        euclidean_distances(coords[indices[indptr[i] : indptr[i + 1]], :], coords[np.newaxis, i, :])
-        for i in range(N)
-        if len(indices[indptr[i] : indptr[i + 1]])
-    )))).squeeze()
-    Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
-    # fmt: on
-
-    # radius-based filtering needs same indices/indptr: do not remove 0s
-    Adj.setdiag(1.0 if set_diag else Adj.diagonal())
     Dst.setdiag(0.0)
 
     return Adj, Dst
 
 
+def _build_connectivity(
+    coords: np.ndarray,
+    n_neighs: int,
+    radius: float | tuple[float, float] | None = None,
+    delaunay: bool = False,
+    neigh_correct: bool = False,
+    set_diag: bool = False,
+    return_distance: bool = False,
+) -> csr_matrix | tuple[csr_matrix, csr_matrix]:
+    N = coords.shape[0]
+    if delaunay:
+        tri = Delaunay(coords)
+        indptr, indices = tri.vertex_neighbor_vertices
+        Adj = csr_matrix((np.ones_like(indices, dtype=np.float64), indices, indptr), shape=(N, N))
+
+        if return_distance:
+            # fmt: off
+            dists = np.array(list(chain(*(
+                euclidean_distances(coords[indices[indptr[i] : indptr[i + 1]], :], coords[np.newaxis, i, :])
+                for i in range(N)
+                if len(indices[indptr[i] : indptr[i + 1]])
+            )))).squeeze()
+            Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
+            # fmt: on
+    else:
+        r = 1 if radius is None else radius if isinstance(radius, (int, float)) else max(radius)
+        tree = NearestNeighbors(n_neighbors=n_neighs, radius=r, metric="euclidean")
+        tree.fit(coords)
+
+        if radius is None:
+            dists, col_indices = tree.kneighbors()
+            dists, col_indices = dists.reshape(-1), col_indices.reshape(-1)
+            row_indices = np.repeat(np.arange(N), n_neighs)
+            if neigh_correct:
+                dist_cutoff = np.median(dists) * 1.3  # there's a small amount of sway
+                mask = dists < dist_cutoff
+                row_indices, col_indices, dists = row_indices[mask], col_indices[mask], dists[mask]
+        else:
+            dists, col_indices = tree.radius_neighbors()
+            row_indices = np.repeat(np.arange(N), [len(x) for x in col_indices])
+            dists = np.concatenate(dists)
+            col_indices = np.concatenate(col_indices)
+
+        Adj = csr_matrix((np.ones_like(row_indices, dtype=np.float64), (row_indices, col_indices)), shape=(N, N))
+        if return_distance:
+            Dst = csr_matrix((dists, (row_indices, col_indices)), shape=(N, N))
+
+    # radius-based filtering needs same indices/indptr: do not remove 0s
+    Adj.setdiag(1.0 if set_diag else Adj.diagonal())
+    if return_distance:
+        Dst.setdiag(0.0)
+        return Adj, Dst
+
+    return Adj
+
+
 def _technology_coords(adata: AnnData, technology: str) -> np.ndarray:
-    VALID_TECHNOLOGIES = ["cosmx", "merscope", "xenium"]
+    VALID_TECHNOLOGIES = list(get_args(SpatialTechnology))
     factor: float = 1.0
 
     assert technology in VALID_TECHNOLOGIES, f"Invalid `technology` argument. Choose one of {VALID_TECHNOLOGIES}"
+
+    assert (
+        "spatial" not in adata.obsm
+    ), "Running `novae.utils.spatial_neighbors` with `technology` but `adata.obsm['spatial']` already exists."
 
     if technology == "cosmx":
         columns = ["CenterX_global_px", "CenterY_global_px"]

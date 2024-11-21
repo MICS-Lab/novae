@@ -115,6 +115,7 @@ def connectivities(
     ngh_threshold: int | None = None,
     cell_size: int = 5,
     linewidths: float = 1,
+    figsize: tuple[int, int] = (8, 8),
     line_color: str = "#333",
     cmap="rocket",
     color_isolated_cells: str = "orangered",
@@ -136,7 +137,7 @@ def connectivities(
 
     X, A = adata.obsm["spatial"], adata.obsp[Keys.ADJ]
 
-    _, ax = plt.subplots()
+    _, ax = plt.subplots(figsize=figsize)
     ax.invert_yaxis()
     ax.axes.set_aspect("equal")
 
