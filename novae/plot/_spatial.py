@@ -13,7 +13,7 @@ from scanpy._utils import sanitize_anndata
 
 from .. import utils
 from .._constants import Keys
-from ._utils import get_categorical_color_palette
+from ._utils import _subplots_per_slide, get_categorical_color_palette
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def domains(
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
     na_color: str = "#ccc",
-    show: bool = False,
+    show: bool = True,
     library_id: str | None = None,
     **kwargs: int,
 ):
@@ -59,32 +59,25 @@ def domains(
 
     all_domains, colors = get_categorical_color_palette(adatas, obs_key)
 
-    n_slides = sum(len(adata.obs[slide_name_key].cat.categories) for adata in adatas)
-    ncols = n_slides if n_slides < ncols else ncols
-    nrows = (n_slides + ncols - 1) // ncols
+    fig, axes = _subplots_per_slide(adatas, ncols, fig_size_per_slide)
 
-    fig, axes = plt.subplots(
-        nrows, ncols, figsize=(ncols * fig_size_per_slide[0], nrows * fig_size_per_slide[1]), squeeze=False
-    )
+    for i, adata in enumerate(utils.iter_slides(adatas)):
+        ax = axes[i // ncols, i % ncols]
+        slide_name = adata.obs[slide_name_key].iloc[0]
+        assert len(np.unique(adata.obs[slide_name_key])) == 1
 
-    i = 0
-    for adata in adatas:
-        for slide_name in adata.obs[slide_name_key].cat.categories:
-            ax = axes[i // ncols, i % ncols]
-            adata_ = adata[adata.obs[slide_name_key] == slide_name]
-            sc.pl.spatial(
-                adata_,
-                spot_size=cell_size,
-                color=obs_key,
-                ax=ax,
-                show=False,
-                library_id=library_id,
-                **kwargs,
-            )
-            sns.despine(ax=ax, offset=10, trim=True)
-            ax.get_legend().remove()
-            ax.set_title(slide_name)
-            i += 1
+        sc.pl.spatial(
+            adata,
+            spot_size=cell_size,
+            color=obs_key,
+            ax=ax,
+            show=False,
+            library_id=library_id,
+            **kwargs,
+        )
+        sns.despine(ax=ax, offset=10, trim=True)
+        ax.get_legend().remove()
+        ax.set_title(slide_name)
 
     [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
 
@@ -117,7 +110,7 @@ def spatially_variable_genes(
     adata: AnnData,
     obs_key: str | None = None,
     top_k: int = 5,
-    show: bool = False,
+    show: bool = True,
     cell_size: int = 10,
     min_positive_ratio: float = 0.05,
     return_list: bool = False,

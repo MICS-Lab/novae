@@ -13,12 +13,16 @@ from itertools import chain
 from typing import Iterable, Literal, get_args
 
 import numpy as np
+import pandas as pd
 from anndata import AnnData
 from anndata.utils import make_index_unique
 from scipy.sparse import SparseEfficiencyWarning, block_diag, csr_matrix, spmatrix
 from scipy.spatial import Delaunay
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.neighbors import NearestNeighbors
+
+from .._constants import Keys
+from ._utils import unique_obs
 
 log = logging.getLogger(__name__)
 __all__ = ["spatial_neighbors"]
@@ -32,7 +36,7 @@ class CoordType(Enum):
 
 
 def spatial_neighbors(
-    adata: AnnData,
+    adata: AnnData | list[AnnData],
     slide_key: str | None = None,
     radius: tuple[float, float] | float | None = None,
     pixel_size: float | None = None,
@@ -43,6 +47,7 @@ def spatial_neighbors(
     n_rings: int = 1,
     percentile: float | None = None,
     set_diag: bool = False,
+    reset_slide_ids: bool = True,
 ):
     """Create a Delaunay graph from the spatial coordinates of the cells (in microns).
     The graph is stored in `adata.obsp['spatial_connectivities']` and `adata.obsp['spatial_distances']`. The long edges
@@ -57,9 +62,9 @@ def spatial_neighbors(
         This function was updated from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
 
     Args:
-        adata: AnnData object
-        radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]` microns. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
+        adata: An `AnnData` object, or a list of `AnnData` objects.
         slide_key: Optional key in `adata.obs` indicating the slide ID of each cell. If provided, the graph is computed for each slide separately.
+        radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]` microns. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
         pixel_size: Number of microns in one pixel of the image (use this argument if `adata.obsm["spatial"]` is in pixels). If `None`, the coordinates are assumed to be in microns.
         technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium", "visium", "visium_hd"`. If `None`, the coordinates are assumed to be in microns.
         coord_type: Either `"grid"` or `"generic"`. If `"grid"`, the graph is built on a grid. If `"generic"`, the graph is built using the coordinates as they are. By default, uses `"grid"` for Visium/VisiumHD and `"generic"` for other technologies.
@@ -68,7 +73,29 @@ def spatial_neighbors(
         n_rings: See `squidpy.gr.spatial_neighbors` documentation.
         percentile: See `squidpy.gr.spatial_neighbors` documentation.
         set_diag: See `squidpy.gr.spatial_neighbors` documentation.
+        reset_slide_ids: Whether to reset the novae slide ids.
     """
+    if reset_slide_ids:
+        _set_unique_slide_ids(adata, slide_key=slide_key)
+
+    if isinstance(adata, list):
+        for adata_ in adata:
+            spatial_neighbors(
+                adata_,
+                slide_key=slide_key,
+                radius=radius,
+                pixel_size=pixel_size,
+                technology=technology,
+                coord_type=coord_type,
+                n_neighs=n_neighs,
+                delaunay=delaunay,
+                n_rings=n_rings,
+                percentile=percentile,
+                set_diag=set_diag,
+                reset_slide_ids=False,
+            )
+        return
+
     if isinstance(radius, float) or isinstance(radius, int):
         radius = [0.0, float(radius)]
 
@@ -101,12 +128,8 @@ def spatial_neighbors(
         f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=} microns, {n_neighs=})"
     )
 
-    if slide_key is not None:
-        adata.obs[slide_key] = adata.obs[slide_key].astype("category")
-        slides = adata.obs[slide_key].cat.categories
-        make_index_unique(adata.obs_names)
-    else:
-        slides = [None]
+    slides = adata.obs[Keys.SLIDE_ID].cat.categories
+    make_index_unique(adata.obs_names)
 
     _build_fun = partial(
         _spatial_neighbor,
@@ -120,12 +143,12 @@ def spatial_neighbors(
         percentile=percentile,
     )
 
-    if slide_key is not None:
+    if len(slides) > 1:
         mats: list[tuple[spmatrix, spmatrix]] = []
         ixs = []  # type: ignore[var-annotated]
         for slide in slides:
-            ixs.extend(np.where(adata.obs[slide_key] == slide)[0])
-            mats.append(_build_fun(adata[adata.obs[slide_key] == slide]))
+            ixs.extend(np.where(adata.obs[Keys.SLIDE_ID] == slide)[0])
+            mats.append(_build_fun(adata[adata.obs[Keys.SLIDE_ID] == slide]))
         ixs = np.argsort(ixs)  # type: ignore[assignment] # invert
         Adj = block_diag([m[0] for m in mats], format="csr")[ixs, :][:, ixs]
         Dst = block_diag([m[1] for m in mats], format="csr")[ixs, :][:, ixs]
@@ -298,3 +321,32 @@ def _technology_coords(adata: AnnData, technology: str) -> np.ndarray:
     assert all(column in adata.obs for column in columns), f"For {technology=}, you must have {columns} in `adata.obs`"
 
     return adata.obs[columns].values * factor
+
+
+def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None) -> None:
+    adatas = [adatas] if isinstance(adatas, AnnData) else adatas
+
+    # we will re-create the slide-ids, even if already set
+    for adata in adatas:
+        if Keys.SLIDE_ID in adata.obs:
+            del adata.obs[Keys.SLIDE_ID]
+
+    if slide_key is None:  # each adata has its own slide ID
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+        return
+
+    assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
+
+    slides_ids = [unique_obs(adata, slide_key) for adata in adatas]
+
+    if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
+        for adata in adatas:
+            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
+        return
+
+    log.warning("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
+
+    for adata in adatas:
+        values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
+        adata.obs[Keys.SLIDE_ID] = values.astype("category")

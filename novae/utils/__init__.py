@@ -1,5 +1,4 @@
 from ._docs import format_docs
-from ._build import spatial_neighbors
 from ._utils import (
     repository_root,
     tqdm,
@@ -16,6 +15,7 @@ from ._utils import (
     sparse_std,
     iter_slides,
 )
+from ._build import spatial_neighbors
 from ._validate import check_available_domains_key, prepare_adatas, check_has_spatial_adjancency
 from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_dataset
 from ._mode import Mode

@@ -10,7 +10,7 @@ from anndata import AnnData
 
 from .. import settings
 from .._constants import Keys, Nums
-from . import format_docs, lower_var_names, spatial_neighbors, unique_obs
+from . import format_docs, lower_var_names, spatial_neighbors
 
 log = logging.getLogger(__name__)
 
@@ -55,8 +55,8 @@ def prepare_adatas(
 
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
-    _set_unique_slide_ids(adatas, slide_key=slide_key)
-    _standardize_adatas(adatas, slide_key=slide_key)  # log1p + spatial_neighbors
+    _compute_neighbors_and_slide_id(adatas, slide_key)
+    _standardize_adatas(adatas)  # log1p + spatial_neighbors
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
     _select_novae_genes(adatas, var_names)
@@ -67,34 +67,7 @@ def prepare_adatas(
     return adatas, var_names
 
 
-def _set_unique_slide_ids(adatas: list[AnnData], slide_key: str | None) -> None:
-    # we will re-create the slide-ids, even if already set
-    for adata in adatas:
-        if Keys.SLIDE_ID in adata.obs:
-            del adata.obs[Keys.SLIDE_ID]
-
-    if slide_key is None:  # each adata has its own slide ID
-        for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
-        return
-
-    assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
-
-    slides_ids = [unique_obs(adata, slide_key) for adata in adatas]
-
-    if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
-        for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
-        return
-
-    log.warning("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
-
-    for adata in adatas:
-        values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
-        adata.obs[Keys.SLIDE_ID] = values.astype("category")
-
-
-def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
+def _standardize_adatas(adatas: list[AnnData]):
     """
     Make sure all AnnData objects are preprocessed correctly and have a Delaunay graph
     """
@@ -118,12 +91,21 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
             sc.pp.normalize_total(adata)
             sc.pp.log1p(adata)
 
-        if Keys.ADJ not in adata.obsp:
-            assert (
-                settings.auto_preprocessing
-            ), "`novae.settings.auto_preprocessing` is False, but `novae.utils.spatial_neighbors` was not run."
-            spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
+    if count_raw:
+        log.info(
+            f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{Keys.COUNTS_LAYER}'])"
+        )
 
+
+def _compute_neighbors_and_slide_id(adatas: list[AnnData], slide_key: str | None = None):
+    if not settings.auto_preprocessing:
+        assert all(
+            Keys.ADJ in adata.obsp for adata in adatas
+        ), "`novae.settings.auto_preprocessing` is False, but `novae.utils.spatial_neighbors` was not run."
+    elif any(Keys.ADJ not in adata.obsp for adata in adatas):
+        spatial_neighbors(adatas, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
+
+    for adata in adatas:
         mean_distance = adata.obsp[Keys.ADJ].data.mean()
 
         warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors. Read the documentation of `novae.utils.spatial_neighbors` to fix this."
@@ -138,11 +120,6 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
                 log.warning(
                     f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different `radius` threshold."
                 )
-
-    if count_raw:
-        log.info(
-            f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{Keys.COUNTS_LAYER}'])"
-        )
 
 
 def check_has_spatial_adjancency(adata: AnnData):

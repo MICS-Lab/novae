@@ -1,5 +1,9 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from anndata import AnnData
+
+from .._constants import Keys
 
 
 def get_categorical_color_palette(adatas: list[AnnData], obs_key: str) -> tuple[list[str], list[str]]:
@@ -14,3 +18,17 @@ def get_categorical_color_palette(adatas: list[AnnData], obs_key: str) -> tuple[
         adata.uns[key_added] = colors
 
     return all_domains, colors
+
+
+def _subplots_per_slide(
+    adatas: list[AnnData], ncols: int, fig_size_per_slide: tuple[int, int]
+) -> tuple[plt.Figure, np.ndarray]:
+    n_slides = sum(len(adata.obs[Keys.SLIDE_ID].cat.categories) for adata in adatas)
+    ncols = n_slides if n_slides < ncols else ncols
+    nrows = (n_slides + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=(ncols * fig_size_per_slide[0], nrows * fig_size_per_slide[1]), squeeze=False
+    )
+
+    return fig, axes

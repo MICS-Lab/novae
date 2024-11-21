@@ -11,7 +11,7 @@ from sklearn.cluster import AgglomerativeClustering
 
 from .. import utils
 from .._constants import Keys
-from ._utils import get_categorical_color_palette
+from ._utils import _subplots_per_slide, get_categorical_color_palette
 
 
 def _leaves_count(clustering: AgglomerativeClustering) -> np.ndarray:
@@ -114,11 +114,13 @@ def connectivities(
     adata: AnnData,
     ngh_threshold: int | None = None,
     cell_size: int = 5,
+    ncols: int = 4,
+    fig_size_per_slide: tuple[int, int] = (5, 5),
     linewidths: float = 1,
-    figsize: tuple[int, int] = (8, 8),
     line_color: str = "#333",
     cmap="rocket",
     color_isolated_cells: str = "orangered",
+    show: bool = True,
 ):
     """Show the graph of the spatial connectivities between cells. By default,
     the cells are colored by the number of neighbors. Use `ngh_threshold` to show
@@ -128,31 +130,54 @@ def connectivities(
         adata: An AnnData object.
         ngh_threshold: If not `None`, only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`).
         cell_size: Size of the dots for each cell.
+        ncols: Number of columns to be shown.
+        fig_size_per_slide: Size of the figure for each slide.
         linewidths: Width of the lines/edges connecting the cells.
         line_color: Color of the lines/edges.
         cmap: Name of the colormap to use for the number of neighbors.
         color_isolated_cells: Color for the cells with a number of neighbors below `ngh_threshold` (if not `None`).
+        show: Whether to show the plot.
     """
-    utils.check_has_spatial_adjancency(adata)
+    adatas = [adata] if isinstance(adata, AnnData) else adata
 
-    X, A = adata.obsm["spatial"], adata.obsp[Keys.ADJ]
+    fig, axes = _subplots_per_slide(adatas, ncols, fig_size_per_slide)
 
-    _, ax = plt.subplots(figsize=figsize)
-    ax.invert_yaxis()
-    ax.axes.set_aspect("equal")
+    for i, adata in enumerate(utils.iter_slides(adatas)):
+        ax = axes[i // ncols, i % ncols]
 
-    rows, cols = A.nonzero()
-    mask = rows < cols
-    rows, cols = rows[mask], cols[mask]
-    edge_segments = np.stack([X[rows], X[cols]], axis=1)
-    edges = LineCollection(edge_segments, color=line_color, linewidths=linewidths, zorder=1)
-    ax.add_collection(edges)
+        utils.check_has_spatial_adjancency(adata)
 
-    n_neighbors = (A > 0).sum(1).A1
+        X, A = adata.obsm["spatial"], adata.obsp[Keys.ADJ]
 
-    if ngh_threshold is None:
-        _ = plt.scatter(X[:, 0], X[:, 1], c=n_neighbors, s=cell_size, zorder=2, cmap=cmap)
-        plt.colorbar(_)
+        ax.invert_yaxis()
+        ax.axes.set_aspect("equal")
+
+        rows, cols = A.nonzero()
+        mask = rows < cols
+        rows, cols = rows[mask], cols[mask]
+        edge_segments = np.stack([X[rows], X[cols]], axis=1)
+        edges = LineCollection(edge_segments, color=line_color, linewidths=linewidths, zorder=1)
+        ax.add_collection(edges)
+
+        n_neighbors = (A > 0).sum(1).A1
+
+        if ngh_threshold is None:
+            _ = ax.scatter(X[:, 0], X[:, 1], c=n_neighbors, s=cell_size, zorder=2, cmap=cmap)
+            plt.colorbar(_, ax=ax)
+        else:
+            isolated_cells = n_neighbors < ngh_threshold
+            ax.scatter(X[isolated_cells, 0], X[isolated_cells, 1], color=color_isolated_cells, s=cell_size, zorder=2)
+
+        ax.set_title(adata.obs[Keys.SLIDE_ID].iloc[0])
+
+    [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
+
+    title = "Node connectivities"
+
+    if i == 1:
+        axes[0, 0].set_title(title)
     else:
-        isolated_cells = n_neighbors < ngh_threshold
-        plt.scatter(X[isolated_cells, 0], X[isolated_cells, 1], color=color_isolated_cells, s=cell_size, zorder=2)
+        fig.suptitle(title, fontsize=14)
+
+    if show:
+        plt.show()
