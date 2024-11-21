@@ -5,6 +5,7 @@ import numpy as np
 import scanpy as sc
 import seaborn as sns
 from anndata import AnnData
+from matplotlib.collections import LineCollection
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 
@@ -107,3 +108,50 @@ def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
 
     sc.pl.paga(adata_clean, title=f"PAGA graph ({obs_key})", show=False, **paga_plot_kwargs)
     sns.despine(offset=10, trim=True, bottom=True)
+
+
+def connectivities(
+    adata: AnnData,
+    ngh_threshold: int | None = None,
+    cell_size: int = 5,
+    linewidths: float = 1,
+    line_color: str = "#333",
+    cmap="rocket",
+    color_isolated_cells: str = "orangered",
+):
+    """Show the graph of the spatial connectivities between cells. By default,
+    the cells are colored by the number of neighbors. Use `ngh_threshold` to show
+    only the cells with a number of neighbors below this threshold (good for quality control).
+
+    Args:
+        adata: An AnnData object.
+        ngh_threshold: If not `None`, only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`).
+        cell_size: Size of the dots for each cell.
+        linewidths: Width of the lines/edges connecting the cells.
+        line_color: Color of the lines/edges.
+        cmap: Name of the colormap to use for the number of neighbors.
+        color_isolated_cells: Color for the cells with a number of neighbors below `ngh_threshold` (if not `None`).
+    """
+    utils.check_has_spatial_adjancency(adata)
+
+    X, A = adata.obsm["spatial"], adata.obsp[Keys.ADJ]
+
+    _, ax = plt.subplots()
+    ax.invert_yaxis()
+    ax.axes.set_aspect("equal")
+
+    rows, cols = A.nonzero()
+    mask = rows < cols
+    rows, cols = rows[mask], cols[mask]
+    edge_segments = np.stack([X[rows], X[cols]], axis=1)
+    edges = LineCollection(edge_segments, color=line_color, linewidths=linewidths, zorder=1)
+    ax.add_collection(edges)
+
+    n_neighbors = (A > 0).sum(1).A1
+
+    if ngh_threshold is None:
+        _ = plt.scatter(X[:, 0], X[:, 1], c=n_neighbors, s=cell_size, zorder=2, cmap=cmap)
+        plt.colorbar(_)
+    else:
+        isolated_cells = n_neighbors < ngh_threshold
+        plt.scatter(X[isolated_cells, 0], X[isolated_cells, 1], color=color_isolated_cells, s=cell_size, zorder=2)

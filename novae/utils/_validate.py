@@ -8,6 +8,7 @@ import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 
+from .. import settings
 from .._constants import Keys, Nums
 from . import format_docs, lower_var_names, spatial_neighbors, unique_obs
 
@@ -56,7 +57,8 @@ def prepare_adatas(
 
     _set_unique_slide_ids(adatas, slide_key=slide_key)
     _standardize_adatas(adatas, slide_key=slide_key)  # log1p + spatial_neighbors
-    _lookup_highly_variable_genes(adatas)
+    if settings.auto_preprocessing:
+        _lookup_highly_variable_genes(adatas)
     _select_novae_genes(adatas, var_names)
 
     if var_names is None:
@@ -109,7 +111,7 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
                 "Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)"
             )
 
-        if adata.X.max() >= 10:
+        if settings.auto_preprocessing and adata.X.max() >= 10:
             count_raw += 1
 
             adata.layers[Keys.COUNTS_LAYER] = adata.X.copy()
@@ -117,6 +119,9 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
             sc.pp.log1p(adata)
 
         if Keys.ADJ not in adata.obsp:
+            assert (
+                settings.auto_preprocessing
+            ), "`novae.settings.auto_preprocessing` is False, but `novae.utils.spatial_neighbors` was not run."
             spatial_neighbors(adata, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
 
         mean_distance = adata.obsp[Keys.ADJ].data.mean()
@@ -138,6 +143,14 @@ def _standardize_adatas(adatas: list[AnnData], slide_key: str = None):
         log.info(
             f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{Keys.COUNTS_LAYER}'])"
         )
+
+
+def check_has_spatial_adjancency(adata: AnnData):
+    assert "spatial" in adata.obsm, "No spatial coordinates found in `adata.obsm['spatial']`"
+    assert Keys.ADJ in adata.obsp, (
+        "No spatial adjacency found in `adata.obsp['spatial_distances']`."
+        "Consider running `novae.utils.spatial_neighbors`"
+    )
 
 
 def _lookup_highly_variable_genes(adatas: list[AnnData]):

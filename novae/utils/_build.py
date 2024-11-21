@@ -69,7 +69,7 @@ def spatial_neighbors(
     if pixel_size is not None:
         assert (
             "spatial_pixel" not in adata.obsm
-        ), "Do nott run `novae.utils.spatial_neighbors` twice ('spatial_pixel' already present in `adata.obsm`)."
+        ), "Do not run `novae.utils.spatial_neighbors` twice ('spatial_pixel' already present in `adata.obsm`)."
         adata.obsm["spatial_pixel"] = adata.obsm["spatial"].copy()
         adata.obsm["spatial"] = adata.obsm["spatial"] * pixel_size
 

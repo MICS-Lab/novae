@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 import torch
@@ -13,6 +15,8 @@ from .. import utils
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
 from . import AnnDataTorch
+
+log = logging.getLogger(__name__)
 
 
 class NovaeDataset(Dataset):
@@ -83,6 +87,13 @@ class NovaeDataset(Dataset):
                 adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
             if Keys.IS_VALID_OBS not in adata.obs:
                 adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
+
+        ratio_valid_obs = pd.concat([adata.obs[Keys.IS_VALID_OBS] for adata in self.adatas]).mean()
+        if ratio_valid_obs < Nums.RATIO_VALID_CELLS_TH:
+            log.warning(
+                f"Only {ratio_valid_obs:.2%} of the cells have a valid neighborhood.\n"
+                "Consider running `novae.utils.spatial_neighbors` with a larger `radius`."
+            )
 
         self.valid_indices = [utils.valid_indices(adata) for adata in self.adatas]
 

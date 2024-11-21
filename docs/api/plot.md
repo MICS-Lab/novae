@@ -2,6 +2,8 @@
 
 ::: novae.plot.domains_proportions
 
+::: novae.plot.connectivities
+
 ::: novae.plot.pathway_scores
 
 ::: novae.plot.paga
