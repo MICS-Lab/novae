@@ -38,7 +38,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        slide_key: str = None,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
         embedding_size: int = 100,
@@ -60,7 +59,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             {adata}
-            {slide_key}
             {scgpt_model_dir}
             {var_names}
             {embedding_size} Do not use it when loading embeddings from scGPT.
@@ -79,20 +77,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             {min_prototypes_ratio}
         """
         super().__init__()
-        self.slide_key = slide_key
-
         ### Initialize cell embedder and prepare adata(s) object(s)
         if scgpt_model_dir is None:
-            self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=var_names)
+            self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
             self.cell_embedder = CellEmbedder(var_names, embedding_size)
             self.cell_embedder.pca_init(self.adatas)
         else:
             self.cell_embedder = CellEmbedder.from_scgpt_embedding(scgpt_model_dir)
             embedding_size = self.cell_embedder.embedding_size
             _scgpt_var_names = self.cell_embedder.gene_names
-            self.adatas, var_names = utils.prepare_adatas(adata, slide_key=slide_key, var_names=_scgpt_var_names)
+            self.adatas, var_names = utils.prepare_adatas(adata, var_names=_scgpt_var_names)
 
-        self.save_hyperparameters(ignore=["adata", "slide_key", "scgpt_model_dir"])
+        self.save_hyperparameters(ignore=["adata", "scgpt_model_dir"])
         self.mode = utils.Mode()
 
         ### Initialize modules
@@ -164,10 +160,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         else:
             raise ValueError(f"Invalid type for `adata`: {type(adata)}")
 
-    def _prepare_adatas(self, adata: AnnData | list[AnnData] | None, slide_key: str | None = None):
+    def _prepare_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)[0]
+        return utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)[0]
 
     def _init_datamodule(
         self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None, **kwargs: int
@@ -306,7 +302,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def compute_representations(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        slide_key: str | None = None,
         *,
         zero_shot: bool = False,
         accelerator: str = "cpu",
@@ -319,7 +314,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             {adata}
-            {slide_key}
             {accelerator}
             num_workers: Number of workers for the dataloader.
         """
@@ -331,7 +325,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adatas = self.adatas
             self._compute_representations_datamodule(self.adatas[0], self.datamodule)
         else:
-            adatas = self._prepare_adatas(adata, slide_key=slide_key)
+            adatas = self._prepare_adatas(adata)
             for adata in adatas:
                 datamodule = self._init_datamodule(adata)
                 self._compute_representations_datamodule(adata, datamodule)
@@ -477,7 +471,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def fine_tune(
         self,
         adata: AnnData | list[AnnData],
-        slide_key: str | None = None,
         *,
         accelerator: str = "cpu",
         num_workers: int | None = None,
@@ -489,7 +482,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             {adata}
-            {slide_key}
             {accelerator}
             {num_workers}
             lr: Model learning rate.
@@ -510,7 +502,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.fit(
             adata=adata,
-            slide_key=slide_key,
             max_epochs=max_epochs,
             accelerator=accelerator,
             num_workers=num_workers,
@@ -522,7 +513,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def fit(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        slide_key: str | None = None,
         max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
@@ -540,7 +530,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             {adata}
-            {slide_key}
             {max_epochs}
             {accelerator}
             {num_workers}
@@ -554,7 +543,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.mode.fit()
 
         if adata is not None:
-            self.adatas, _ = utils.prepare_adatas(adata, slide_key=slide_key, var_names=self.cell_embedder.gene_names)
+            self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
 
         ### Misc
         self._lr = lr

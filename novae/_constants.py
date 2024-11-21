@@ -41,9 +41,7 @@ class Nums:
 
     # distances constants and thresholds (in microns)
     CELLS_CHARACTERISTIC_DISTANCE: int = 20  # characteristic distance between two cells, in microns
-    DELAUNAY_RADIUS_TH: int = 100
-    MEAN_DISTANCE_UPPER_TH_WARNING: float = 50
-    MEAN_DISTANCE_LOWER_TH_WARNING: float = 4
+    MAX_MEAN_DISTANCE_RATIO: float = 8
 
     # genes constants
     N_HVG_THRESHOLD: int = 500

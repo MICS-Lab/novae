@@ -112,11 +112,11 @@ def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
 
 def connectivities(
     adata: AnnData,
-    ngh_threshold: int | None = None,
+    ngh_threshold: int | None = 2,
     cell_size: int = 5,
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
-    linewidths: float = 1,
+    linewidths: float = 0.1,
     line_color: str = "#333",
     cmap="rocket",
     color_isolated_cells: str = "orangered",
@@ -172,9 +172,9 @@ def connectivities(
 
     [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
 
-    title = "Node connectivities"
+    title = "Node connectivities" + (f" (threshold={ngh_threshold} neighbors)" if ngh_threshold is not None else "")
 
-    if i == 1:
+    if i == 0:
         axes[0, 0].set_title(title)
     else:
         fig.suptitle(title, fontsize=14)

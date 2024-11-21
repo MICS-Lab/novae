@@ -8,7 +8,7 @@ import pytest
 import novae
 from novae._constants import Keys
 from novae.data.dataset import _to_adjacency_local, _to_adjacency_view
-from novae.utils._validate import _set_unique_slide_ids
+from novae.utils._build import _set_unique_slide_ids
 
 from ._utils import adata, adata_concat, adata_line
 

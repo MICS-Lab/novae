@@ -101,7 +101,9 @@ def test_representation_single_panel(slide_key: str | None):
         n_domains=2,
     )[0]
 
-    model = novae.Novae(adata, slide_key=slide_key)
+    novae.utils.spatial_neighbors(adata, slide_key=slide_key)
+
+    model = novae.Novae(adata)
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
 

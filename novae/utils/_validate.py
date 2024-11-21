@@ -10,7 +10,7 @@ from anndata import AnnData
 
 from .. import settings
 from .._constants import Keys, Nums
-from . import format_docs, lower_var_names, spatial_neighbors
+from . import format_docs, lower_var_names
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 @format_docs
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
-    slide_key: str | None = None,
     var_names: set | list[str] | None = None,
 ) -> list[AnnData]:
     """Ensure the AnnData objects are ready to be used by the model.
@@ -27,15 +26,12 @@ def prepare_adatas(
         It performs the following operations:
 
         - Preprocess the data if needed (e.g. normalize, log1p), in which case raw counts are saved in `adata.layers['counts']`
-        - Compute spatial neighbors (if not already computed), using [novae.utils.spatial_neighbors][]
         - Compute the mean and std of each gene
         - Save which genes are highly variable, in case the number of genes is too high
-        - If `slide_key` is provided, ensure that all `slide_key` are valid and unique
         - If using a pretrained model, save which genes are known by the model
 
     Args:
         {adata}
-        {slide_key}
         {var_names}
 
     Returns:
@@ -55,7 +51,14 @@ def prepare_adatas(
 
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
-    _compute_neighbors_and_slide_id(adatas, slide_key)
+    assert all(
+        Keys.ADJ in adata.obsp for adata in adatas
+    ), "You need to first run `novae.utils.spatial_neighbors` to compute cell neighbors."
+
+    assert all(
+        Keys.SLIDE_ID in adata.obs for adata in adatas
+    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.utils.spatial_neighbors` first."
+
     _standardize_adatas(adatas)  # log1p + spatial_neighbors
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
@@ -95,31 +98,6 @@ def _standardize_adatas(adatas: list[AnnData]):
         log.info(
             f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{Keys.COUNTS_LAYER}'])"
         )
-
-
-def _compute_neighbors_and_slide_id(adatas: list[AnnData], slide_key: str | None = None):
-    if not settings.auto_preprocessing:
-        assert all(
-            Keys.ADJ in adata.obsp for adata in adatas
-        ), "`novae.settings.auto_preprocessing` is False, but `novae.utils.spatial_neighbors` was not run."
-    elif any(Keys.ADJ not in adata.obsp for adata in adatas):
-        spatial_neighbors(adatas, radius=[0, Nums.DELAUNAY_RADIUS_TH], slide_key=slide_key)
-
-    for adata in adatas:
-        mean_distance = adata.obsp[Keys.ADJ].data.mean()
-
-        warning_cs = "Your coordinate system may not be in microns, which would lead to unexpected behaviors. Read the documentation of `novae.utils.spatial_neighbors` to fix this."
-        if mean_distance >= Nums.MEAN_DISTANCE_UPPER_TH_WARNING:
-            log.warning(f"The mean distance between neighborhood cells is {mean_distance}, which is high. {warning_cs}")
-        elif mean_distance <= Nums.MEAN_DISTANCE_LOWER_TH_WARNING:
-            log.warning(f"The mean distance between neighborhood cells is {mean_distance}, which is low. {warning_cs}")
-        else:
-            mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
-
-            if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
-                log.warning(
-                    f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `spatial_neighbors` with a different `radius` threshold."
-                )
 
 
 def check_has_spatial_adjancency(adata: AnnData):

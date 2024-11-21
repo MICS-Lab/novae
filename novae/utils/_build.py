@@ -21,7 +21,7 @@ from scipy.spatial import Delaunay
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.neighbors import NearestNeighbors
 
-from .._constants import Keys
+from .._constants import Keys, Nums
 from ._utils import unique_obs
 
 log = logging.getLogger(__name__)
@@ -163,6 +163,8 @@ def spatial_neighbors(
         "distances_key": "spatial_distances",
         "params": {"radius": radius, "set_diag": set_diag, "n_neighbors": n_neighs, "coord_type": coord_type.value},
     }
+
+    _sanity_check_spatial_neighbors(adata)
 
 
 def _spatial_neighbor(
@@ -350,3 +352,21 @@ def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None
     for adata in adatas:
         values: pd.Series = f"{id(adata)}_" + adata.obs[slide_key].astype(str)
         adata.obs[Keys.SLIDE_ID] = values.astype("category")
+
+
+def _sanity_check_spatial_neighbors(adata: AnnData):
+    mean_distance = adata.obsp[Keys.ADJ].data.mean()
+    max_distance = adata.obsp[Keys.ADJ].data.max()
+
+    if max_distance / mean_distance > Nums.MAX_MEAN_DISTANCE_RATIO:
+        log.warning(
+            f"The maximum distance between neighbors is {max_distance:.1f}, which is very high compared"
+            f"to the mean distance of {mean_distance:.1f}.\n Consider re-running `novae.utils.spatial_neighbors` with a different `radius` threshold."
+        )
+
+    mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
+
+    if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
+        log.warning(
+            f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `novae.utils.spatial_neighbors` with a different `radius` threshold."
+        )

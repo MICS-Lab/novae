@@ -83,7 +83,7 @@ def domains(
 
     title = f"Novae domains ({obs_key})"
 
-    if i == 1:
+    if i == 0:
         axes[0, 0].set_title(title)
     else:
         fig.suptitle(title, fontsize=14, y=1.15)
