@@ -6,6 +6,7 @@ import novae
 from novae._constants import Keys
 
 adatas = novae.utils.toy_dataset(n_panels=2, xmax=200)
+novae.utils.spatial_neighbors(adatas)
 
 model = novae.Novae(adatas)
 
@@ -29,4 +30,9 @@ def test_plot_prototype_weights():
 
 
 def test_plot_domains():
-    novae.plot.domains(adatas)
+    novae.plot.domains(adatas, show=False)
+
+
+def test_plot_connectivities():
+    novae.plot.connectivities(adatas, ngh_threshold=2, show=False)
+    novae.plot.connectivities(adatas, ngh_threshold=None, show=False)

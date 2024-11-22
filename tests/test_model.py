@@ -55,6 +55,7 @@ def test_train():
         n_domains=2,
     )
 
+    novae.utils.spatial_neighbors(adatas)
     model = novae.Novae(adatas, num_prototypes=10)
 
     with pytest.raises(AssertionError):  # should raise an error because the model has not been trained
@@ -115,7 +116,8 @@ def test_representation_single_panel(slide_key: str | None):
 
     assert domains.equals(adata.obs[Keys.LEAVES])
 
-    model.compute_representations([adata], slide_key=slide_key)
+    novae.utils.spatial_neighbors(adata, slide_key=slide_key)
+    model.compute_representations([adata])
 
     assert domains.equals(adata.obs[Keys.LEAVES])
 
@@ -123,13 +125,15 @@ def test_representation_single_panel(slide_key: str | None):
         sids = adata.obs[slide_key].unique()
         adatas = [adata[adata.obs[slide_key] == sid] for sid in sids]
 
+        novae.utils.spatial_neighbors(adatas)
         model.compute_representations(adatas)
 
         adata_concat = anndata.concat(adatas)
 
         assert domains.equals(adata_concat.obs[Keys.LEAVES].loc[domains.index])
 
-        model.compute_representations(adatas, slide_key=slide_key)
+        novae.utils.spatial_neighbors(adatas, slide_key=slide_key)
+        model.compute_representations(adatas)
 
         adata_concat = anndata.concat(adatas)
 
@@ -145,7 +149,8 @@ def test_representation_multi_panel(slide_key: str | None):
         n_domains=2,
     )
 
-    model = novae.Novae(adatas, slide_key=slide_key)
+    novae.utils.spatial_neighbors(adatas, slide_key=slide_key)
+    model = novae.Novae(adatas)
     model._datamodule = model._init_datamodule()
     model.mode.trained = True
 
@@ -153,7 +158,8 @@ def test_representation_multi_panel(slide_key: str | None):
 
     domains_series = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
-    model.compute_representations(adatas, slide_key=slide_key)
+    novae.utils.spatial_neighbors(adatas, slide_key=slide_key)
+    model.compute_representations(adatas)
 
     domains_series2 = pd.concat([adata.obs[Keys.LEAVES].copy() for adata in adatas])
 
@@ -181,9 +187,9 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     )[0]
 
     # using weird parameters
+    novae.utils.spatial_neighbors(adata, slide_key=slide_key)
     model = novae.Novae(
         adata,
-        slide_key=slide_key,
         embedding_size=67,
         output_size=78,
         n_hops_local=4,
@@ -215,7 +221,8 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
 
     new_model = novae.Novae.from_pretrained("tests/test_model")
 
-    new_model.compute_representations(adata, slide_key=slide_key)
+    novae.utils.spatial_neighbors(adata, slide_key=slide_key)
+    new_model.compute_representations(adata)
     new_model.assign_domains(adata)
 
     assert (adata.obsm[Keys.REPR] == representations).all()

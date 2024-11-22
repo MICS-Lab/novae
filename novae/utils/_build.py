@@ -179,6 +179,8 @@ def _spatial_neighbor(
     percentile: float | None = None,
 ) -> tuple[csr_matrix, csr_matrix]:
     coords = adata.obsm[spatial_key]
+    assert coords.shape[1] == 2, "Spatial coordinates must be 2D."
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SparseEfficiencyWarning)
         if coord_type == CoordType.GRID:
@@ -355,6 +357,8 @@ def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None
 
 
 def _sanity_check_spatial_neighbors(adata: AnnData):
+    assert adata.obsp[Keys.ADJ].getnnz() > 0, "No neighbors found. Please check your `radius` parameter."
+
     mean_distance = adata.obsp[Keys.ADJ].data.mean()
     max_distance = adata.obsp[Keys.ADJ].data.max()
 

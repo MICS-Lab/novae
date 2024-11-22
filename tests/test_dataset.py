@@ -17,10 +17,11 @@ single_adata = adatas[0]
 
 def test_raise_invalid_slide_id():
     with pytest.raises(AssertionError):
-        novae.Novae(adatas, slide_key="key_not_in_obs")
+        novae.utils.spatial_neighbors(adatas, slide_key="key_not_in_obs")
 
 
 def test_single_panel():
+    novae.utils.spatial_neighbors(single_adata)
     model = novae.Novae(single_adata)
     model._datamodule = model._init_datamodule()
 
@@ -29,7 +30,8 @@ def test_single_panel():
 
 
 def test_single_panel_slide_key():
-    model = novae.Novae(single_adata, slide_key="slide_key")
+    novae.utils.spatial_neighbors(single_adata, slide_key="slide_key")
+    model = novae.Novae(single_adata)
     model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == N_SLIDES_PER_PANEL
@@ -39,6 +41,7 @@ def test_single_panel_slide_key():
 
 
 def test_multi_panel():
+    novae.utils.spatial_neighbors(adatas)
     model = novae.Novae(adatas)
     model._datamodule = model._init_datamodule()
 
@@ -49,7 +52,8 @@ def test_multi_panel():
 
 
 def test_multi_panel_slide_key():
-    model = novae.Novae(adatas, slide_key="slide_key")
+    novae.utils.spatial_neighbors(adatas, slide_key="slide_key")
+    model = novae.Novae(adatas)
     model._datamodule = model._init_datamodule()
 
     assert len(model.dataset.slides_metadata) == N_PANELS * N_SLIDES_PER_PANEL

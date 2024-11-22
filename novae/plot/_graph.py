@@ -123,12 +123,18 @@ def connectivities(
     show: bool = True,
 ):
     """Show the graph of the spatial connectivities between cells. By default,
-    the cells are colored by the number of neighbors. Use `ngh_threshold` to show
-    only the cells with a number of neighbors below this threshold (good for quality control).
+    the cells which have a number of neighbors inferior to `ngh_threshold` are shown
+    in red. If `ngh_threshold` is `None`, the cells are colored by the number of neighbors.
+
+    !!! info "Quality control"
+        This plot is useful to check the quality of the spatial connectivities obtained via [novae.utils.spatial_neighbors][].
+        Make sure few cells (e.g., less than 5%) have a number of neighbors below `ngh_threshold`.
+        If too many cells are isolated, you may want to increase the `radius` parameter in [novae.utils.spatial_neighbors][].
+        Conversely, if there are some less that are really **far from each other**, but still connected, so may want to decrease the `radius` parameter to **disconnect** them.
 
     Args:
         adata: An AnnData object.
-        ngh_threshold: If not `None`, only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`).
+        ngh_threshold: Only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`). If `None`, cells are colored by the number of neighbors.
         cell_size: Size of the dots for each cell.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
