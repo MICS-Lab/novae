@@ -138,7 +138,9 @@ class CellEmbedder(L.LightningModule):
         adata = max(adatas, key=lambda adata: adata.n_vars)
 
         if adata.X.shape[1] <= self.embedding_size:
-            log.warning(f"PCA with {self.embedding_size} components can not be run on shape {adata.X.shape}")
+            log.warning(
+                f"PCA with {self.embedding_size} components can not be run on shape {adata.X.shape}.\nTo use PCA initialization, set a lower `embedding_size` (<{adata.X.shape[1]}) in novae.Novae()."
+            )
             return
 
         X = adata.X.toarray() if issparse(adata.X) else adata.X

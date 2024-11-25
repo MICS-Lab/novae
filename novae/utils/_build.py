@@ -49,14 +49,9 @@ def spatial_neighbors(
     set_diag: bool = False,
     reset_slide_ids: bool = True,
 ):
-    """Create a Delaunay graph from the spatial coordinates of the cells (in microns).
+    """Create a Delaunay graph from the spatial coordinates of the cells.
     The graph is stored in `adata.obsp['spatial_connectivities']` and `adata.obsp['spatial_distances']`. The long edges
     are removed from the graph according to the `radius` argument (if provided).
-
-    Note:
-        The spatial coordinates are expected to be in microns, and stored in `adata.obsm["spatial"]`.
-        If the coordinates are in pixels, set `pixel_size` to the size of a pixel in microns.
-        If you don't know the `pixel_size`, or if you don't have `adata.obsm["spatial"]`, you can also provide the `technology` argument.
 
     Info:
         This function was updated from [squidpy](https://squidpy.readthedocs.io/en/latest/api/squidpy.gr.spatial_neighbors.html#squidpy.gr.spatial_neighbors).
@@ -64,9 +59,8 @@ def spatial_neighbors(
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
         slide_key: Optional key in `adata.obs` indicating the slide ID of each cell. If provided, the graph is computed for each slide separately.
-        radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]` microns. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
-        pixel_size: Number of microns in one pixel of the image (use this argument if `adata.obsm["spatial"]` is in pixels). If `None`, the coordinates are assumed to be in microns.
-        technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium", "visium", "visium_hd"`. If `None`, the coordinates are assumed to be in microns.
+        radius: `tuple` that prunes the final graph to only contain edges in interval `[min(radius), max(radius)]`. If `float`, uses `[0, radius]`. If `None`, all edges are kept.
+        technology: Technology or machine used to generate the spatial data. One of `"cosmx", "merscope", "xenium", "visium", "visium_hd"`. If `None`, uses `adata.obsm["spatial"]`.
         coord_type: Either `"grid"` or `"generic"`. If `"grid"`, the graph is built on a grid. If `"generic"`, the graph is built using the coordinates as they are. By default, uses `"grid"` for Visium/VisiumHD and `"generic"` for other technologies.
         n_neighs: Number of neighbors to consider. If `None`, uses `6` for Visium, `4` for Visium HD, and `None` for generic graphs.
         delaunay: Whether to use Delaunay triangulation to build the graph. If `None`, uses `False` for grid-based graphs and `True` for generic graphs.
@@ -116,16 +110,12 @@ def spatial_neighbors(
         "spatial" in adata.obsm
     ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
 
-    spatial_key = "spatial_microns" if pixel_size is not None else "spatial"
-    if pixel_size is not None:
-        adata.obsm["spatial_microns"] = adata.obsm["spatial"] * pixel_size
-
     coord_type = CoordType(coord_type or "generic")
     delaunay = True if delaunay is None else delaunay
     n_neighs = 6 if (n_neighs is None and not delaunay) else n_neighs
 
     log.info(
-        f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=} microns, {n_neighs=})"
+        f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=}, {n_neighs=})"
     )
 
     slides = adata.obs[Keys.SLIDE_ID].cat.categories
@@ -133,7 +123,6 @@ def spatial_neighbors(
 
     _build_fun = partial(
         _spatial_neighbor,
-        spatial_key=spatial_key,
         coord_type=coord_type,
         n_neighs=n_neighs,
         radius=radius,

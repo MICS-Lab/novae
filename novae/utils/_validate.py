@@ -87,13 +87,18 @@ def _standardize_adatas(adatas: list[AnnData]):
                 "Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)"
             )
 
-        if settings.auto_preprocessing and adata.X.max() >= 10:
-            count_raw += 1
+        max_value = adata.X.max()
+        if settings.auto_preprocessing and max_value >= 10:
+            if int(max_value) == max_value:  # counts
+                count_raw += 1
 
-            adata.layers[Keys.COUNTS_LAYER] = adata.X.copy()
-            sc.pp.normalize_total(adata)
-            sc.pp.log1p(adata)
-
+                adata.layers[Keys.COUNTS_LAYER] = adata.X.copy()
+                sc.pp.normalize_total(adata)
+                sc.pp.log1p(adata)
+            else:
+                log.warning(
+                    "adata.X has high values. We recommend processing the data before running the model (e.g., with sc.pp.log1p)."
+                )
     if count_raw:
         log.info(
             f"Preprocessed {count_raw} adata object(s) with sc.pp.normalize_total and sc.pp.log1p (raw counts were saved in adata.layers['{Keys.COUNTS_LAYER}'])"
