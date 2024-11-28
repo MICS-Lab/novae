@@ -47,7 +47,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         heads: int = 4,
         hidden_size: int = 64,
         num_layers: int = 10,
-        batch_size: int = 512,
+        batch_size: int = 256,
         temperature: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
@@ -417,6 +417,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             weights[i, indices_0] = 0
 
         plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
+
+    def plot_prototype_covariance(self, **kwargs):
+        C = self.swav_head.prototypes.data.numpy(force=True)
+
+        plot._weights_clustermap(C, None, [], show_yticklabels=False, show_tissue_legend=False, **kwargs)
 
     @utils.format_docs
     def assign_domains(

@@ -54,7 +54,7 @@ def _weights_clustermap(
         **kwargs,
     )
 
-    if row_colors is not None and show_tissue_legend:
+    if show_tissue_legend and row_colors is not None:
         handles = [mpatches.Patch(facecolor=color, label=tissue) for tissue, color in tissue_colors.items()]
         ax = plt.gcf().axes[3]
         ax.legend(handles=handles, bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0, frameon=False)
