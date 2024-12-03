@@ -16,6 +16,7 @@ from ._utils import _subplots_per_slide, get_categorical_color_palette
 log = logging.getLogger(__name__)
 
 
+@utils.format_docs
 def domains(
     adata: AnnData | list[AnnData],
     obs_key: str | None = None,
@@ -36,12 +37,12 @@ def domains(
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
-        slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
+        {slide_name_key}
         cell_size: Size of the cells or spots.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
-        show: Whether to show the plot.
+        {show}
         library_id: `library_id` argument for `sc.pl.spatial`.
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
@@ -49,7 +50,7 @@ def domains(
         assert str(obs_key).startswith(Keys.DOMAINS_PREFIX), f"Received {obs_key=}, which is not a valid Novae obs_key"
 
     adatas = adata if isinstance(adata, list) else [adata]
-    slide_name_key = slide_name_key if slide_name_key is not None else Keys.SLIDE_ID
+    slide_name_key = utils.check_slide_name_key(adatas, slide_name_key)
     obs_key = utils.check_available_domains_key(adatas, obs_key)
 
     for adata in adatas:
@@ -104,14 +105,15 @@ def domains(
         plt.show()
 
 
+@utils.format_docs
 def spatially_variable_genes(
     adata: AnnData,
     obs_key: str | None = None,
     top_k: int = 5,
-    show: bool = True,
     cell_size: int = 10,
     min_positive_ratio: float = 0.05,
     return_list: bool = False,
+    show: bool = True,
     **kwargs: int,
 ) -> None | list[str]:
     """Plot the most spatially variable genes (SVG) for a given `AnnData` object.
@@ -123,10 +125,10 @@ def spatially_variable_genes(
         adata: An `AnnData` object corresponding to one slide.
         obs_key: Key in `adata.obs` that contains the domains. By default, it will use the last available Novae domain key.
         top_k: Number of SVG to be shown.
-        show: Whether to show the plot.
         cell_size: Size of the cells or spots (`spot_size` argument of `sc.pl.spatial`).
         min_positive_ratio: Genes whose "ratio of cells expressing it" is lower than this threshold are not considered.
         return_list: Whether to return the list of SVG instead of plotting them.
+        {show}
         **kwargs: Additional arguments for `sc.pl.spatial`.
 
     Returns:

@@ -2,6 +2,7 @@ import anndata
 import numpy as np
 import pandas as pd
 import pytest
+from anndata import AnnData
 
 import novae
 from novae._constants import Keys
@@ -257,3 +258,22 @@ def test_to_adjacency_view():
     adjancency_view = _to_adjacency_view(adata_line.obsp["spatial_connectivities"], 3)
 
     assert adjancency_view.sum() == 0
+
+
+def test_check_slide_name_key():
+    obs = pd.DataFrame({Keys.SLIDE_ID: ["slide1", "slide2"], "name": ["sample1", "sample2"]})
+    adata = AnnData(obs=obs)
+
+    assert novae.utils.check_slide_name_key(adata, None) == Keys.SLIDE_ID
+    novae.utils.check_slide_name_key(adata, "name")
+
+    obs = pd.DataFrame({Keys.SLIDE_ID: ["slide1", "slide2", "slide2"], "name": ["sample1", "sample2", "sample3"]})
+    adata2 = AnnData(obs=obs)
+
+    assert novae.utils.check_slide_name_key(adata2, None) == Keys.SLIDE_ID
+    with pytest.raises(AssertionError):
+        novae.utils.check_slide_name_key(adata2, "name")
+
+    del adata2.obs[Keys.SLIDE_ID]
+    with pytest.raises(AssertionError):
+        novae.utils.check_slide_name_key(adata2, None)

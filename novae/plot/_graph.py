@@ -78,7 +78,8 @@ def _domains_hierarchy(
     sns.despine(offset=10, trim=True, bottom=True)
 
 
-def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
+@utils.format_docs
+def paga(adata: AnnData, obs_key: str | None = None, show: bool = True, **paga_plot_kwargs: int):
     """Plot a PAGA graph.
 
     Info:
@@ -87,6 +88,7 @@ def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
     Args:
         adata: An AnnData object.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
+        {show}
         **paga_plot_kwargs: Additional arguments for `sc.pl.paga`.
     """
     assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
@@ -107,7 +109,11 @@ def paga(adata: AnnData, obs_key: str | None = None, **paga_plot_kwargs: int):
     sc.pl.paga(adata_clean, title=f"PAGA graph ({obs_key})", show=False, **paga_plot_kwargs)
     sns.despine(offset=10, trim=True, bottom=True)
 
+    if show:
+        plt.show()
 
+
+@utils.format_docs
 def connectivities(
     adata: AnnData,
     ngh_threshold: int | None = 2,
@@ -140,7 +146,7 @@ def connectivities(
         line_color: Color of the lines/edges.
         cmap: Name of the colormap to use for the number of neighbors.
         color_isolated_cells: Color for the cells with a number of neighbors below `ngh_threshold` (if not `None`).
-        show: Whether to show the plot.
+        {show}
     """
     adatas = [adata] if isinstance(adata, AnnData) else adata
 

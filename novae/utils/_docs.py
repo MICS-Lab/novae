@@ -21,6 +21,8 @@ _format_doc_dict = {
     "embedding_size": "Size of the embeddings of the genes (`E` in the article).",
     "max_epochs": "Maximum number of training epochs.",
     "min_prototypes_ratio": "Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.",
+    "show": "Whether to show the plot.",
+    "slide_name_key": "Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.",
 }
 
 _format_doc_map = {k: f"{k}: {v}" for k, v in _format_doc_dict.items()}

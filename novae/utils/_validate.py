@@ -231,3 +231,19 @@ def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> s
     obs_key = list(available_obs_keys)[-1]
     log.info(f"Using {obs_key=} as default.")
     return obs_key
+
+
+def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | None) -> str:
+    if isinstance(adatas, AnnData):
+        return check_slide_name_key([adatas], slide_name_key)
+
+    if slide_name_key is None:
+        assert all(Keys.SLIDE_ID in adata.obs for adata in adatas)
+        return Keys.SLIDE_ID
+
+    for adata in adatas:
+        assert slide_name_key in adata.obs, f"Column '{slide_name_key}' not found in adata.obs"
+        counts = adata.obs.groupby(Keys.SLIDE_ID, observed=True)[slide_name_key].value_counts().unstack()
+        assert (counts.isna().sum(1) == counts.shape[1] - 1).all(), f"Column '{slide_name_key}' is not unique per slide"
+
+    return slide_name_key
