@@ -225,3 +225,21 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
 
     assert (adata.obsm[Keys.REPR] == representations).all()
     assert domains.equals(adata.obs[Keys.LEAVES])
+
+    for name, param in model.named_parameters():
+        assert torch.equal(param, new_model.state_dict()[name])
+
+
+def test_safetensors_parameters_names():
+    from huggingface_hub import hf_hub_download
+    from safetensors import safe_open
+
+    local_file = hf_hub_download(repo_id="MICS-Lab/novae-human-0", filename="model.safetensors")
+    with safe_open(local_file, framework="pt", device="cpu") as f:
+        pretrained_model_names = f.keys()
+
+    model = novae.Novae(adata)
+
+    actual_names = [name for name, _ in model.named_parameters()]
+
+    assert set(pretrained_model_names) == set(actual_names)

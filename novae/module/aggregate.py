@@ -20,9 +20,7 @@ class AttentionAggregation(Aggregation, L.LightningModule):
             {output_size}
         """
         super().__init__()
-        self.gate_nn = nn.Linear(output_size, 1)
-        self.nn = nn.Linear(output_size, output_size)
-
+        self.attention_aggregation = ProjectionLayers(output_size)  # for backward compatibility when loading models
         self._entropies = torch.tensor([], dtype=torch.float32)
 
     def forward(
@@ -42,8 +40,8 @@ class AttentionAggregation(Aggregation, L.LightningModule):
         Returns:
             A tensor of shape `(B, O)` of graph embeddings.
         """
-        gate = self.gate_nn(x)
-        x = self.nn(x)
+        gate = self.attention_aggregation.gate_nn(x)
+        x = self.attention_aggregation.nn(x)
 
         gate = softmax(gate, index, dim=dim)
 
@@ -54,8 +52,20 @@ class AttentionAggregation(Aggregation, L.LightningModule):
         return self.reduce(gate * x, index, dim=dim)
 
     def reset_parameters(self):
-        reset(self.gate_nn)
-        reset(self.nn)
+        reset(self.attention_aggregation.gate_nn)
+        reset(self.attention_aggregation.nn)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(gate_nn={self.gate_nn}, nn={self.nn})"
+        return f"{self.__class__.__name__}(gate_nn={self.attention_aggregation.gate_nn}, nn={self.attention_aggregation.nn})"
+
+
+class ProjectionLayers(L.LightningModule):
+    """
+    Small class for backward compatibility when loading models
+    Contains the projection layers used for the attention aggregation
+    """
+
+    def __init__(self, output_size):
+        super().__init__()
+        self.gate_nn = nn.Linear(output_size, 1)
+        self.nn = nn.Linear(output_size, output_size)
