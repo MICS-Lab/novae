@@ -5,7 +5,7 @@ We detail below how to download public spatial transcriptomics datasets.
 ## Option 1: Hugging Face Hub
 
 We store our dataset on [Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae).
-To automatically download these slides, you can use the [`novae.utils.load_dataset`](https://mics-lab.github.io/novae/api/novae.utils/#novae.utils.load_dataset) function.
+To automatically download these slides, you can use the [`novae.utils.load_dataset`](https://mics-lab.github.io/novae/api/utils/#novae.utils.load_dataset) function.
 
 NB: not all slides are uploaded on Hugging Face yet, but we are progressively adding new slides. To get the full dataset right now, use the "Option 2" below.
 

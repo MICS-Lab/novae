@@ -43,6 +43,6 @@ Choose one of the following, depending on your needs. It should take at most a f
 ## Next steps
 
 - We recommend to start with our [first tutorial](../tutorials/main_usage).
-- You can also read the [API](../api/novae.Novae).
+- You can also read the [API](../api/Novae).
 - If you have questions, please check our [FAQ](../faq) or open an issue on the [GitHub repository](https://github.com/MICS-Lab/novae).
 - If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).

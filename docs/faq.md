@@ -4,7 +4,7 @@
 
 Using a GPU may significantly speed-up the training or inference of Novae.
 
-If you have a valid GPU for PyTorch, you can set the `accelerator` argument (e.g., one of `["cpu", "gpu", "tpu", "hpu", "mps", "auto"]`) in the following methods: [model.fit()](../api/novae.Novae/#novae.Novae.fit), [model.fine_tune()](../api/novae.Novae/#novae.Novae.fine_tune), [model.compute_representations()](../api/novae.Novae/#novae.Novae.compute_representations).
+If you have a valid GPU for PyTorch, you can set the `accelerator` argument (e.g., one of `["cpu", "gpu", "tpu", "hpu", "mps", "auto"]`) in the following methods: [model.fit()](../api/Novae/#novae.Novae.fit), [model.fine_tune()](../api/Novae/#novae.Novae.fine_tune), [model.compute_representations()](../api/Novae/#novae.Novae.compute_representations).
 
 When using a GPU, we also highly recommend setting multiple workers to speed up the dataset `__getitem__`. For that, you'll need to set the `num_workers` argument in the previous methods, according to the number of CPUs available (`num_workers=8` is usually a good value).
 
@@ -12,7 +12,7 @@ For more details, refer to the API of the [PyTorch Lightning Trainer](https://li
 
 ### How to load a pretrained model?
 
-We highly recommend to load a pretrained Novae model instead of re-training from scratch. For that, choose an available Novae model name on [our HuggingFace collection](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd), and provide this name to the [model.save_pretrained()](../api/novae.Novae/#novae.Novae.save_pretrained) method:
+We highly recommend to load a pretrained Novae model instead of re-training from scratch. For that, choose an available Novae model name on [our HuggingFace collection](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd), and provide this name to the [model.save_pretrained()](../api/Novae/#novae.Novae.save_pretrained) method:
 
 ```python
 from novae import Novae
@@ -23,13 +23,13 @@ model = Novae.from_pretrained("MICS-Lab/novae-human-0") # or any valid model nam
 
 ### How to save my own model?
 
-If you have trained or fine-tuned your own Novae model, you can save it for later use. For that, use the [model.save_pretrained()](../api/novae.Novae/#novae.Novae.save_pretrained) method as below:
+If you have trained or fine-tuned your own Novae model, you can save it for later use. For that, use the [model.save_pretrained()](../api/Novae/#novae.Novae.save_pretrained) method as below:
 
 ```python
 model.save_pretrained(save_directory="./my-model-directory")
 ```
 
-Then, you can load this model back via the [model.from_pretrained()](../api/novae.Novae/#novae.Novae.from_pretrained) method:
+Then, you can load this model back via the [model.from_pretrained()](../api/Novae/#novae.Novae.from_pretrained) method:
 
 ```python
 from novae import Novae

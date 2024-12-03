@@ -122,7 +122,7 @@ def connectivities(
     fig_size_per_slide: tuple[int, int] = (5, 5),
     linewidths: float = 0.1,
     line_color: str = "#333",
-    cmap="rocket",
+    cmap: str = "rocket",
     color_isolated_cells: str = "orangered",
     show: bool = True,
 ):

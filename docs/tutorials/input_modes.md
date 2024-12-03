@@ -14,7 +14,7 @@ You can follow the first section of the [main usage tutorial](../main_usage).
 
 If you have multiple slides with the same gene panel, you can concatenate them into one `AnnData` object. In that case, make sure you keep a column in `adata.obs` that denotes which cell corresponds to which slide.
 
-Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/novae.utils/#novae.utils.spatial_neighbors).
+Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/utils/#novae.utils.spatial_neighbors).
 
 !!! example
     For instance, you can do:
@@ -41,7 +41,7 @@ That case is pretty easy, since most functions and methods of Novae also support
 
 If you have multiple slides and multiple panels, instead of the above option, you could have one `AnnData` object per panel, and multiple slides inside each `AnnData` object. In that case, make sure you keep a column in `adata.obs` that denotes which cell corresponds to which slide.
 
-Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/novae.utils/#novae.utils.spatial_neighbors). The other functions don't need this argument.
+Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/utils/#novae.utils.spatial_neighbors). The other functions don't need this argument.
 
 !!! example
     For instance, you can do:
