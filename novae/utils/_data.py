@@ -7,7 +7,9 @@ import anndata
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import torch
 from anndata import AnnData
+from torch_geometric.data import Batch
 
 from . import repository_root, spatial_neighbors, wandb_log_dir
 
@@ -61,7 +63,7 @@ def toy_dataset(
     adatas = []
 
     var_names = np.array(
-        TRUE_GENE_NAMES[:n_vars] if n_vars <= len(TRUE_GENE_NAMES) else [f"g{i}" for i in range(n_vars)]
+        GENE_NAMES_SUBSET[:n_vars] if n_vars <= len(GENE_NAMES_SUBSET) else [f"g{i}" for i in range(n_vars)]
     )
 
     domains_shift = np.random.exponential(domain_shift_lambda, size=(n_domains, n_vars))
@@ -237,7 +239,13 @@ def load_wandb_artifact(name: str) -> Path:
     return artifact_path
 
 
-TRUE_GENE_NAMES = [
+def shuffle_nodes(data: Batch):
+    num_nodes = data.ptr[1:] - data.ptr[:-1]
+    perm = torch.cat([torch.randperm(n, device=data.x.device) + offset for offset, n in zip(data.ptr[:-1], num_nodes)])
+    data.x = data.x[perm]
+
+
+GENE_NAMES_SUBSET = [
     "A2M",
     "ACKR1",
     "ACKR3",

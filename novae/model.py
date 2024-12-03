@@ -10,9 +10,9 @@ from huggingface_hub import PyTorchModelHubMixin
 from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
-from torch_geometric.data import Data
+from torch_geometric.data import Batch
 
-from . import __version__, plot, utils
+from . import __version__, plot, settings, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -196,15 +196,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             device = utils.parse_device_args(accelerator)
             self.to(device)
 
-    def _embed_pyg_data(self, data: Data) -> Data:
+    def _embed_pyg_data(self, data: Batch) -> Batch:
+        if settings.shuffle_nodes:
+            utils.shuffle_nodes(data)
         if self.training:
             data = self.augmentation(data)
         return self.cell_embedder(data)
 
-    def forward(self, batch: dict[str, Data]) -> dict[str, Tensor]:
+    def forward(self, batch: dict[str, Batch]) -> dict[str, Tensor]:
         return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
 
-    def training_step(self, batch: dict[str, Data], batch_idx: int):
+    def training_step(self, batch: dict[str, Batch], batch_idx: int):
         z_dict: dict[str, Tensor] = self(batch)
         slide_id = batch["main"].get("slide_id", [None])[0]
 

@@ -16,7 +16,7 @@ from lightning.pytorch.trainer.connectors.accelerator_connector import (
 from scipy.sparse import csr_matrix
 from torch import Tensor
 
-from .._constants import Keys
+from .._constants import Keys, Nums
 
 log = logging.getLogger(__name__)
 
@@ -161,3 +161,8 @@ def iter_slides(adatas: AnnData | list[AnnData]):
 
         for slide_id in slide_ids:
             yield adata[adata.obs[Keys.SLIDE_ID] == slide_id]
+
+
+def get_relative_sensitivity(adata: AnnData, latent_key_origin: str, latent_key_perturbed: str) -> np.ndarray:
+    y1, y0 = adata.obsm[latent_key_perturbed], adata.obsm[latent_key_origin]
+    return np.linalg.norm(y1 - y0, axis=1, ord=2) / (np.linalg.norm(y0, axis=1, ord=2) + Nums.EPS)

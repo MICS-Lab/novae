@@ -14,9 +14,10 @@ from ._utils import (
     unique_obs,
     sparse_std,
     iter_slides,
+    get_relative_sensitivity,
 )
 from ._build import spatial_neighbors
 from ._validate import check_available_domains_key, prepare_adatas, check_has_spatial_adjancency
-from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_dataset
+from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_dataset, shuffle_nodes
 from ._mode import Mode
 from ._correct import batch_effect_correction

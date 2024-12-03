@@ -6,6 +6,8 @@ from ._constants import Nums
 class Settings:
     # misc settings
     auto_preprocessing: bool = True
+    shuffle_nodes: bool = False
+    store_attention_entropy: bool = False
 
     def disable_lazy_loading(self):
         """Disable lazy loading of subgraphs in the NovaeDataset."""
