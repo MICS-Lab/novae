@@ -244,6 +244,6 @@ def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | 
     for adata in adatas:
         assert slide_name_key in adata.obs, f"Column '{slide_name_key}' not found in adata.obs"
         counts = adata.obs.groupby(Keys.SLIDE_ID, observed=True)[slide_name_key].value_counts().unstack()
-        assert (counts.isna().sum(1) == counts.shape[1] - 1).all(), f"Column '{slide_name_key}' is not unique per slide"
+        assert ((counts > 0).sum(1) == 1).all(), f"Column '{slide_name_key}' is not unique per slide"
 
     return slide_name_key

@@ -58,26 +58,34 @@ def _weights_clustermap(
         ax.legend(handles=handles, bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0, frameon=False)
 
 
+TEMP_KEY = "_temp"
+
+
 @utils.format_docs
 def pathway_scores(
     adata: AnnData,
     pathways: dict[str, list[str]] | str,
     obs_key: str | None = None,
+    pathway_name: str | None = None,
+    slide_name_key: str | None = None,
     return_df: bool = False,
     figsize: tuple[int, int] = (10, 5),
     min_pathway_size: int = 4,
     show: bool = True,
     **kwargs: int,
 ) -> pd.DataFrame | None:
-    """Show a heatmap of pathway scores for each domain.
+    """Show a heatmap of either (i) the score of multiple pathways for each domain, or (ii) one pathway score for each domain and for each slide.
+    To use the latter case, provide `pathway_name`, or make sure to have only one pathway in `pathways`.
 
     Info:
-        Currently, this function only supports one slide per call.
+        Currently, this function only supports one AnnData object per call.
 
     Args:
         adata: An `AnnData` object.
         pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
         obs_key: Key in `adata.obs` that contains the domains. By default, it will use the last available Novae domain key.
+        pathway_name: If `None`, all pathways will be shown (first mode). If not `None`, this specific pathway will be shown, for all domains and all slides (second mode).
+        {slide_name_key}
         return_df: Whether to return the DataFrame.
         figsize: Matplotlib figure size.
         min_pathway_size: Minimum number of known genes in the pathway to be considered.
@@ -86,30 +94,50 @@ def pathway_scores(
     Returns:
         A DataFrame of scores per domain if `return_df` is True.
     """
-    assert isinstance(adata, AnnData), f"For now, only AnnData objects are supported, received {type(adata)}"
+    assert isinstance(adata, AnnData), f"For now, only one AnnData object is supported, received {type(adata)}"
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
-
-    scores = {}
-    lower_var_names = adata.var_names.str.lower()
 
     if isinstance(pathways, str):
         pathways = _load_gsea_json(pathways)
         log.info(f"Loaded {len(pathways)} pathway(s)")
 
-    for key, gene_names in pathways.items():
-        vars = np.array([gene_name.lower() for gene_name in gene_names])
-        vars = adata.var_names[np.isin(lower_var_names, vars)]
-        if len(vars) >= min_pathway_size:
-            sc.tl.score_genes(adata, vars, score_name="_temp")
-            scores[key] = adata.obs["_temp"]
-    del adata.obs["_temp"]
+    if len(pathways) == 1:
+        pathway_name = list(pathways.keys())[0]
 
-    assert len(scores) > 1, f"Found {len(scores)} valid pathway. Minimum 2 required."
+    if pathway_name is not None:
+        gene_names = pathways[pathway_name]
+        is_valid = _get_pathway_score(adata, gene_names, min_pathway_size)
+        assert is_valid, f"Pathway '{pathway_name}' has less than {min_pathway_size} genes in the dataset."
+    else:
+        scores = {}
 
-    df = pd.DataFrame(scores)
-    df[obs_key] = adata.obs[obs_key]
-    df = df.groupby(obs_key).mean()
+        for key, gene_names in pathways.items():
+            is_valid = _get_pathway_score(adata, gene_names, min_pathway_size)
+            if is_valid:
+                scores[key] = adata.obs[TEMP_KEY]
+
+    if pathway_name is not None:
+        log.info(f"Plot mode: {pathway_name} score per domain per slide")
+
+        slide_name_key = utils.check_slide_name_key(adata, slide_name_key)
+
+        df = adata.obs.groupby([obs_key, slide_name_key], observed=True)[TEMP_KEY].mean().unstack()
+        df.columns.name = slide_name_key
+
+        assert len(df) > 1, f"Found {len(df)} valid slide. Minimum 2 required."
+    else:
+        log.info(f"Plot mode: {len(scores)} pathways scores per domain")
+
+        assert len(scores) > 1, f"Found {len(scores)} valid pathway. Minimum 2 required."
+
+        df = pd.DataFrame(scores)
+        df[obs_key] = adata.obs[obs_key]
+        df = df.groupby(obs_key, observed=True).mean()
+        df.columns.name = "Pathways"
+
+    del adata.obs[TEMP_KEY]
+
     df = df.fillna(0)
 
     g = sns.clustermap(df, figsize=figsize, **kwargs)
@@ -120,6 +148,18 @@ def pathway_scores(
 
     if return_df:
         return df
+
+
+def _get_pathway_score(adata: AnnData, gene_names: list[str], min_pathway_size: int) -> bool:
+    lower_var_names = adata.var_names.str.lower()
+
+    vars = np.array([gene_name.lower() for gene_name in gene_names])
+    vars = adata.var_names[np.isin(lower_var_names, vars)]
+
+    if len(vars) >= min_pathway_size:
+        sc.tl.score_genes(adata, vars, score_name=TEMP_KEY)
+        return True
+    return False
 
 
 def _load_gsea_json(path: str) -> dict[str, list[str]]:

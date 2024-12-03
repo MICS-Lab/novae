@@ -4,6 +4,7 @@
 
 - `novae.plot.connectivities(...)` to show the cells neighbors
 - `novae.settings.auto_processing = False` to enforce using your own preprocessing
+- Tutorials update (more plots and more details)
 
 ### Fixed
 
