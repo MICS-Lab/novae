@@ -18,7 +18,7 @@ A clear and concise description of what you expected to happen.
 
 ## System
  - OS: [e.g. Linux]
- - Python version [e.g. 3.9.7]
+ - Python version [e.g. 3.10.7]
 <details>
 <summary>Dependencies versions</summary>
 <br>

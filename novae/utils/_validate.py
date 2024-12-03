@@ -229,7 +229,7 @@ def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> s
         return obs_key
 
     obs_key = list(available_obs_keys)[-1]
-    log.info(f"Using {obs_key=} as default.")
+    log.info(f"Using {obs_key=} by default.")
     return obs_key
 
 

@@ -2,7 +2,7 @@
 
 ### How to use the GPU?
 
-Using a GPU may significantly speed-up the training or inference of Novae.
+Using a GPU may significantly speed up Novae's training or inference.
 
 If you have a valid GPU for PyTorch, you can set the `accelerator` argument (e.g., one of `["cpu", "gpu", "tpu", "hpu", "mps", "auto"]`) in the following methods: [model.fit()](../api/Novae/#novae.Novae.fit), [model.fine_tune()](../api/Novae/#novae.Novae.fine_tune), [model.compute_representations()](../api/Novae/#novae.Novae.compute_representations).
 
@@ -12,7 +12,7 @@ For more details, refer to the API of the [PyTorch Lightning Trainer](https://li
 
 ### How to load a pretrained model?
 
-We highly recommend to load a pretrained Novae model instead of re-training from scratch. For that, choose an available Novae model name on [our HuggingFace collection](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd), and provide this name to the [model.save_pretrained()](../api/Novae/#novae.Novae.save_pretrained) method:
+We highly recommend loading a pre-trained Novae model instead of re-training from scratch. For that, choose an available Novae model name on [our HuggingFace collection](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd), and provide this name to the [model.save_pretrained()](../api/Novae/#novae.Novae.save_pretrained) method:
 
 ```python
 from novae import Novae
@@ -21,7 +21,7 @@ model = Novae.from_pretrained("MICS-Lab/novae-human-0") # or any valid model nam
 ```
 
 
-### How to save my own model?
+### How do I save my own model?
 
 If you have trained or fine-tuned your own Novae model, you can save it for later use. For that, use the [model.save_pretrained()](../api/Novae/#novae.Novae.save_pretrained) method as below:
 
@@ -37,9 +37,9 @@ from novae import Novae
 model = Novae.from_pretrained("./my-model-directory")
 ```
 
-### How to disable or enable lazy loading?
+### How to turn lazy loading on or off?
 
-By default, lazy loading is used only on large datasets. To enforce a specific behaviour, you can do the following:
+By default, lazy loading is used only on large datasets. To enforce a specific behavior, you can do the following:
 
 ```python
 # never use lazy loading
@@ -54,7 +54,7 @@ novae.settings.enable_lazy_loading(n_obs_threshold=1_000_000)
 
 ### How to update the logging level?
 
-The logging level can be update as below:
+The logging level can be updated as below:
 
 ```python
 import logging
@@ -63,10 +63,18 @@ from novae import log
 log.setLevel(logging.ERROR) # or any other level, e.g. logging.DEBUG
 ```
 
+### How to disable auto-preprocessing
+
+By default, Novae automatically run data preprocessing for you. If you don't want that, you can run the line below.
+
+```python
+novae.settings.auto_preprocessing = False
+```
+
 ### How to contribute?
 
 If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
 
 ### How to resolve any other issue?
 
-If you have any bug/question/suggestion, don't hesitate to [open a new issue](https://github.com/MICS-Lab/novae/issues).
+If you have any bugs/questions/suggestions, don't hesitate to [open a new issue](https://github.com/MICS-Lab/novae/issues).

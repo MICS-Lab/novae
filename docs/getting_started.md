@@ -1,6 +1,6 @@
 ## Installation
 
-Novae can be installed on every OS via `pip` or [`poetry`](https://python-poetry.org/docs/), on any Python version from `3.9` to `3.12` (included). By default, we recommend using `python==3.10`.
+Novae can be installed on every OS via `pip` or [`poetry`](https://python-poetry.org/docs/), on any Python version from `3.10` to `3.12` (included). By default, we recommend using `python==3.10`.
 
 !!! note "Advice (optional)"
 

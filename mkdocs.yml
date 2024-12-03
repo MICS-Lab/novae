@@ -17,6 +17,7 @@ nav:
     - Different input modes: tutorials/input_modes.md
     - Spot vs single-cell resolution: tutorials/spot_vs_sc.ipynb
     - Multi tissue/condition mode: tutorials/multi_tissue.ipynb
+    - Usage on proteins: tutorials/proteins.ipynb
   - API:
     - Novae model: api/Novae.md
     - Utils: api/utils.md

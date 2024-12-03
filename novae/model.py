@@ -467,6 +467,15 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         return key_added
 
     def batch_effect_correction(self, adata: AnnData | list[AnnData] | None = None, obs_key: str | None = None):
+        """Correct batch effects from the spatial representations of cells.
+
+        !!! info
+            The corrected spatial representations will be saved in `adata.obsm["novae_latent_corrected"]`.
+
+        Args:
+            adata: An `AnnData` object, or a list of `AnnData` objects.
+            obs_key: Optional key in `adata.obs` containing the domains to use for batch correction. If not provided, the key will be automatically selected.
+        """
         adatas = self._to_anndata_list(adata)
         obs_key = utils.check_available_domains_key(adatas, obs_key)
 

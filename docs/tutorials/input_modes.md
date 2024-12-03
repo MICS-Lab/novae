@@ -1,5 +1,5 @@
-Depending on your data and preferences, you case use 4 types of inputs.
-Specifically, it depends whether (i) you have one or multiple slides, and (ii) if you prefer to concatenate your data or not.
+Depending on your data and preferences, you can use 4 types of inputs.
+Specifically, it depends on whether (i) you have one or multiple slides and (ii) you prefer to concatenate your data.
 
 !!! info
     In all cases, the data structure is [AnnData](https://anndata.readthedocs.io/en/latest/). We may support MuData in the future.
