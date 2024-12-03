@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 _format_doc_dict = {
     "adata": "An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.",
     "slide_key": "Optional key of `adata.obs` containing the ID of each slide. Not needed if each `adata` is a slide.",

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import importlib
 import logging
 from functools import wraps

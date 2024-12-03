@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 class Mode:
     """Novae mode class, used to store states variables related to training and inference."""
 

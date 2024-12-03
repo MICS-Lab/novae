@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import logging
 from pathlib import Path
@@ -69,7 +67,7 @@ class CellEmbedder(L.LightningModule):
 
     @utils.format_docs
     @classmethod
-    def from_scgpt_embedding(cls, scgpt_model_dir: str) -> CellEmbedder:
+    def from_scgpt_embedding(cls, scgpt_model_dir: str) -> "CellEmbedder":
         """Initialize the CellEmbedder from a scGPT pretrained model directory.
 
         Args:

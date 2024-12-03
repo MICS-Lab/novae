@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import lightning as L
 from anndata import AnnData
 from torch_geometric.loader import DataLoader

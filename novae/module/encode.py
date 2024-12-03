@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import lightning as L
 from torch import Tensor
 from torch_geometric.data import Data

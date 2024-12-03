@@ -3,8 +3,6 @@ Novae model training with Weight & Biases monitoring
 This is **not** the actual Novae source code. Instead, see the `novae` directory
 """
 
-from __future__ import annotations
-
 import argparse
 
 import novae
