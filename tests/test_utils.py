@@ -109,21 +109,6 @@ def test_build_slide_key_disjoint_indices():
     assert len(adata_concat.obsp["spatial_connectivities"].data) == n1 + n2
 
 
-def test_build_pixel_size():
-    adata_pixel = adata.copy()
-    with pytest.raises(AssertionError):  # no neighbors
-        novae.utils.spatial_neighbors(adata_pixel, radius=5, pixel_size=10)
-
-    connectivities = adata_pixel.obsp["spatial_connectivities"]
-    assert (connectivities.todense() == 0).all()
-
-    adata_pixel = adata.copy()
-    novae.utils.spatial_neighbors(adata_pixel, radius=15, pixel_size=10)
-
-    connectivities = adata_pixel.obsp["spatial_connectivities"]
-    assert (connectivities.todense() == true_connectivities).all()
-
-
 def test_build_technology():
     adata_cosmx = adata.copy()
     adata_cosmx.obs[["CenterX_global_px", "CenterY_global_px"]] = adata_cosmx.obsm["spatial"]

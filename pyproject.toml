@@ -19,13 +19,14 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.10,<3.13"
 scanpy = ">=1.9.8"
 lightning = ">=2.2.1"
 torch = ">=2.2.1"
 torch-geometric = ">=2.5.2"
 huggingface-hub = ">=0.24.0"
 safetensors = ">=0.4.3"
+pandas = ">=2.0.0"
 
 wandb = { version = ">=0.17.2", optional = true }
 black = { version = ">=22.8.0", optional = true }
