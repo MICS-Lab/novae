@@ -53,10 +53,7 @@ def prepare_adatas(
         Keys.ADJ in adata.obsp for adata in adatas
     ), "You need to first run `novae.utils.spatial_neighbors` to compute cell neighbors."
 
-    assert all(
-        Keys.SLIDE_ID in adata.obs for adata in adatas
-    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.utils.spatial_neighbors` first."
-
+    _check_has_slide_id(adatas)
     _standardize_adatas(adatas)  # log1p + spatial_neighbors
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
@@ -66,6 +63,16 @@ def prepare_adatas(
         var_names = _genes_union(adatas, among_used=True)
 
     return adatas, var_names
+
+
+def _check_has_slide_id(adata: AnnData | list[AnnData]):
+    if not isinstance(adata, AnnData):
+        for adata_ in adata:
+            _check_has_slide_id(adata_)
+        return
+    assert (
+        Keys.SLIDE_ID in adata.obs
+    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.utils.spatial_neighbors` first."
 
 
 def _standardize_adatas(adatas: list[AnnData]):
@@ -237,8 +244,9 @@ def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | 
     if isinstance(adatas, AnnData):
         return check_slide_name_key([adatas], slide_name_key)
 
+    _check_has_slide_id(adatas)
+
     if slide_name_key is None:
-        assert all(Keys.SLIDE_ID in adata.obs for adata in adatas)
         return Keys.SLIDE_ID
 
     for adata in adatas:
