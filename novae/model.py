@@ -126,8 +126,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         }
         return utils.pretty_model_repr(info_dict)
 
-    def __new__(cls) -> "Novae":
-        return super().__new__(cls)  # trick to enable auto-completion despite PyTorchModelHubMixin inheritance
+    def __new__(cls, *args, **kwargs) -> "Novae":
+        # trick to enable auto-completion despite PyTorchModelHubMixin inheritance
+        return super().__new__(cls, *args, **kwargs)
 
     @property
     def datamodule(self) -> NovaeDatamodule:
