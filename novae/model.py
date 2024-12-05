@@ -126,6 +126,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         }
         return utils.pretty_model_repr(info_dict)
 
+    def __new__(cls) -> "Novae":
+        return super().__new__(cls)
+
     @property
     def datamodule(self) -> NovaeDatamodule:
         assert (
