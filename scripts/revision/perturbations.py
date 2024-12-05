@@ -12,6 +12,8 @@ adatas = [
 
 model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0", force_download=True)
 
+novae.utils.spatial_neighbors(adatas, radius=80)
+
 # Zero-shot
 print("Zero-shot")
 model.compute_representations(adatas, zero_shot=True)
