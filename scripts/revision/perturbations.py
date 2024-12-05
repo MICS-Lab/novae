@@ -28,11 +28,11 @@ for adata in adatas:
 print("Attention heterogeneity")
 novae.settings.store_attention_entropy = True
 for adata in adatas:
-    model.compute_representations(adatas[0])
+    model.encoder.node_aggregation._entropies = torch.tensor([], dtype=torch.float32)
+    model.compute_representations(adata)
     attention_entropies = model.encoder.node_aggregation._entropies.numpy()
     adata.obs["attention_entropies"] = 0.0
     adata.obs.loc[adata.obs["neighborhood_valid"], "attention_entropies"] = attention_entropies
-    model.encoder.node_aggregation._entropies = torch.tensor([], dtype=torch.float32)
 novae.settings.store_attention_entropy = False
 
 # Shuffle nodes
