@@ -10,7 +10,7 @@ adatas = [
     ),
 ]
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0", force_download=True)
 
 # Zero-shot
 print("Zero-shot")
