@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "novae"
-version = "0.2.0"
+version = "0.2.1"
 description = "Graph-based foundation model for spatial transcriptomics data"
 documentation = "https://mics-lab.github.io/novae/"
 homepage = "https://mics-lab.github.io/novae/"

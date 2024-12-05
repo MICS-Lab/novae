@@ -1,5 +1,10 @@
-## [0.2.1] - xxxx-xx-xx
+## [0.2.1] - 2024-12-04
 
+### Added
+- `novae.utils.quantile_scaling` for proteins expression
+
+### Fixed
+- Fix autocompletion using `__new__` to trick hugging_face inheritance
 
 
 ## [0.2.0] - 2024-12-03
