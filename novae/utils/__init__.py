@@ -21,4 +21,4 @@ from ._validate import check_available_domains_key, prepare_adatas, check_has_sp
 from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_dataset, shuffle_nodes
 from ._mode import Mode
 from ._correct import batch_effect_correction
-from ._proprocess import quantile_scaling
+from ._preprocess import quantile_scaling
