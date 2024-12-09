@@ -1,3 +1,8 @@
+## [0.2.2] - xxxx-xx-xx
+
+### Added
+- `load_dataset`: add `custom_filter` and `dry_run` arguments
+
 ## [0.2.1] - 2024-12-04
 
 ### Added

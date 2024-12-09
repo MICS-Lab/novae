@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import Callable
 
 import anndata
 import numpy as np
@@ -138,7 +139,11 @@ def _read_h5ad_from_hub(name: str, row: pd.Series):
 
 
 def load_dataset(
-    pattern: str | None = None, tissue: list[str] | str | None = None, species: list[str] | str | None = None
+    pattern: str | None = None,
+    tissue: list[str] | str | None = None,
+    species: list[str] | str | None = None,
+    custom_filter: Callable[[pd.DataFrame], pd.Series] | None = None,
+    dry_run: bool = False,
 ) -> list[AnnData]:
     """Automatically load slides from the Novae dataset repository.
 
@@ -150,6 +155,8 @@ def load_dataset(
         pattern: Optional pattern to match the slides names.
         tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain", "colon"`.
         species: Optional species (or species list) to filter the slides. E.g., `"human", "mouse"`.
+        custom_filter: Custom filter function that takes the metadata DataFrame (see above link) and returns a boolean Series to decide which rows should be kept.
+        dry_run: If `True`, the function will only return the metadata of slides that match the filters.
 
     Returns:
         A list of `AnnData` objects, each object corresponds to one slide.
@@ -173,6 +180,9 @@ def load_dataset(
         ), f"Found invalid tissues in {tissues}. Valid tissues for the provided species are {valid_tissues}."
         metadata = metadata[metadata["tissue"].isin(tissues)]
 
+    if custom_filter is not None:
+        metadata = metadata[custom_filter(metadata)]
+
     assert not metadata.empty, "No dataset found for the provided filters."
 
     if pattern is not None:
@@ -181,6 +191,9 @@ def load_dataset(
         metadata = metadata[where]
 
     assert not metadata.empty, "No dataset found for the provided filters."
+
+    if dry_run:
+        return metadata
 
     log.info(f"Found {len(metadata)} h5ad file(s) matching the filters.")
     return [_read_h5ad_from_hub(name, row) for name, row in metadata.iterrows()]
