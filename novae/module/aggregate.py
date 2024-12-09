@@ -46,7 +46,8 @@ class AttentionAggregation(Aggregation, L.LightningModule):
         gate = softmax(gate, index, dim=dim)
 
         if settings.store_attention_entropy:
-            attention_entropy = scatter(-gate * (gate + Nums.EPS).log2(), index=index)[:, 0]
+            att = softmax(gate / 0.01, index, dim=dim)
+            attention_entropy = scatter(-att * (att + Nums.EPS).log2(), index=index)[:, 0]
             self._entropies = torch.cat([self._entropies, attention_entropy])
 
         return self.reduce(gate * x, index, dim=dim)
