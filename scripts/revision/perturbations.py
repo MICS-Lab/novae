@@ -55,6 +55,12 @@ for adata in adatas:
     adata.obs["rs_edge_length"] = novae.utils.get_relative_sensitivity(adata, "novae_latent_normal", "novae_latent")
 
 # Saving results
+
+for adata in adatas:
+    del adata.X
+    for key in list(adata.layers.keys()):
+        del adata.layers[key]
+
 adatas[0].write_h5ad(
     "/gpfs/workdir/blampeyq/novae/data/_perturbation/HumanBreastCancerPatient1_region_0_perturbed.h5ad"
 )

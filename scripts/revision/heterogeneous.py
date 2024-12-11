@@ -28,6 +28,6 @@ plt.savefig("/gpfs/workdir/blampeyq/novae/data/_heterogeneous/prototype_weights.
 
 for i, adata in enumerate(adatas):
     del adata.X
-    for key in adata.layers.keys():
+    for key in list(adata.layers.keys()):
         del adata.layers[key]
     adata.write_h5ad(f"/gpfs/workdir/blampeyq/novae/data/_heterogeneous/{i}_res.h5ad")

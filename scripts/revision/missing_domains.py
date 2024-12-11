@@ -37,6 +37,6 @@ for adata in adatas:
 
 for adata, name in [(adata1_full, "v1_full"), (adata1_split, "v1_split"), (adata2_full, "v2_full")]:
     del adata.X
-    for key in adata.layers.keys():
+    for key in list(adata.layers.keys()):
         del adata.layers[key]
     adata.write_h5ad(path / f"{name}_res.h5ad")
