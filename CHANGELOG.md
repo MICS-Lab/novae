@@ -3,6 +3,9 @@
 ### Added
 - `load_dataset`: add `custom_filter` and `dry_run` arguments
 
+### Changed
+- Removed the docs formatting (better for autocompletion)
+
 ## [0.2.1] - 2024-12-04
 
 ### Added
