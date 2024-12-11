@@ -3,6 +3,9 @@
 ### Added
 - `load_dataset`: add `custom_filter` and `dry_run` arguments
 
+### Fixed
+- Ensure reset clustering if multiple zero-shot (#9)
+
 ### Changed
 - Removed the docs formatting (better for autocompletion)
 

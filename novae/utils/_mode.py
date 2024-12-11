@@ -1,7 +1,9 @@
 class Mode:
     """Novae mode class, used to store states variables related to training and inference."""
 
-    all_clustering_attrs: list[str] = ["_clustering", "_clustering_zero", "_clusters_levels", "_clusters_levels_zero"]
+    zero_shot_clustering_attrs: list[str] = ["_clustering_zero", "_clusters_levels_zero"]
+    normal_clustering_attrs: list[str] = ["_clustering", "_clusters_levels"]
+    all_clustering_attrs: list[str] = normal_clustering_attrs + zero_shot_clustering_attrs
 
     def __init__(self):
         self.zero_shot = False

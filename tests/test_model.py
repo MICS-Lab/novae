@@ -243,3 +243,20 @@ def test_safetensors_parameters_names():
     actual_names = [name for name, _ in model.named_parameters()]
 
     assert set(pretrained_model_names) == set(actual_names)
+
+
+def test_reset_clusters_zero_shot():
+    adata = novae.utils.toy_dataset()[0]
+
+    novae.utils.spatial_neighbors(adata)
+
+    model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+
+    model.compute_representations(adata, zero_shot=True)
+    clusters_levels = model.swav_head.clusters_levels.copy()
+
+    adata = adata[:550].copy()
+
+    model.compute_representations(adata, zero_shot=True)
+
+    assert not (model.swav_head.clusters_levels == clusters_levels).all()

@@ -337,6 +337,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if self.mode.zero_shot:
             latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas])
             self.swav_head.set_kmeans_prototypes(latent)
+            self.swav_head.reset_clustering(only_zero_shot=True)
 
             for adata in adatas:
                 self._compute_leaves(adata, None, None)

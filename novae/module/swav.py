@@ -203,8 +203,9 @@ class SwavHead(L.LightningModule):
 
         return getattr(self, clusters_levels_attr)
 
-    def reset_clustering(self) -> None:
-        for attr in self.mode.all_clustering_attrs:
+    def reset_clustering(self, only_zero_shot: bool = False) -> None:
+        attrs = self.mode.zero_shot_clustering_attrs if only_zero_shot else self.mode.all_clustering_attrs
+        for attr in attrs:
             setattr(self, attr, None)
 
     def set_clustering(self, clustering: None, clusters_levels: None) -> None:
