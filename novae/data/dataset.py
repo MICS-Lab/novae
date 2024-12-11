@@ -33,7 +33,6 @@ class NovaeDataset(Dataset):
     obs_ilocs: np.ndarray
     shuffled_obs_ilocs: np.ndarray
 
-    @utils.format_docs
     def __init__(
         self,
         adatas: list[AnnData],
@@ -43,14 +42,14 @@ class NovaeDataset(Dataset):
         n_hops_view: int,
         sample_cells: int | None = None,
     ) -> None:
-        """_summary_
+        """NovaeDataset constructor.
 
         Args:
             adatas: A list of `AnnData` objects.
             cell_embedder: A [novae.module.CellEmbedder][] object.
             batch_size: The model batch size.
-            {n_hops_local}
-            {n_hops_view}
+            n_hops_local: Number of hops between a cell and its neighborhood cells.
+            n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
             sample_cells: If not None, the dataset if used to sample the subgraphs from precisely `sample_cells` cells.
         """
         super().__init__()

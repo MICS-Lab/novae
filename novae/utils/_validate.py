@@ -8,12 +8,11 @@ from anndata import AnnData
 
 from .. import settings
 from .._constants import Keys, Nums
-from . import format_docs, lower_var_names
+from . import lower_var_names
 
 log = logging.getLogger(__name__)
 
 
-@format_docs
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     var_names: set | list[str] | None = None,
@@ -29,8 +28,8 @@ def prepare_adatas(
         - If using a pretrained model, save which genes are known by the model
 
     Args:
-        {adata}
-        {var_names}
+        adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+        var_names: Only used when loading a pretrained model. Do not use it yourself.
 
     Returns:
         A list of `AnnData` objects ready to be used by the model. If only one `adata` object is provided, it will be wrapped in a list.

@@ -16,7 +16,6 @@ from ._utils import _subplots_per_slide, get_categorical_color_palette
 log = logging.getLogger(__name__)
 
 
-@utils.format_docs
 def domains(
     adata: AnnData | list[AnnData],
     obs_key: str | None = None,
@@ -37,12 +36,12 @@ def domains(
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
-        {slide_name_key}
+        slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
         cell_size: Size of the cells or spots.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
-        {show}
+        show: Whether to show the plot.
         library_id: `library_id` argument for `sc.pl.spatial`.
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
@@ -105,7 +104,6 @@ def domains(
         plt.show()
 
 
-@utils.format_docs
 def spatially_variable_genes(
     adata: AnnData,
     obs_key: str | None = None,
@@ -128,7 +126,7 @@ def spatially_variable_genes(
         cell_size: Size of the cells or spots (`spot_size` argument of `sc.pl.spatial`).
         min_positive_ratio: Genes whose "ratio of cells expressing it" is lower than this threshold are not considered.
         return_list: Whether to return the list of SVG instead of plotting them.
-        {show}
+        show: Whether to show the plot.
         **kwargs: Additional arguments for `sc.pl.spatial`.
 
     Returns:

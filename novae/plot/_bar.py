@@ -7,7 +7,6 @@ from .. import utils
 from ._utils import get_categorical_color_palette
 
 
-@utils.format_docs
 def domains_proportions(
     adata: AnnData | list[AnnData],
     obs_key: str | None = None,
@@ -21,7 +20,7 @@ def domains_proportions(
         adata: One `AnnData` object, or a list of `AnnData` objects.
         obs_key: The key in `adata.obs` that contains the Novae domains. By default, the last available domain key is shown.
         figsize: Matplotlib figure size.
-        {show}
+        show: Whether to show the plot.
     """
     adatas = [adata] if isinstance(adata, AnnData) else adata
     slide_name_key = utils.check_slide_name_key(adatas, slide_name_key)

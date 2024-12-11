@@ -32,7 +32,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```
     """
 
-    @utils.format_docs
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -56,23 +55,23 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
 
         Args:
-            {adata}
-            {scgpt_model_dir}
-            {var_names}
-            {embedding_size} Do not use it when loading embeddings from scGPT.
-            {output_size}
-            {n_hops_local}
-            {n_hops_view}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
+            var_names: Only used when loading a pretrained model. Do not use it yourself.
+            embedding_size: Size of the embeddings of the genes (`E` in the article). Do not use it when loading embeddings from scGPT.
+            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
+            n_hops_local: Number of hops between a cell and its neighborhood cells.
+            n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
             heads: Number of heads for the graph encoder.
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.
             batch_size: Mini-batch size.
-            {temperature}
-            {num_prototypes}
-            {panel_subset_size}
-            {background_noise_lambda}
-            {sensitivity_noise_std}
-            {min_prototypes_ratio}
+            temperature: Temperature used in the cross-entropy loss.
+            num_prototypes: Number of prototypes (`K` in the article).
+            panel_subset_size: Ratio of genes kept from the panel during augmentation.
+            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
+            sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
+            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
         """
         super().__init__()
         ### Initialize cell embedder and prepare adata(s) object(s)
@@ -100,15 +99,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._datamodule = None
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
 
-    @utils.format_docs
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float = 0.5) -> None:
         """
         Initialize the slide-queue for the SwAV head.
         This can be used before training (`fit` or `fine_tune`) when there are potentially slide-specific or condition-specific prototypes.
 
         Args:
-            {adata}
-            {min_prototypes_ratio}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
         """
         if adata is None or self.hparams.min_prototypes_ratio == 1:
             return
@@ -300,8 +298,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         model._model_name = model_name
         return model
 
-    @utils.format_docs
-    @utils.requires_fit
     @torch.no_grad()
     def compute_representations(
         self,
@@ -317,10 +313,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             Representations are saved in `adata.obsm["novae_latent"]`
 
         Args:
-            {adata}
-            {accelerator}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
         """
+        assert self.mode.trained, "Novae must be trained first, so consider running `model.fit()`"
+
         self.mode.zero_shot = zero_shot
         self.training = False
         self._parse_hardware_args(accelerator, num_workers, use_device=True)
@@ -427,7 +425,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         plot._weights_clustermap(C, None, [], show_yticklabels=False, show_tissue_legend=False, **kwargs)
 
-    @utils.format_docs
     def assign_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -443,7 +440,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
         Args:
-            {adata}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
             n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
             key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
@@ -485,7 +482,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         utils.batch_effect_correction(adatas, obs_key)
 
-    @utils.format_docs
     def fine_tune(
         self,
         adata: AnnData | list[AnnData],
@@ -499,11 +495,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """Fine tune a pretrained Novae model. This will update the prototypes with the new data, and `fit` for one or a few epochs.
 
         Args:
-            {adata}
-            {accelerator}
-            {num_workers}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
+            num_workers: Number of workers for the dataloader.
             lr: Model learning rate.
-            {max_epochs}
+            max_epochs: Maximum number of training epochs.
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """
         self.mode.fine_tune()
@@ -527,7 +523,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **fit_kwargs,
         )
 
-    @utils.format_docs
     def fit(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -547,10 +542,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             If you loaded a pretrained model, use [novae.Novae.fine_tune][] instead.
 
         Args:
-            {adata}
-            {max_epochs}
-            {accelerator}
-            {num_workers}
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            max_epochs: Maximum number of training epochs.
+            accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
+            num_workers: Number of workers for the dataloader.
             lr: Model learning rate.
             min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             patience: Number of epochs with no improvement after which training will be stopped (early stopping).

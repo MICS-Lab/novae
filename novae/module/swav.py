@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 class SwavHead(L.LightningModule):
     queue: None | Tensor  # (n_slides, num_prototypes)
 
-    @utils.format_docs
     def __init__(
         self,
         mode: utils.Mode,
@@ -29,9 +28,9 @@ class SwavHead(L.LightningModule):
         """SwavHead module, adapted from the paper ["Unsupervised Learning of Visual Features by Contrasting Cluster Assignments"](https://arxiv.org/abs/2006.09882).
 
         Args:
-            {output_size}
-            {num_prototypes}
-            {temperature}
+            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
+            num_prototypes: Number of prototypes (`K` in the article).
+            temperature: Temperature used in the cross-entropy loss.
         """
         super().__init__()
         self.mode = mode
@@ -97,12 +96,11 @@ class SwavHead(L.LightningModule):
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
-    @utils.format_docs
     def projection(self, z: Tensor) -> Tensor:
         """Compute the projection of the (normalized) representations over the prototypes.
 
         Args:
-            {z}
+            z: The representations of one batch, of size `(B, O)`.
 
         Returns:
             The projections of size `(B, K)`.
@@ -110,13 +108,12 @@ class SwavHead(L.LightningModule):
         z_normalized = F.normalize(z, dim=1, p=2)
         return z_normalized @ self.prototypes.T
 
-    @utils.format_docs
     @torch.no_grad()
     def prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
         """Get the indices of the prototypes to use for the current slide.
 
         Args:
-            {projections}
+            projections: Projections of the (normalized) representations over the prototypes, of size `(B, K)`.
             slide_id: ID of the slide, or `None`.
 
         Returns:
@@ -148,13 +145,12 @@ class SwavHead(L.LightningModule):
 
         return max_projections, thresholds
 
-    @utils.format_docs
     @torch.no_grad()
     def sinkhorn(self, projections: Tensor) -> Tensor:
         """Apply the Sinkhorn-Knopp algorithm to the projections.
 
         Args:
-            {projections}
+            projections: Projections of the (normalized) representations over the prototypes, of size `(B, K)`.
 
         Returns:
             The soft codes from the Sinkhorn-Knopp algorithm, with shape `(B, K)`.

@@ -1,4 +1,3 @@
-from ._docs import format_docs
 from ._utils import (
     repository_root,
     tqdm,
@@ -8,7 +7,6 @@ from ._utils import (
     pretty_num_parameters,
     pretty_model_repr,
     parse_device_args,
-    requires_fit,
     valid_indices,
     unique_leaves_indices,
     unique_obs,

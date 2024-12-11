@@ -5,19 +5,18 @@ from torch_geometric.nn.aggr import Aggregation
 from torch_geometric.nn.inits import reset
 from torch_geometric.utils import scatter, softmax
 
-from .. import settings, utils
+from .. import settings
 from .._constants import Nums
 
 
 class AttentionAggregation(Aggregation, L.LightningModule):
     """Aggregate the node embeddings using attention."""
 
-    @utils.format_docs
     def __init__(self, output_size: int):
         """
 
         Args:
-            {output_size}
+            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
         """
         super().__init__()
         self.attention_aggregation = ProjectionLayers(output_size)  # for backward compatibility when loading models

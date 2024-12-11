@@ -61,7 +61,6 @@ def _weights_clustermap(
 TEMP_KEY = "_temp"
 
 
-@utils.format_docs
 def pathway_scores(
     adata: AnnData,
     pathways: dict[str, list[str]] | str,
@@ -85,11 +84,11 @@ def pathway_scores(
         pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
         obs_key: Key in `adata.obs` that contains the domains. By default, it will use the last available Novae domain key.
         pathway_name: If `None`, all pathways will be shown (first mode). If not `None`, this specific pathway will be shown, for all domains and all slides (second mode).
-        {slide_name_key}
+        slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
         return_df: Whether to return the DataFrame.
         figsize: Matplotlib figure size.
         min_pathway_size: Minimum number of known genes in the pathway to be considered.
-        {show}
+        show: Whether to show the plot.
 
     Returns:
         A DataFrame of scores per domain if `return_df` is True.

@@ -5,13 +5,11 @@ import scanpy as sc
 from anndata import AnnData
 from sklearn import metrics
 
-from .. import utils
 from .._constants import Keys, Nums
 
 log = logging.getLogger(__name__)
 
 
-@utils.format_docs
 def mean_fide_score(
     adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_classes: int | None = None
 ) -> float:
@@ -19,8 +17,8 @@ def mean_fide_score(
 
     Args:
         adatas: An `AnnData` object, or a list of `AnnData` objects.
-        {obs_key}
-        {slide_key}
+        obs_key: Key of `adata.obs` containing the domains annotation.
+        slide_key: Optional key of `adata.obs` containing the ID of each slide. Not needed if each `adata` is a slide.
         n_classes: Optional number of classes. This can be useful if not all classes are predicted, for a fair comparision.
 
     Returns:
@@ -34,7 +32,6 @@ def mean_fide_score(
     )
 
 
-@utils.format_docs
 def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> float:
     """F1-score of intra-domain edges (FIDE). A high score indicates a great domain continuity.
 
@@ -44,7 +41,7 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
 
     Args:
         adata: An `AnnData` object
-        {obs_key}
+        obs_key: Key of `adata.obs` containing the domains annotation.
         n_classes: Optional number of classes. This can be useful if not all classes are predicted, for a fair comparision.
 
     Returns:
@@ -66,14 +63,13 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     return np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean()
 
 
-@utils.format_docs
 def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
     """Jensen-Shannon divergence (JSD) over all slides
 
     Args:
         adatas: One or a list of AnnData object(s)
-        {obs_key}
-        {slide_key}
+        obs_key: Key of `adata.obs` containing the domains annotation.
+        slide_key: Optional key of `adata.obs` containing the ID of each slide. Not needed if each `adata` is a slide.
 
     Returns:
         The Jensen-Shannon divergence score for all slides
@@ -98,7 +94,6 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
     return _jensen_shannon_divergence(np.array(distributions))
 
 
-@utils.format_docs
 def mean_svg_score(
     adata: AnnData | list[AnnData],
     obs_key: str,
@@ -110,9 +105,9 @@ def mean_svg_score(
 
     Args:
         adata: An `AnnData` object, or a list.
-        {obs_key}
-        {slide_key}
-        {n_top_genes}
+        obs_key: Key of `adata.obs` containing the domains annotation.
+        slide_key: Optional key of `adata.obs` containing the ID of each slide. Not needed if each `adata` is a slide.
+        n_top_genes: Number of genes per domain to consider.
 
     Returns:
         The mean SVG score accross all slides.
@@ -125,14 +120,13 @@ def mean_svg_score(
     )
 
 
-@utils.format_docs
 def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3, n_classes: int | None = None) -> float:
     """Average score of the top differentially expressed genes for each domain.
 
     Args:
         adata: An `AnnData` object
-        {obs_key}
-        {n_top_genes}
+        obs_key: Key of `adata.obs` containing the domains annotation.
+        n_top_genes: Number of genes per domain to consider.
 
     Returns:
         The average SVG score.

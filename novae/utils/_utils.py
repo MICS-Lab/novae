@@ -1,8 +1,6 @@
 import importlib
 import logging
-from functools import wraps
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 import pandas as pd
@@ -63,17 +61,6 @@ def fill_invalid_indices(
     res = np.full((n_obs, *out.shape[1:]), fill_value, dtype=dtype)
     res[valid_indices] = out
     return res
-
-
-def requires_fit(f: Callable) -> Callable:
-    """Make sure the model has been trained"""
-
-    @wraps(f)
-    def wrapper(model, *args, **kwargs):
-        assert model.mode.trained, "Novae must be trained first, so consider running `model.fit()`"
-        return f(model, *args, **kwargs)
-
-    return wrapper
 
 
 def parse_device_args(accelerator: str = "cpu") -> torch.device:

@@ -37,8 +37,6 @@ plugins:
           options:
             show_root_heading: true
             heading_level: 3
-            extensions:
-            - docs/format_docstrings.py
   - mkdocs-jupyter:
       include_source: True
 markdown_extensions:

@@ -1,15 +1,12 @@
 import lightning as L
 import torch
 from torch.distributions import Exponential
-from torch_geometric.data import Data
-
-from .. import utils
+from torch_geometric.data import Batch
 
 
 class GraphAugmentation(L.LightningModule):
     """Perform graph augmentation for Novae. It adds noise to the data and keeps a subset of the genes."""
 
-    @utils.format_docs
     def __init__(
         self,
         panel_subset_size: float,
@@ -19,9 +16,9 @@ class GraphAugmentation(L.LightningModule):
         """
 
         Args:
-            {panel_subset_size}
-            {background_noise_lambda}
-            {sensitivity_noise_std}
+            panel_subset_size: Ratio of genes kept from the panel during augmentation.
+            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
+            sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
         """
         super().__init__()
         self.panel_subset_size = panel_subset_size
@@ -30,12 +27,11 @@ class GraphAugmentation(L.LightningModule):
 
         self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda)))
 
-    @utils.format_docs
-    def noise(self, data: Data):
+    def noise(self, data: Batch):
         """Add noise (inplace) to the data as detailed in the article.
 
         Args:
-            {data}
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
         """
         sample_shape = (data.batch_size, data.x.shape[1])
 
@@ -47,13 +43,12 @@ class GraphAugmentation(L.LightningModule):
             start, stop = data.ptr[i], data.ptr[i + 1]
             data.x[start:stop] = data.x[start:stop] * factors[i] + additions[i]
 
-    @utils.format_docs
-    def panel_subset(self, data: Data):
+    def panel_subset(self, data: Batch):
         """
         Keep a ratio of `panel_subset_size` of the input genes (inplace operation).
 
         Args:
-            {data}
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
         """
         n_total = len(data.genes_indices[0])
         n_subset = int(n_total * self.panel_subset_size)
@@ -63,12 +58,11 @@ class GraphAugmentation(L.LightningModule):
         data.x = data.x[:, gene_subset_indices]
         data.genes_indices = data.genes_indices[:, gene_subset_indices]
 
-    @utils.format_docs
-    def forward(self, data: Data) -> Data:
+    def forward(self, data: Batch) -> Batch:
         """Perform data augmentation (`noise` and `panel_subset`).
 
         Args:
-            {data}
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
 
         Returns:
             The augmented `Data` object

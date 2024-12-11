@@ -1,16 +1,14 @@
 import lightning as L
 from torch import Tensor
-from torch_geometric.data import Data
+from torch_geometric.data import Batch
 from torch_geometric.nn.models import GAT
 
-from .. import utils
 from . import AttentionAggregation
 
 
 class GraphEncoder(L.LightningModule):
     """Graph encoder of Novae. It uses a graph attention network."""
 
-    @utils.format_docs
     def __init__(
         self,
         embedding_size: int,
@@ -21,10 +19,10 @@ class GraphEncoder(L.LightningModule):
     ) -> None:
         """
         Args:
-            {embedding_size}
+            embedding_size: Size of the embeddings of the genes (`E` in the article).
             hidden_size: The size of the hidden layers in the GAT.
             num_layers: The number of layers in the GAT.
-            {output_size}
+            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
             heads: The number of attention heads in the GAT.
         """
         super().__init__()
@@ -41,12 +39,11 @@ class GraphEncoder(L.LightningModule):
 
         self.node_aggregation = AttentionAggregation(output_size)
 
-    @utils.format_docs
-    def forward(self, data: Data) -> Tensor:
+    def forward(self, data: Batch) -> Tensor:
         """Encode the input data.
 
         Args:
-            {data}
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
 
         Returns:
             A tensor of shape `(B, O)` containing the encoded graphs.

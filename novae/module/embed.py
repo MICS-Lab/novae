@@ -23,7 +23,6 @@ log = logging.getLogger(__name__)
 class CellEmbedder(L.LightningModule):
     """Convert a cell into an embedding using a gene embedding matrix."""
 
-    @utils.format_docs
     def __init__(
         self,
         gene_names: list[str] | dict[str, int],
@@ -34,7 +33,7 @@ class CellEmbedder(L.LightningModule):
 
         Args:
             gene_names: Name of the genes to be used in the embedding, or dictionnary of index to name.
-            {embedding_size} Optional if `embedding` is provided.
+            embedding_size: Size of the embeddings of the genes (`E` in the article). Optional if `embedding` is provided.
             embedding: Optional pre-trained embedding matrix. If provided, `embedding_size` shouldn't be provided.
         """
         super().__init__()
@@ -65,13 +64,12 @@ class CellEmbedder(L.LightningModule):
         self.linear.weight.data.copy_(torch.eye(self.embedding_size))
         self.linear.bias.data.zero_()
 
-    @utils.format_docs
     @classmethod
     def from_scgpt_embedding(cls, scgpt_model_dir: str) -> "CellEmbedder":
         """Initialize the CellEmbedder from a scGPT pretrained model directory.
 
         Args:
-            {scgpt_model_dir}
+            scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
 
         Returns:
             A CellEmbedder instance.
@@ -105,15 +103,14 @@ class CellEmbedder(L.LightningModule):
 
         return np.array(indices, dtype=np.int16)
 
-    @utils.format_docs
     def forward(self, data: Data) -> Data:
         """Embed the input data.
 
         Args:
-            {data} The number of node features is variable.
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. The number of node features is variable.
 
         Returns:
-            {data} Each node now has a size of `E`.
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. Each node now has a size of `E`.
         """
         genes_embeddings = self.embedding(data.genes_indices[0])
         genes_embeddings = self.linear(genes_embeddings)
