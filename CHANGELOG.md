@@ -2,6 +2,7 @@
 
 ### Added
 - `load_dataset`: add `custom_filter` and `dry_run` arguments
+- added `min_prototypes_ratio` argument in `fine_tune` to run `init_slide_queue`
 
 ### Fixed
 - Ensure reset clustering if multiple zero-shot (#9)

@@ -491,6 +491,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         *,
         accelerator: str = "cpu",
         num_workers: int | None = None,
+        min_prototypes_ratio: float = 0.5,
         lr: float = 1e-3,
         max_epochs: int = 4,
         **fit_kwargs: int,
@@ -511,6 +512,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
         datamodule = self._init_datamodule(self._prepare_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
+        self.init_slide_queue(adata, min_prototypes_ratio)
+
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
