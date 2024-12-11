@@ -10,7 +10,7 @@ adatas = [
     ),
 ]
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0", force_download=True)
+model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
 novae.utils.spatial_neighbors(adatas, radius=80)
 
