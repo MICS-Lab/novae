@@ -108,7 +108,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
         """
-        if adata is None or self.hparams.min_prototypes_ratio == 1:
+        self.hparams.min_prototypes_ratio = min_prototypes_ratio
+
+        if adata is None or min_prototypes_ratio == 1:
             return
 
         slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
