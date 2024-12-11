@@ -50,7 +50,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
-        min_prototypes_ratio: float = 0.7,
+        min_prototypes_ratio: float = 0.6,
     ) -> None:
         """
 
@@ -99,7 +99,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._datamodule = None
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
 
-    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float = 0.5) -> None:
+    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float) -> None:
         """
         Initialize the slide-queue for the SwAV head.
         This can be used before training (`fit` or `fine_tune`) when there are potentially slide-specific or condition-specific prototypes.
@@ -491,7 +491,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         *,
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        min_prototypes_ratio: float = 0.5,
+        min_prototypes_ratio: float = 0.6,
         lr: float = 1e-3,
         max_epochs: int = 4,
         **fit_kwargs: int,
