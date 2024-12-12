@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import scanpy as sc
 from anndata import AnnData
 from sklearn import metrics
 
@@ -92,55 +91,6 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
         distributions.append(distribution)
 
     return _jensen_shannon_divergence(np.array(distributions))
-
-
-def mean_svg_score(
-    adata: AnnData | list[AnnData],
-    obs_key: str,
-    slide_key: str = None,
-    n_top_genes: int = 3,
-    n_classes: int | None = None,
-) -> float:
-    """Mean SVG score over all slides. A high score indicates better domain-specific genes, or spatial variable genes.
-
-    Args:
-        adata: An `AnnData` object, or a list.
-        obs_key: Key of `adata.obs` containing the domains annotation.
-        slide_key: Optional key of `adata.obs` containing the ID of each slide. Not needed if each `adata` is a slide.
-        n_top_genes: Number of genes per domain to consider.
-
-    Returns:
-        The mean SVG score accross all slides.
-    """
-    return np.mean(
-        [
-            svg_score(adata, obs_key, n_top_genes=n_top_genes, n_classes=n_classes)
-            for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
-        ]
-    )
-
-
-def svg_score(adata: AnnData, obs_key: str, n_top_genes: int = 3, n_classes: int | None = None) -> float:
-    """Average score of the top differentially expressed genes for each domain.
-
-    Args:
-        adata: An `AnnData` object
-        obs_key: Key of `adata.obs` containing the domains annotation.
-        n_top_genes: Number of genes per domain to consider.
-
-    Returns:
-        The average SVG score.
-    """
-    if adata.obs[obs_key].value_counts().min() < 2:
-        log.warning(f"Skipping {obs_key=} because some domains have one or zero cell")
-        return -1000
-
-    sc.tl.rank_genes_groups(adata, groupby=obs_key)
-
-    sub_recarray: np.recarray = adata.uns["rank_genes_groups"]["scores"][:n_top_genes]
-    mean_per_domain = [sub_recarray[field].mean() for field in sub_recarray.dtype.names]
-
-    return np.mean(mean_per_domain) if n_classes is None else np.sum(mean_per_domain) / n_classes
 
 
 def _jensen_shannon_divergence(distributions: np.ndarray) -> float:

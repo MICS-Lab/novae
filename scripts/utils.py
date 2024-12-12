@@ -17,7 +17,6 @@ from novae.monitor import (
     jensen_shannon_divergence,
     mean_fide_score,
     mean_normalized_entropy,
-    mean_svg_score,
 )
 from novae.monitor.callback import (
     LogProtoCovCallback,
@@ -100,7 +99,7 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
     if config.post_training.log_domains:
         for n_domains in config.post_training.n_domains:
             obs_key = model.assign_domains(adatas, n_domains=n_domains)
-            novae.plot.domains(adatas, obs_key)
+            novae.plot.domains(adatas, obs_key, show=False)
             log_plt_figure(f"domains_{n_domains=}")
 
     if config.post_training.log_metrics:
@@ -108,14 +107,12 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
             obs_key = model.assign_domains(adatas, n_domains=n_domains)
             jsd = jensen_shannon_divergence(adatas, obs_key)
             fide = mean_fide_score(adatas, obs_key, n_classes=n_domains)
-            svg = mean_svg_score(adatas, obs_key)
             mne = mean_normalized_entropy(adatas, n_classes=n_domains, obs_key=obs_key)
-            log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}, MNE: {mne}")
+            log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, MNE: {mne}")
             wandb.log(
                 {
                     f"metrics/jsd_{n_domains}_domains": jsd,
                     f"metrics/fid_{n_domains}_domainse": fide,
-                    f"metrics/svg_{n_domains}_domains": svg,
                     f"metrics/mne_{n_domains}_domains": mne,
                     f"metrics/train_heuristic_{n_domains}_domains": fide * mne,
                 }
