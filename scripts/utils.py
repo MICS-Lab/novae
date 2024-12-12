@@ -13,7 +13,12 @@ from lightning.pytorch.loggers import WandbLogger
 import novae
 from novae import log
 from novae._constants import Keys
-from novae.monitor import jensen_shannon_divergence, mean_fide_score, mean_svg_score
+from novae.monitor import (
+    jensen_shannon_divergence,
+    mean_fide_score,
+    mean_normalized_entropy,
+    mean_svg_score,
+)
 from novae.monitor.callback import (
     LogProtoCovCallback,
     LogTissuePrototypeWeights,
@@ -104,7 +109,16 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
             jsd = jensen_shannon_divergence(adatas, obs_key)
             fide = mean_fide_score(adatas, obs_key, n_classes=n_domains)
             svg = mean_svg_score(adatas, obs_key)
-            log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}")
+            mne = mean_normalized_entropy(adatas, n_classes=n_domains, obs_key=obs_key)
+            log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, SVG: {svg}, MNE: {mne}")
+            wandb.log(
+                {
+                    f"metrics/jsd_{n_domains}_domains": jsd,
+                    f"metrics/fid_{n_domains}_domainse": fide,
+                    f"metrics/svg_{n_domains}_domains": svg,
+                    f"metrics/mne_{n_domains}_domains": mne,
+                }
+            )
 
     if config.post_training.log_umap:
         _log_umap(model, adatas, config)

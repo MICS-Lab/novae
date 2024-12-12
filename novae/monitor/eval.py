@@ -172,6 +172,25 @@ def entropy(distribution: np.ndarray) -> float:
     return -(distribution * np.log2(distribution + Nums.EPS)).sum()
 
 
+def mean_normalized_entropy(
+    adatas: AnnData | list[AnnData], n_classes: int, obs_key: str, slide_key: str = None
+) -> float:
+    return np.mean(
+        [
+            _mean_normalized_entropy(adata, obs_key, n_classes=n_classes)
+            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+        ]
+    )
+
+
+def _mean_normalized_entropy(adata: AnnData, obs_key: str, n_classes: int) -> float:
+    distribution = adata.obs[obs_key].value_counts(normalize=True).values
+    distribution = np.pad(distribution, (0, n_classes - len(distribution)), mode="constant")
+    entropy_ = entropy(distribution)
+
+    return entropy_ / np.log2(n_classes)
+
+
 def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slide_key: str = None) -> float:
     """Heuristic score to evaluate the quality of the clustering.
 
