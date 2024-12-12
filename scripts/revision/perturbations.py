@@ -1,7 +1,9 @@
 import anndata
 import torch
+from torch_geometric.utils import scatter, softmax
 
 import novae
+from novae._constants import Nums
 
 adatas = [
     anndata.read_h5ad("/gpfs/workdir/blampeyq/novae/data/_perturbation/HumanBreastCancerPatient1_region_0.h5ad"),
@@ -26,14 +28,37 @@ for adata in adatas:
 
 # Attention heterogeneity
 print("Attention heterogeneity")
-novae.settings.store_attention_entropy = True
 for adata in adatas:
-    model.encoder.node_aggregation._entropies = torch.tensor([], dtype=torch.float32)
-    model.compute_representations(adata)
-    attention_entropies = model.encoder.node_aggregation._entropies.numpy()
+    model._datamodule = model._init_datamodule(adata)
+
+    with torch.no_grad():
+        _entropies = torch.tensor([], dtype=torch.float32)
+        gat = model.encoder.gnn
+
+        for data_batch in model.datamodule.predict_dataloader():
+            averaged_attentions_list = []
+
+            data = data_batch["main"]
+            data = model._embed_pyg_data(data)
+
+            x = data.x
+
+            for i, (conv, norm) in enumerate(zip(gat.convs, gat.norms)):
+                x, (index, attentions) = conv(
+                    x, data.edge_index, edge_attr=data.edge_attr, return_attention_weights=True
+                )
+                averaged_attentions = scatter(attentions.mean(1), index[0], dim_size=len(data.x), reduce="mean")
+                averaged_attentions_list.append(averaged_attentions)
+                if i < gat.num_layers - 1:
+                    x = gat.act(x)
+
+            attention_scores = torch.stack(averaged_attentions_list).mean(0)
+            attention_scores = softmax(attention_scores / 0.01, data.batch, dim=0)
+            attention_entropy = scatter(-attention_scores * (attention_scores + Nums.EPS).log2(), index=data.batch)
+            _entropies = torch.cat([_entropies, attention_entropy])
+
     adata.obs["attention_entropies"] = 0.0
-    adata.obs.loc[adata.obs["neighborhood_valid"], "attention_entropies"] = attention_entropies
-novae.settings.store_attention_entropy = False
+    adata.obs.loc[adata.obs["neighborhood_valid"], "attention_entropies"] = _entropies.numpy(force=True)
 
 # Shuffle nodes
 print("Shuffle nodes")
