@@ -1,7 +1,7 @@
 method: random
 metric:
   goal: maximize
-  name: metrics/val_heuristic
+  name: metrics/train_heuristic_8_domains
 parameters:
   output_size:
     values: [64, 128]

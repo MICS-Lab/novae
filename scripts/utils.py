@@ -117,6 +117,7 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
                     f"metrics/fid_{n_domains}_domainse": fide,
                     f"metrics/svg_{n_domains}_domains": svg,
                     f"metrics/mne_{n_domains}_domains": mne,
+                    f"metrics/train_heuristic_{n_domains}_domains": fide * mne,
                 }
             )
 
