@@ -1,0 +1,16 @@
+data:
+  train_dataset: /gpfs/workdir/blampeyq/novae/data/_hyper
+
+model_kwargs:
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
+  n_hops_view: 2
+  background_noise_lambda: 5
+  panel_subset_size: 0.8
+  min_prototypes_ratio: 0.6
+
+fit_kwargs:
+  max_epochs: 10
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 4
+  min_delta: 0.025

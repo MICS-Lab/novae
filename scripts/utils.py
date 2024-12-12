@@ -68,7 +68,7 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
         return validation_callback
 
     return validation_callback + [
-        ModelCheckpoint(monitor="metrics/val_heuristic", mode="max", save_last=True, save_top_k=4),
+        ModelCheckpoint(monitor="metrics/val_heuristic", mode="max", save_last=True, save_top_k=1),
         LogProtoCovCallback(),
         LogTissuePrototypeWeights(),
     ]
