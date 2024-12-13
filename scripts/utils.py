@@ -90,6 +90,8 @@ def read_config(args: argparse.Namespace) -> Config:
 
 
 def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
+    wandb.log({"num_parameters": sum(p.numel() for p in model.parameters())})
+
     keys_repr = ["log_umap", "log_metrics", "log_domains"]
     if any(getattr(config.post_training, key) for key in keys_repr):
         model.compute_representations(adatas, **_get_hardware_kwargs(config), zero_shot=config.zero_shot)
