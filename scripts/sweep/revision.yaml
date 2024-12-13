@@ -3,20 +3,18 @@ metric:
   goal: maximize
   name: metrics/train_heuristic_8_domains
 parameters:
-  output_size:
-    values: [64, 128]
+  heads:
+    values: [2, 4, 8, 16]
   num_layers:
-    values: [10, 14, 18]
-  hidden_size:
-    values: [64, 128]
-  background_noise_lambda:
-    min: 3
-    max: 5
-  sensitivity_noise_std:
-    min: 0.08
-    max: 0.16
+    values: [2, 6, 9, 12, 15]
+  num_prototypes:
+    values: [16, 64, 128, 256, 1024]
+  batch_size:
+    values: [64, 128, 256, 512, 1024]
+  temperature:
+    values: [0.025, 0.05, 0.1, 0.2, 0.4]
   lr:
-    values: [0.00005, 0.0001, 0.0002, 0.0004]
+    values: [0.00005, 0.0001, 0.0002, 0.0004, 0.001]
 
 command:
   - python
