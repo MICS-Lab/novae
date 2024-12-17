@@ -20,6 +20,14 @@ from novae import Novae
 model = Novae.from_pretrained("MICS-Lab/novae-human-0") # or any valid model name
 ```
 
+### How to avoid overcorrecting?
+
+By default, Novae corrects the batch-effect to get shared spatial domains across slides.
+The batch information is used only during training (`fit` or `fine_tune`), which should prevent Novae from overcorrecting in `zero_shot` mode.
+
+If not using the `zero_shot` mode, you can provide the `min_prototypes_ratio` parameter to control batch effect correction: either (i) in the `fine_tune` method itself, or (ii) during the model initialization (if retraining a model from scratch).
+
+For instance, if `min_prototypes_ratio=0.5`, Novae expects each slide to contain at least 50% of the prototypes (each prototype can be interpreted as an "elementary spatial domain"). Therefore, the lower `min_prototypes_ratio`, the lower the batch-effect correction. Conversely, if `min_prototypes_ratio=1`, all prototypes are expected to be found in all slides (this doesn't mean the proportions will be the same overall slides, though).
 
 ### How do I save my own model?
 

@@ -3,12 +3,14 @@
 ### Added
 - `load_dataset`: add `custom_filter` and `dry_run` arguments
 - added `min_prototypes_ratio` argument in `fine_tune` to run `init_slide_queue`
+- Added tutorials for proteins data + minor docs improvements
 
 ### Fixed
 - Ensure reset clustering if multiple zero-shot (#9)
 
 ### Changed
 - Removed the docs formatting (better for autocompletion)
+- Reorder parameters in Novae `__init__` (sorted by importance)
 
 ## [0.2.1] - 2024-12-04
 
