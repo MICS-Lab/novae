@@ -9,11 +9,11 @@ model_kwargs:
   min_prototypes_ratio: 0.6
 
 fit_kwargs:
-  max_epochs: 10
+  max_epochs: 40
   accelerator: "gpu"
   num_workers: 8
-  patience: 4
-  min_delta: 0.025
+  patience: 5
+  min_delta: 0.015
 
 post_training:
   n_domains: [8, 10, 12]
