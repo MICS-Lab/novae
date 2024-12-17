@@ -35,43 +35,43 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        scgpt_model_dir: str | None = None,
-        var_names: list[str] | None = None,
         embedding_size: int = 100,
-        output_size: int = 64,
+        min_prototypes_ratio: float = 0.6,
         n_hops_local: int = 2,
         n_hops_view: int = 2,
+        temperature: float = 0.1,
+        output_size: int = 64,
         heads: int = 4,
         hidden_size: int = 64,
         num_layers: int = 10,
         batch_size: int = 256,
-        temperature: float = 0.1,
         num_prototypes: int = 256,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
-        min_prototypes_ratio: float = 0.6,
+        scgpt_model_dir: str | None = None,
+        var_names: list[str] | None = None,
     ) -> None:
         """
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
-            var_names: Only used when loading a pretrained model. Do not use it yourself.
             embedding_size: Size of the embeddings of the genes (`E` in the article). Do not use it when loading embeddings from scGPT.
-            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
+            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
             n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
+            temperature: Temperature used in the cross-entropy loss.
+            output_size: Size of the representations, i.e. the encoder outputs (`O` in the article).
             heads: Number of heads for the graph encoder.
             hidden_size: Hidden size for the graph encoder.
             num_layers: Number of layers for the graph encoder.
             batch_size: Mini-batch size.
-            temperature: Temperature used in the cross-entropy loss.
             num_prototypes: Number of prototypes (`K` in the article).
             panel_subset_size: Ratio of genes kept from the panel during augmentation.
             background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
-            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
+            scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
+            var_names: Only used when loading a pretrained model. Do not use it yourself.
         """
         super().__init__()
         ### Initialize cell embedder and prepare adata(s) object(s)
