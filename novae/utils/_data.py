@@ -143,6 +143,7 @@ def load_dataset(
     tissue: list[str] | str | None = None,
     species: list[str] | str | None = None,
     custom_filter: Callable[[pd.DataFrame], pd.Series] | None = None,
+    top_k: int | None = None,
     dry_run: bool = False,
 ) -> list[AnnData]:
     """Automatically load slides from the Novae dataset repository.
@@ -156,6 +157,7 @@ def load_dataset(
         tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain", "colon"`.
         species: Optional species (or species list) to filter the slides. E.g., `"human", "mouse"`.
         custom_filter: Custom filter function that takes the metadata DataFrame (see above link) and returns a boolean Series to decide which rows should be kept.
+        top_k: Optional number of slides to keep. If `None`, keeps all slides.
         dry_run: If `True`, the function will only return the metadata of slides that match the filters.
 
     Returns:
@@ -191,6 +193,9 @@ def load_dataset(
         metadata = metadata[where]
 
     assert not metadata.empty, "No dataset found for the provided filters."
+
+    if top_k is not None:
+        metadata = metadata.head(top_k)
 
     if dry_run:
         return metadata
