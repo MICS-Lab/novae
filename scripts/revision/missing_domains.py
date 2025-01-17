@@ -3,6 +3,10 @@ from pathlib import Path
 import scanpy as sc
 
 import novae
+from novae._constants import Nums
+
+Nums.BATCH_INTER_SLIDE_RATIO = 0.5
+suffix = Nums.BATCH_INTER_SLIDE_RATIO
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -53,4 +57,4 @@ for adata, name in [(adata1_full, "v1_full"), (adata1_split, "v1_split"), (adata
     del adata.X
     for key in list(adata.layers.keys()):
         del adata.layers[key]
-    adata.write_h5ad(path / f"{name}_res2.h5ad")
+    adata.write_h5ad(path / f"{name}_res2_{suffix}.h5ad")
