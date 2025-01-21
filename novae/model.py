@@ -198,19 +198,20 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             device = utils.parse_device_args(accelerator)
             self.to(device)
 
-    def _embed_pyg_data(self, data: Batch) -> Batch:
+    def _embed_pyg_data(self, data: Batch, unique_slide: bool = True) -> Batch:
         if settings.shuffle_nodes:
             utils.shuffle_nodes(data)
         if self.training:
             data = self.augmentation(data)
-        return self.cell_embedder(data)
+        return self.cell_embedder(data, unique_slide)
 
-    def forward(self, batch: dict[str, Batch]) -> dict[str, Tensor]:
-        return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
+    def forward(self, batch: dict[str, Batch], unique_slide: bool) -> dict[str, Tensor]:
+        return {key: self.encoder(self._embed_pyg_data(data, unique_slide)) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Batch], batch_idx: int):
-        z_dict: dict[str, Tensor] = self(batch)
-        slide_id = batch["main"].get("slide_id", [None])[0]
+        slide_id = utils.get_mini_batch_slide_id(batch)
+
+        z_dict: dict[str, Tensor] = self(batch, slide_id is not None)
 
         loss, mean_entropy_normalized = self.swav_head(z_dict["main"], z_dict["view"], slide_id)
 

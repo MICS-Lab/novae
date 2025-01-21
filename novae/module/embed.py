@@ -103,7 +103,7 @@ class CellEmbedder(L.LightningModule):
 
         return np.array(indices, dtype=np.int16)
 
-    def forward(self, data: Data) -> Data:
+    def forward(self, data: Data, unique_slide: bool) -> Data:
         """Embed the input data.
 
         Args:
@@ -112,11 +112,31 @@ class CellEmbedder(L.LightningModule):
         Returns:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. Each node now has a size of `E`.
         """
-        genes_embeddings = self.embedding(data.genes_indices[0])
-        genes_embeddings = self.linear(genes_embeddings)
-        genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
+        if unique_slide:
+            genes_embeddings = self.embedding(data.genes_indices[0])
+            genes_embeddings = self.linear(genes_embeddings)
+            genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
-        data.x = data.x @ genes_embeddings
+            data.x = data.x @ genes_embeddings
+
+            return data
+
+        x = torch.zeros((len(data.x), self.embedding_size), device=data.x.device)
+
+        for i in range(data.batch_size):
+            start, stop = data.ptr[i], data.ptr[i + 1]
+
+            genes_indices = data.genes_indices[i]
+            not_padded = genes_indices != -1
+
+            genes_embeddings = self.embedding(genes_indices[not_padded])
+            genes_embeddings = self.linear(genes_embeddings)
+            genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
+
+            x[start:stop] = data.x[start:stop, not_padded] @ genes_embeddings
+
+        data.x = x
+
         return data
 
     def pca_init(self, adatas: list[AnnData] | None):

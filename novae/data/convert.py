@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 from anndata import AnnData
 from sklearn.preprocessing import LabelEncoder
 from torch import Tensor
@@ -24,6 +25,8 @@ class AnnDataTorch:
         self.adatas = adatas
         self.cell_embedder = cell_embedder
 
+        self.max_vars = max(adata.n_vars for adata in self.adatas)
+
         self.genes_indices_list = [self._adata_to_genes_indices(adata) for adata in self.adatas]
         self.tensors = None
 
@@ -34,7 +37,8 @@ class AnnDataTorch:
             self.tensors = [self.to_tensor(adata) for adata in self.adatas]
 
     def _adata_to_genes_indices(self, adata: AnnData) -> Tensor:
-        return self.cell_embedder.genes_to_indices(adata.var_names[self._keep_var(adata)])[None, :]
+        genes_indices = self.cell_embedder.genes_to_indices(adata.var_names[self._keep_var(adata)])
+        return F.pad(genes_indices, (0, self.max_vars - len(genes_indices)), value=-1)[None, :]
 
     def _keep_var(self, adata: AnnData) -> AnnData:
         return adata.var[Keys.USE_GENE]
@@ -86,6 +90,7 @@ class AnnDataTorch:
         X = torch.tensor(X, dtype=torch.float32)
         X = (X - mean) / (std + Nums.EPS)
 
+        X = F.pad(X, (0, self.max_vars - X.shape[1]), value=0)
         return X
 
     def __getitem__(self, item: tuple[int, slice]) -> tuple[Tensor, Tensor]:

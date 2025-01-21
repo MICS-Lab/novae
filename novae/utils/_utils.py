@@ -151,3 +151,16 @@ def iter_slides(adatas: AnnData | list[AnnData]):
 def get_relative_sensitivity(adata: AnnData, latent_key_origin: str, latent_key_perturbed: str) -> np.ndarray:
     y1, y0 = adata.obsm[latent_key_perturbed], adata.obsm[latent_key_origin]
     return np.linalg.norm(y1 - y0, axis=1, ord=2) / (np.linalg.norm(y0, axis=1, ord=2) + Nums.EPS)
+
+
+def get_mini_batch_slide_id(batch: dict[str, Tensor]) -> str | int | None:
+    """
+    Get the slide id of the batch.
+    Returns None if not all slide ids are the same
+    """
+    slide_id = batch["main"].get("slide_id")
+    if slide_id is None:
+        return None
+    ids = np.array(slide_id)
+    first_id = ids[0]
+    return first_id if (ids == first_id).all() else None

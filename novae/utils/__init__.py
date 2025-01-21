@@ -13,6 +13,7 @@ from ._utils import (
     sparse_std,
     iter_slides,
     get_relative_sensitivity,
+    get_mini_batch_slide_id,
 )
 from ._build import spatial_neighbors
 from ._validate import check_available_domains_key, prepare_adatas, check_has_spatial_adjancency, check_slide_name_key

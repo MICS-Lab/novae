@@ -198,11 +198,21 @@ class NovaeDataset(Dataset):
             adata_indices = np.concatenate([adata_indices, np.full_like(_obs_indices, adata_index)], axis=0)
             batched_obs_indices = np.concatenate([batched_obs_indices, _obs_indices], axis=0)
 
-        permutation = np.random.permutation(len(batched_obs_indices))
-        adata_indices = adata_indices[permutation].flatten()
-        obs_indices = batched_obs_indices[permutation].flatten()
+        inter_slides_batches_mask = np.random.binomial(
+            1, Nums.BATCH_INTER_SLIDE_RATIO, size=len(batched_obs_indices)
+        ).astype(bool)
+        res_cross = _flatten_shuffle_indices(
+            adata_indices[~inter_slides_batches_mask],
+            batched_obs_indices[~inter_slides_batches_mask],
+            flatten_after=False,
+        )
+        res_inter = _flatten_shuffle_indices(
+            adata_indices[inter_slides_batches_mask],
+            batched_obs_indices[inter_slides_batches_mask],
+            flatten_after=True,
+        )
 
-        self.shuffled_obs_ilocs = np.stack([adata_indices, obs_indices], axis=1)
+        self.shuffled_obs_ilocs = np.concatenate([res_cross, res_inter], axis=0)
 
     def _adata_slides_metadata(self, adata_index: int, obs_indices: list[int]) -> pd.DataFrame:
         obs_counts: pd.Series = self.adatas[adata_index].obs.iloc[obs_indices][Keys.SLIDE_ID].value_counts()
@@ -250,3 +260,16 @@ def _to_adjacency_view(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
     adjacency_pair: csr_matrix = adjacency_pair.tocsr()
     adjacency_pair.eliminate_zeros()
     return adjacency_pair
+
+
+def _flatten_shuffle_indices(a: np.ndarray, b: np.ndarray, flatten_after: bool = True) -> np.ndarray:
+    if flatten_after:
+        permutation = np.random.permutation(len(a))
+        a = a[permutation].flatten()
+        b = b[permutation].flatten()
+    else:
+        a, b = a.flatten(), b.flatten()
+        permutation = np.random.permutation(len(a))
+        a = a[permutation]
+        b = b[permutation]
+    return np.stack([a, b], axis=1)
