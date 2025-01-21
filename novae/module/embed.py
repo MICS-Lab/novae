@@ -12,7 +12,7 @@ from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 from torch import Tensor, nn
-from torch_geometric.data import Data
+from torch_geometric.data import Batch
 
 from .. import utils
 from .._constants import Keys
@@ -103,29 +103,23 @@ class CellEmbedder(L.LightningModule):
 
         return np.array(indices, dtype=np.int16)
 
-    def forward(self, data: Data, unique_slide: bool) -> Data:
+    def forward(self, data: Batch, unique_slide: bool) -> Batch:
         """Embed the input data.
 
         Args:
-            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. The number of node features is variable.
+            data: A Pytorch Geometric `Batch` object representing a batch of `B` graphs. The number of node features is variable.
 
         Returns:
-            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. Each node now has a size of `E`.
+            data: A Pytorch Geometric `Batch` object representing a batch of `B` graphs. Each node now has a size of `E`.
         """
         if unique_slide:  # TODO: or same panel
             data.x = self._embed(data.x, data.genes_indices[0])
-
-            return data
-
-        x = torch.zeros((len(data.x), self.embedding_size), device=data.x.device)
-
-        for i in range(data.batch_size):
-            start, stop = data.ptr[i], data.ptr[i + 1]
-
-            x[start:stop] = self._embed(data.x[start:stop], data.genes_indices[i])
-
-        data.x = x
-
+        else:
+            x = torch.zeros((data.x.shape[0], self.embedding_size), device=data.x.device)
+            for i in range(data.batch_size):
+                start, stop = data.ptr[i], data.ptr[i + 1]
+                x[start:stop] = self._embed(data.x[start:stop], data.genes_indices[i])
+            data.x = x
         return data
 
     def _embed(self, x: Tensor, genes_indices: Tensor) -> Tensor:

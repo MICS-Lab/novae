@@ -50,10 +50,10 @@ class GraphAugmentation(L.LightningModule):
         Args:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
         """
-        n_total = len(data.genes_indices[0])
-        n_subset = int(n_total * self.panel_subset_size)
+        n_vars = data.genes_indices.shape[1]
+        n_vars_subset = int(n_vars * self.panel_subset_size)
 
-        gene_subset_indices = torch.randperm(n_total)[:n_subset]
+        gene_subset_indices = torch.randperm(n_vars)[:n_vars_subset]
 
         data.x = data.x[:, gene_subset_indices]
         data.genes_indices = data.genes_indices[:, gene_subset_indices]
