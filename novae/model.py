@@ -10,7 +10,7 @@ from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
 from torch_geometric.data import Batch
 
-from . import __version__, plot, settings, utils
+from . import __version__, plot, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -173,6 +173,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         return NovaeDatamodule(
             self._to_anndata_list(adata),
             cell_embedder=self.cell_embedder,
+            augmentation=self.augmentation,
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
             n_hops_view=self.hparams.n_hops_view,
@@ -198,19 +199,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             device = utils.parse_device_args(accelerator)
             self.to(device)
 
-    def _embed_pyg_data(self, data: Batch) -> Batch:
-        if settings.shuffle_nodes:
-            utils.shuffle_nodes(data)
-        if self.training:
-            data = self.augmentation(data)
-        return self.cell_embedder(data)
-
     def forward(self, batch: dict[str, Batch]) -> dict[str, Tensor]:
-        return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
+        return {key: self.encoder(data) for key, data in batch.items()}
 
     def training_step(self, batch: dict[str, Batch], batch_idx: int):
         z_dict: dict[str, Tensor] = self(batch)
-        slide_id = batch["main"].get("slide_id", [None])[0]
+
+        slide_id = utils.get_mini_batch_slide_id(batch)
 
         loss, mean_entropy_normalized = self.swav_head(z_dict["main"], z_dict["view"], slide_id)
 
@@ -351,7 +346,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         for batch in utils.tqdm(datamodule.predict_dataloader(), desc="Computing representations"):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
+            batch_repr = self.encoder(batch["main"])
 
             representations.append(batch_repr)
 

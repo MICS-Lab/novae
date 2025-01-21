@@ -11,7 +11,7 @@ from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
 from .. import utils
 from .._constants import Keys, Nums
-from ..module import CellEmbedder
+from ..module import CellEmbedder, GraphAugmentation
 from . import AnnDataTorch
 
 log = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ class NovaeDataset(Dataset):
         self,
         adatas: list[AnnData],
         cell_embedder: CellEmbedder,
+        augmentation: GraphAugmentation,
         batch_size: int,
         n_hops_local: int,
         n_hops_view: int,
@@ -55,6 +56,7 @@ class NovaeDataset(Dataset):
         super().__init__()
         self.adatas = adatas
         self.cell_embedder = cell_embedder
+        self.augmentation = augmentation
         self.anndata_torch = AnnDataTorch(self.adatas, self.cell_embedder)
 
         self.training = False
@@ -163,14 +165,17 @@ class NovaeDataset(Dataset):
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
         x, genes_indices = self.anndata_torch[adata_index, obs_indices]
-
-        return Data(
+        data = Data(
             x=x,
             edge_index=edge_index,
             edge_attr=edge_attr,
-            genes_indices=genes_indices,
             slide_id=adata.obs[Keys.SLIDE_ID].iloc[0],
         )
+
+        if self.training:
+            data, genes_indices = self.augmentation(data, genes_indices)
+
+        return self.cell_embedder(data, genes_indices)
 
     def shuffle_obs_ilocs(self):
         """Shuffle the indices of the cells to be used in the dataset (for training only)."""

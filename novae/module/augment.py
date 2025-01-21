@@ -1,7 +1,8 @@
 import lightning as L
 import torch
+from torch import Tensor
 from torch.distributions import Exponential
-from torch_geometric.data import Batch
+from torch_geometric.data import Data
 
 
 class GraphAugmentation(L.LightningModule):
@@ -27,46 +28,49 @@ class GraphAugmentation(L.LightningModule):
 
         self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda)))
 
-    def noise(self, data: Batch):
+    def noise(self, data: Data):
         """Add noise (inplace) to the data as detailed in the article.
 
         Args:
-            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
+            data: A Pytorch Geometric `Data` object representing a graph.
         """
-        sample_shape = (data.batch_size, data.x.shape[1])
+        sample_shape = (data.x.shape[1],)
 
         additions = self.background_noise_distribution.sample(sample_shape=sample_shape).to(self.device)
         gaussian_noise = torch.randn(sample_shape, device=self.device)
         factors = (1 + gaussian_noise * self.sensitivity_noise_std).clip(0, 2)
 
-        for i in range(data.batch_size):
-            start, stop = data.ptr[i], data.ptr[i + 1]
-            data.x[start:stop] = data.x[start:stop] * factors[i] + additions[i]
+        data.x = data.x * factors + additions
 
-    def panel_subset(self, data: Batch):
+    def panel_subset(self, data: Data, genes_indices: Tensor) -> Tensor:
         """
         Keep a ratio of `panel_subset_size` of the input genes (inplace operation).
 
         Args:
-            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
+            data: A Pytorch Geometric `Data` object representing a graph.
+
+        Returns:
+            The new gene indices.
         """
-        n_total = len(data.genes_indices[0])
+        n_total = len(genes_indices)
         n_subset = int(n_total * self.panel_subset_size)
 
         gene_subset_indices = torch.randperm(n_total)[:n_subset]
 
         data.x = data.x[:, gene_subset_indices]
-        data.genes_indices = data.genes_indices[:, gene_subset_indices]
 
-    def forward(self, data: Batch) -> Batch:
+        return gene_subset_indices
+
+    def forward(self, data: Data, genes_indices: Tensor) -> tuple[Data, Tensor]:
         """Perform data augmentation (`noise` and `panel_subset`).
 
         Args:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
+            genes_indices: A `Tensor` of gene indices to use for the embedding.
 
         Returns:
-            The augmented `Data` object
+            The augmented `Data` object and the new gene indices.
         """
-        self.panel_subset(data)
+        gene_subset_indices = self.panel_subset(data, genes_indices)
         self.noise(data)
-        return data
+        return data, gene_subset_indices

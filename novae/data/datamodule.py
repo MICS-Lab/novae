@@ -2,7 +2,7 @@ import lightning as L
 from anndata import AnnData
 from torch_geometric.loader import DataLoader
 
-from ..module import CellEmbedder
+from ..module import CellEmbedder, GraphAugmentation
 from . import NovaeDataset
 
 
@@ -15,6 +15,7 @@ class NovaeDatamodule(L.LightningDataModule):
         self,
         adatas: list[AnnData],
         cell_embedder: CellEmbedder,
+        augmentation: GraphAugmentation,
         batch_size: int,
         n_hops_local: int,
         n_hops_view: int,
@@ -25,6 +26,7 @@ class NovaeDatamodule(L.LightningDataModule):
         self.dataset = NovaeDataset(
             adatas,
             cell_embedder=cell_embedder,
+            augmentation=augmentation,
             batch_size=batch_size,
             n_hops_local=n_hops_local,
             n_hops_view=n_hops_view,

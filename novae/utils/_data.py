@@ -6,9 +6,7 @@ import anndata
 import numpy as np
 import pandas as pd
 import scanpy as sc
-import torch
 from anndata import AnnData
-from torch_geometric.data import Batch
 
 from . import repository_root, spatial_neighbors, wandb_log_dir
 
@@ -253,12 +251,6 @@ def load_wandb_artifact(name: str) -> Path:
         artifact.download(root=artifact_path)
 
     return artifact_path
-
-
-def shuffle_nodes(data: Batch):
-    num_nodes = data.ptr[1:] - data.ptr[:-1]
-    perm = torch.cat([torch.randperm(n, device=data.x.device) + offset for offset, n in zip(data.ptr[:-1], num_nodes)])
-    data.x = data.x[perm]
 
 
 GENE_NAMES_SUBSET = [

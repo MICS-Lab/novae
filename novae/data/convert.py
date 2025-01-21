@@ -34,7 +34,7 @@ class AnnDataTorch:
             self.tensors = [self.to_tensor(adata) for adata in self.adatas]
 
     def _adata_to_genes_indices(self, adata: AnnData) -> Tensor:
-        return self.cell_embedder.genes_to_indices(adata.var_names[self._keep_var(adata)])[None, :]
+        return self.cell_embedder.genes_to_indices(adata.var_names[self._keep_var(adata)])
 
     def _keep_var(self, adata: AnnData) -> AnnData:
         return adata.var[Keys.USE_GENE]

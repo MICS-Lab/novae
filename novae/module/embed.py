@@ -11,7 +11,7 @@ from anndata import AnnData
 from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
-from torch import nn
+from torch import Tensor, nn
 from torch_geometric.data import Data
 
 from .. import utils
@@ -103,16 +103,17 @@ class CellEmbedder(L.LightningModule):
 
         return np.array(indices, dtype=np.int16)
 
-    def forward(self, data: Data) -> Data:
+    def forward(self, data: Data, genes_indices: Tensor) -> Data:
         """Embed the input data.
 
         Args:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. The number of node features is variable.
+            genes_indices: A `Tensor` of gene indices to use for the embedding.
 
         Returns:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. Each node now has a size of `E`.
         """
-        genes_embeddings = self.embedding(data.genes_indices[0])
+        genes_embeddings = self.embedding(genes_indices)
         genes_embeddings = self.linear(genes_embeddings)
         genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
 
