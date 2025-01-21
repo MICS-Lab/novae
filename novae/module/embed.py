@@ -11,7 +11,7 @@ from anndata import AnnData
 from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
-from torch import nn
+from torch import Tensor, nn
 from torch_geometric.data import Data
 
 from .. import utils
@@ -112,12 +112,8 @@ class CellEmbedder(L.LightningModule):
         Returns:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs. Each node now has a size of `E`.
         """
-        if unique_slide:
-            genes_embeddings = self.embedding(data.genes_indices[0])
-            genes_embeddings = self.linear(genes_embeddings)
-            genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
-
-            data.x = data.x @ genes_embeddings
+        if unique_slide:  # TODO: or same panel
+            data.x = self._embed(data.x, data.genes_indices[0])
 
             return data
 
@@ -126,18 +122,20 @@ class CellEmbedder(L.LightningModule):
         for i in range(data.batch_size):
             start, stop = data.ptr[i], data.ptr[i + 1]
 
-            genes_indices = data.genes_indices[i]
-            not_padded = genes_indices != -1
-
-            genes_embeddings = self.embedding(genes_indices[not_padded])
-            genes_embeddings = self.linear(genes_embeddings)
-            genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
-
-            x[start:stop] = data.x[start:stop, not_padded] @ genes_embeddings
+            x[start:stop] = self._embed(data.x[start:stop], data.genes_indices[i])
 
         data.x = x
 
         return data
+
+    def _embed(self, x: Tensor, genes_indices: Tensor) -> Tensor:
+        not_padded = genes_indices != -1
+
+        genes_embeddings = self.embedding(genes_indices[not_padded])
+        genes_embeddings = self.linear(genes_embeddings)
+        genes_embeddings = F.normalize(genes_embeddings, dim=0, p=2)
+
+        return x[:, not_padded] @ genes_embeddings
 
     def pca_init(self, adatas: list[AnnData] | None):
         """Initialize the Noave embeddings with PCA components.

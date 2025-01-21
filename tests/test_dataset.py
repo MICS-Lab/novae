@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import novae
-from novae._constants import Keys
+from novae._constants import Keys, Nums
 
 N_PANELS = 2
 N_SLIDES_PER_PANEL = 3
@@ -28,6 +28,7 @@ def test_single_panel():
 
 
 def test_single_panel_slide_key():
+    Nums.BATCH_INTER_SLIDE_RATIO = 1
     novae.utils.spatial_neighbors(single_adata, slide_key="slide_key")
     model = novae.Novae(single_adata)
     model._datamodule = model._init_datamodule()
@@ -36,9 +37,11 @@ def test_single_panel_slide_key():
     assert model.dataset.obs_ilocs is not None
 
     _ensure_batch_same_slide(model)
+    Nums.BATCH_INTER_SLIDE_RATIO = 0.5
 
 
 def test_multi_panel():
+    Nums.BATCH_INTER_SLIDE_RATIO = 1
     novae.utils.spatial_neighbors(adatas)
     model = novae.Novae(adatas)
     model._datamodule = model._init_datamodule()
@@ -47,9 +50,11 @@ def test_multi_panel():
     assert model.dataset.obs_ilocs is None
 
     _ensure_batch_same_slide(model)
+    Nums.BATCH_INTER_SLIDE_RATIO = 0.5
 
 
 def test_multi_panel_slide_key():
+    Nums.BATCH_INTER_SLIDE_RATIO = 1
     novae.utils.spatial_neighbors(adatas, slide_key="slide_key")
     model = novae.Novae(adatas)
     model._datamodule = model._init_datamodule()
@@ -58,6 +63,7 @@ def test_multi_panel_slide_key():
     assert model.dataset.obs_ilocs is None
 
     _ensure_batch_same_slide(model)
+    Nums.BATCH_INTER_SLIDE_RATIO = 0.5
 
 
 def _ensure_batch_same_slide(model: novae.Novae):
