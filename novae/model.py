@@ -423,10 +423,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
 
-    def plot_prototype_covariance(self, **kwargs):
-        C = self.swav_head.prototypes.data.numpy(force=True)
+    def plot_prototype_covariance(self, vmax: float | None = None, **kwargs):
+        covariance = np.cov(self.swav_head.prototypes.data.numpy(force=True))
 
-        plot._weights_clustermap(C, None, [], show_yticklabels=False, show_tissue_legend=False, **kwargs)
+        vmax = vmax or covariance.max()
+
+        plot._weights_clustermap(
+            covariance, None, [], show_yticklabels=False, show_tissue_legend=False, vmax=vmax, **kwargs
+        )
 
     def assign_domains(
         self,
