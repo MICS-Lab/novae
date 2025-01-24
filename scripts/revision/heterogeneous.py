@@ -3,7 +3,7 @@ import scanpy as sc
 
 import novae
 
-suffix = "_constants_ft"
+suffix = "_constants_ft_all"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -21,7 +21,7 @@ novae.utils.spatial_neighbors(adatas, radius=80)
 
 model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
-model.fine_tune(adatas, min_prototypes_ratio=0.25)
+model.fine_tune(adatas, min_prototypes_ratio=0.25, reference="all")
 model.compute_representations(adatas)
 
 # model.fit(max_epochs=10)
