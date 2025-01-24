@@ -3,6 +3,8 @@ import scanpy as sc
 
 import novae
 
+suffix = "_constants"
+
 adatas = [
     sc.read_h5ad(
         "/gpfs/workdir/blampeyq/novae/data/_heterogeneous/Xenium_V1_Human_Colon_Cancer_P2_CRC_Add_on_FFPE_outs.h5ad"
@@ -24,10 +26,10 @@ for level in range(7, 15):
     model.assign_domains(level=level)
 
 model.plot_prototype_weights()
-plt.savefig("/gpfs/workdir/blampeyq/novae/data/_heterogeneous/prototype_weights.pdf", bbox_inches="tight")
+plt.savefig(f"/gpfs/workdir/blampeyq/novae/data/_heterogeneous/prototype_weights_{suffix}.pdf", bbox_inches="tight")
 
 for i, adata in enumerate(adatas):
     del adata.X
     for key in list(adata.layers.keys()):
         del adata.layers[key]
-    adata.write_h5ad(f"/gpfs/workdir/blampeyq/novae/data/_heterogeneous/{i}_res.h5ad")
+    adata.write_h5ad(f"/gpfs/workdir/blampeyq/novae/data/_heterogeneous/{i}_res_{suffix}.h5ad")
