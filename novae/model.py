@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import lightning as L
 import numpy as np
@@ -306,6 +307,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata: AnnData | list[AnnData] | None = None,
         *,
         zero_shot: bool = False,
+        reference: str | int | Literal["all", "largest"] = "largest",
         accelerator: str = "cpu",
         num_workers: int | None = None,
     ) -> None:
@@ -316,6 +318,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            zero_shot: If `True`, the model will be used in zero-shot mode, i.e. without training. In this case, the model will assign each cell to a leaf based on the latent representations.
+            reference: Use only if `zero_shot=True`. Reference slide to use for the new prototypes. Can be the AnnData index, a unique slide id, or one of `["all", "largest"]`.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
         """
@@ -335,12 +339,21 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 self._compute_representations_datamodule(adata, datamodule)
 
         if self.mode.zero_shot:
-            latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas])
-            self.swav_head.set_kmeans_prototypes(latent)
-            self.swav_head.reset_clustering(only_zero_shot=True)
+            self.assign_to_kmeans_prototypes(adatas, reference)
 
-            for adata in adatas:
-                self._compute_leaves(adata, None, None)
+    def assign_to_kmeans_prototypes(
+        self, adatas: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
+    ):
+        """Compute prototypes based on the latent representations, and assign each cell to a leaf."""
+        adatas = [adatas] if isinstance(adatas, AnnData) else adatas
+        adatas_reference = _get_reference(adatas, reference)
+
+        latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas_reference])
+        self.swav_head.set_kmeans_prototypes(latent)
+        self.swav_head.reset_clustering(only_zero_shot=True)
+
+        for adata in adatas:
+            self._compute_leaves(adata, None, None)
 
     @torch.no_grad()
     def _compute_representations_datamodule(
@@ -493,6 +506,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData],
         *,
+        reference: str | int | Literal["all", "largest"] = "largest",
         accelerator: str = "cpu",
         num_workers: int | None = None,
         min_prototypes_ratio: float = 0.6,
@@ -504,6 +518,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            reference: Reference slide to use for the new prototypes. Can be the AnnData index, a unique slide id, or one of `["all", "largest"]`.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
             min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
@@ -516,10 +531,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        _adata = adata if isinstance(adata, AnnData) else max(adata, key=lambda x: x.n_obs)
-
-        datamodule = self._init_datamodule(self._prepare_adatas(_adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
-
+        datamodule = self._init_datamodule(
+            self._prepare_adatas(_get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
+        )
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
@@ -624,3 +638,34 @@ def _train(
         **trainer_kwargs,
     )
     trainer.fit(model, datamodule=datamodule)
+
+
+def _get_reference(
+    adata: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
+) -> AnnData | list[AnnData]:
+    if reference == "all":
+        return adata
+
+    if isinstance(reference, int):
+        assert isinstance(adata, list), "When providing an index, you must provide a list of AnnData objects."
+        return adata[reference]
+
+    if reference == "largest":
+
+        def _select_largest_slide(adata: AnnData):
+            counts = adata.obs[Keys.SLIDE_ID].value_counts()
+            return counts.max(), adata[adata.obs[Keys.SLIDE_ID] == counts.idxmax()]
+
+        if isinstance(adata, AnnData):
+            return _select_largest_slide(adata)[1]
+        else:
+            return max([_select_largest_slide(_adata) for _adata in adata])[1]
+
+    assert isinstance(reference, str), f"Invalid type for `reference`: {type(reference)}"
+
+    adatas = [adata] if isinstance(adata, AnnData) else adata
+    for adata in adatas:
+        if reference in adata.obs[Keys.SLIDE_ID].cat.categories:
+            return adata[adata.obs[Keys.SLIDE_ID] == reference]
+
+    raise ValueError(f"Did not found slide id `{reference}` in the provided AnnData object(s).")
