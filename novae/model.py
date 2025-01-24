@@ -191,6 +191,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 "On CPU, `num_workers != 0` can be very slow. Consider using a GPU, or setting `num_workers=0`."
             )
 
+        if accelerator in ["auto", "cuda", "gpu", "mps"] and not num_workers:
+            log.warning("On GPU, consider setting `num_workers` (e.g., 4 or 8) for better performance.")
+
         if num_workers is not None:
             self.num_workers = num_workers
 
