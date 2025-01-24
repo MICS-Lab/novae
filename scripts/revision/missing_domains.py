@@ -4,6 +4,8 @@ import scanpy as sc
 
 import novae
 
+suffix = "_one_latent"
+
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
 adata1_full = sc.read_h5ad(path / "v1_full.h5ad")
@@ -13,33 +15,9 @@ adata2_split = sc.read_h5ad(path / "v2_split.h5ad")
 
 model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
-### Full
-
-# adatas = [adata1_full, adata2_full]
-
-# model.compute_representations(adatas, zero_shot=True)
-# obs_key = model.assign_domains(adatas, level=7)
-
-# for adata in adatas:
-#     adata.obs[f"{obs_key}_full"] = adata.obs[obs_key]
-
-### Split zero-shot
-
 adatas = [adata1_split, adata2_full]
 
-model.compute_representations(adatas, zero_shot=True)
-obs_key = model.assign_domains(adatas, level=7)
-
-for adata in adatas:
-    adata.obs[f"{obs_key}_split_zs"] = adata.obs[obs_key]
-
-### Split fine tune
-
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
-
-model.init_slide_queue(adatas, min_prototypes_ratio=0.5)
-
-model.fine_tune(adatas)
+model.fine_tune(adatas, min_prototypes_ratio=0.5)
 model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, level=7)
@@ -53,4 +31,4 @@ for adata, name in [(adata1_full, "v1_full"), (adata1_split, "v1_split"), (adata
     del adata.X
     for key in list(adata.layers.keys()):
         del adata.layers[key]
-    adata.write_h5ad(path / f"{name}_res2.h5ad")
+    adata.write_h5ad(path / f"{name}_res2{suffix}.h5ad")

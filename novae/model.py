@@ -516,14 +516,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        datamodule = self._init_datamodule(self._prepare_adatas(adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
-        self.init_slide_queue(adata, min_prototypes_ratio)
+        _adata = adata if isinstance(adata, AnnData) else max(adata, key=lambda x: x.n_obs)
+
+        datamodule = self._init_datamodule(self._prepare_adatas(_adata), sample_cells=Nums.DEFAULT_SAMPLE_CELLS)
 
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes
+
+        self.init_slide_queue(adata, min_prototypes_ratio)
 
         self.fit(
             adata=adata,
