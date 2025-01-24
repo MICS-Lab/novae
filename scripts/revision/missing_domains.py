@@ -4,7 +4,7 @@ import scanpy as sc
 
 import novae
 
-suffix = "_one_latent"
+suffix = "_one_latent99"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
