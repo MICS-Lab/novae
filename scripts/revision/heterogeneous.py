@@ -3,19 +3,19 @@ import scanpy as sc
 
 import novae
 
-suffix = "_constants_ft_all"
+suffix = "_constants_ft_all2"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
 adatas = [
     sc.read_h5ad(f"{dir_name}/Xenium_V1_Human_Colon_Cancer_P2_CRC_Add_on_FFPE_outs.h5ad"),
     # sc.read_h5ad(f"{dir_name}/Xenium_V1_Human_Brain_GBM_FFPE_outs.h5ad"),
-    sc.read_h5ad(f"{dir_name}/Xenium_V1_hBoneMarrow_acute_lymphoid_leukemia_section_outs.h5ad"),
+    sc.read_h5ad(f"{dir_name}/Xenium_V1_hLymphNode_nondiseased_section_outs.h5ad"),
 ]
 
 adatas[0].uns["novae_tissue"] = "colon"
 # adatas[1].uns["novae_tissue"] = "brain"
-adatas[1].uns["novae_tissue"] = "bone_marrow"
+adatas[1].uns["novae_tissue"] = "lymph_node"
 
 novae.utils.spatial_neighbors(adatas, radius=80)
 
