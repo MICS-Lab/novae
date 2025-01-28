@@ -3,7 +3,7 @@ import scanpy as sc
 
 import novae
 
-suffix = "_constants_ft_all2"
+suffix = "_constants_fit_all2"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -19,13 +19,13 @@ adatas[1].uns["novae_tissue"] = "lymph_node"
 
 novae.utils.spatial_neighbors(adatas, radius=80)
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+model = novae.Novae(adatas, scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human")
+model.fit(max_epochs=10)
+model.compute_representations()
 
-model.fine_tune(adatas, min_prototypes_ratio=0.25, reference="all")
-model.compute_representations(adatas)
-
-# model.fit(max_epochs=10)
-# model.compute_representations()
+# model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+# model.fine_tune(adatas, min_prototypes_ratio=0.25, reference="all")
+# model.compute_representations(adatas)
 
 for level in range(7, 15):
     model.assign_domains(level=level)
