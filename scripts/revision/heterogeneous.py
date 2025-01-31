@@ -3,7 +3,7 @@ import scanpy as sc
 
 import novae
 
-suffix = "_constants_fit_all3"
+suffix = "_constants_fit_all4"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
