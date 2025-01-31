@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    queue: None | Tensor  # (n_slides, num_prototypes)
+    queue: None | Tensor  # (n_slides, QUEUE_SIZE, num_prototypes)
 
     def __init__(
         self,
@@ -137,7 +137,7 @@ class SwavHead(L.LightningModule):
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
-            A tensor of shape `(n_slides, K)`.
+            A tensor of shape `(n_slides, K)`, and a tensor of shape (K,).
         """
         max_projections = self.queue.max(dim=1).values
 
