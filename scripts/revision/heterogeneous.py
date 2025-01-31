@@ -2,8 +2,11 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 
 import novae
+from novae._constants import Nums
 
-suffix = "_constants_fit_all4"
+Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.99
+
+suffix = "_constants_fit_all5"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -20,7 +23,10 @@ adatas[1].uns["novae_tissue"] = "lymph_node"
 novae.utils.spatial_neighbors(adatas, radius=80)
 
 model = novae.Novae(
-    adatas, scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human", num_prototypes=512, temperature=0.5
+    adatas,
+    scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
+    # num_prototypes=512,
+    # temperature=0.5,
 )
 model.fit(max_epochs=10)
 model.compute_representations()
