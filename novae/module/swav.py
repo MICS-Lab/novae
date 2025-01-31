@@ -131,7 +131,14 @@ class SwavHead(L.LightningModule):
         slide_weights = weights[slide_index]
 
         ilocs = torch.where(slide_weights >= thresholds)[0]
-        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(slide_weights, self.min_prototypes).indices
+
+        if len(ilocs) >= self.min_prototypes:
+            return ilocs
+
+        other_locs = torch.where(slide_weights < thresholds)[0]
+        other_locs = other_locs[torch.topk(slide_weights[other_locs], self.min_prototypes - len(ilocs)).indices]
+
+        return torch.cat([ilocs, other_locs])
 
     def queue_weights(self) -> tuple[Tensor, Tensor]:
         """Convert the queue to a matrix of prototype weight per slide.

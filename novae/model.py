@@ -427,12 +427,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         weights, thresholds = self.swav_head.queue_weights()
         weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
 
-        where_enough_prototypes = (weights >= thresholds).sum(1) >= self.swav_head.min_prototypes
-        for i in np.where(where_enough_prototypes)[0]:
-            weights[i, weights[i] < thresholds] = 0
-        for i in np.where(~where_enough_prototypes)[0]:
-            indices_0 = np.argsort(weights[i])[: -self.swav_head.min_prototypes]
-            weights[i, indices_0] = 0
+        for i in range(len(weights)):
+            below_threshold_ilocs = np.where(weights[i] < thresholds)[0]
+            if len(thresholds) - len(below_threshold_ilocs) >= self.swav_head.min_prototypes:
+                weights[i, below_threshold_ilocs] = 0
+            else:
+                n_missing = len(thresholds) - self.swav_head.min_prototypes
+                ilocs = below_threshold_ilocs[np.argpartition(weights[i, below_threshold_ilocs], n_missing)[:n_missing]]
+                weights[i, ilocs] = 0
 
         plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
 
