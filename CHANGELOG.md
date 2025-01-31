@@ -1,7 +1,7 @@
 ## [0.2.3] - xxxx-xx-xx
 
 ### Fixed
-- Fix `model.plot_prototype_covariance`
+- Fix `model.plot_prototype_covariance` and `model.plot_prototype_weights`
 
 ## [0.2.2] - 2024-12-17
 
