@@ -50,7 +50,7 @@ def prepare_adatas(
 
     assert all(
         Keys.ADJ in adata.obsp for adata in adatas
-    ), "You need to first run `novae.utils.spatial_neighbors` to compute cell neighbors."
+    ), "You need to first run `novae.spatial_neighbors` to compute cell neighbors."
 
     _check_has_slide_id(adatas)
     _standardize_adatas(adatas)  # log1p + spatial_neighbors
@@ -71,7 +71,7 @@ def _check_has_slide_id(adata: AnnData | list[AnnData]):
         return
     assert (
         Keys.SLIDE_ID in adata.obs
-    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.utils.spatial_neighbors` first."
+    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.spatial_neighbors` first."
 
 
 def _standardize_adatas(adatas: list[AnnData]):
@@ -112,8 +112,7 @@ def _standardize_adatas(adatas: list[AnnData]):
 def check_has_spatial_adjancency(adata: AnnData):
     assert "spatial" in adata.obsm, "No spatial coordinates found in `adata.obsm['spatial']`"
     assert Keys.ADJ in adata.obsp, (
-        "No spatial adjacency found in `adata.obsp['spatial_distances']`."
-        "Consider running `novae.utils.spatial_neighbors`"
+        "No spatial adjacency found in `adata.obsp['spatial_distances']`." "Consider running `novae.spatial_neighbors`"
     )
 
 

@@ -14,12 +14,12 @@ You can follow the first section of the [main usage tutorial](../main_usage).
 
 If you have multiple slides with the same gene panel, you can concatenate them into one `AnnData` object. In that case, make sure you keep a column in `adata.obs` that denotes which cell corresponds to which slide.
 
-Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/utils/#novae.utils.spatial_neighbors).
+Then, remind this column, and pass it to [`novae.spatial_neighbors`](../../api/utils/#novae.spatial_neighbors).
 
 !!! example
     For instance, you can do:
     ```python
-    novae.utils.spatial_neighbors(adata, slide_key="my-slide-id-column")
+    novae.spatial_neighbors(adata, slide_key="my-slide-id-column")
     ```
 
 ## 3. Multiple slides, one AnnData object per slide
@@ -32,7 +32,7 @@ That case is pretty easy, since most functions and methods of Novae also support
     ```python
     adatas = [adata_1, adata_2, ...]
 
-    novae.utils.spatial_neighbors(adatas)
+    novae.spatial_neighbors(adatas)
 
     model.compute_representations(adatas, zero_shot=True)
     ```
@@ -41,14 +41,14 @@ That case is pretty easy, since most functions and methods of Novae also support
 
 If you have multiple slides and multiple panels, instead of the above option, you could have one `AnnData` object per panel, and multiple slides inside each `AnnData` object. In that case, make sure you keep a column in `adata.obs` that denotes which cell corresponds to which slide.
 
-Then, remind this column, and pass it to [`novae.utils.spatial_neighbors`](../../api/utils/#novae.utils.spatial_neighbors). The other functions don't need this argument.
+Then, remind this column, and pass it to [`novae.spatial_neighbors`](../../api/utils/#novae.spatial_neighbors). The other functions don't need this argument.
 
 !!! example
     For instance, you can do:
     ```python
     adatas = [adata_1, adata_2, ...]
 
-    novae.utils.spatial_neighbors(adatas, slide_key="my-slide-id-column")
+    novae.spatial_neighbors(adatas, slide_key="my-slide-id-column")
 
     model.compute_representations(adatas, zero_shot=True)
     ```

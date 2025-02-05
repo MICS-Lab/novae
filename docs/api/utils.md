@@ -1,4 +1,6 @@
-::: novae.utils.spatial_neighbors
+::: novae.spatial_neighbors
+
+::: novae.batch_effect_correction
 
 ::: novae.utils.quantile_scaling
 

@@ -89,7 +89,7 @@ class NovaeDataset(Dataset):
         if ratio_valid_obs < Nums.RATIO_VALID_CELLS_TH:
             log.warning(
                 f"Only {ratio_valid_obs:.2%} of the cells have a valid neighborhood.\n"
-                "Consider running `novae.utils.spatial_neighbors` with a larger `radius`."
+                "Consider running `novae.spatial_neighbors` with a larger `radius`."
             )
 
         self.valid_indices = [utils.valid_indices(adata) for adata in self.adatas]

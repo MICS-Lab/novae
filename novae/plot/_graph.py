@@ -9,7 +9,11 @@ from sklearn.cluster import AgglomerativeClustering
 
 from .. import utils
 from .._constants import Keys
-from ._utils import _subplots_per_slide, get_categorical_color_palette
+from ._utils import (
+    _get_default_cell_size,
+    _subplots_per_slide,
+    get_categorical_color_palette,
+)
 
 
 def _leaves_count(clustering: AgglomerativeClustering) -> np.ndarray:
@@ -115,7 +119,7 @@ def paga(adata: AnnData, obs_key: str | None = None, show: bool = True, **paga_p
 def connectivities(
     adata: AnnData,
     ngh_threshold: int | None = 2,
-    cell_size: int = 5,
+    cell_size: int | None = None,
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
     linewidths: float = 0.1,
@@ -129,15 +133,15 @@ def connectivities(
     in red. If `ngh_threshold` is `None`, the cells are colored by the number of neighbors.
 
     !!! info "Quality control"
-        This plot is useful to check the quality of the spatial connectivities obtained via [novae.utils.spatial_neighbors][].
+        This plot is useful to check the quality of the spatial connectivities obtained via [novae.spatial_neighbors][].
         Make sure few cells (e.g., less than 5%) have a number of neighbors below `ngh_threshold`.
-        If too many cells are isolated, you may want to increase the `radius` parameter in [novae.utils.spatial_neighbors][].
+        If too many cells are isolated, you may want to increase the `radius` parameter in [novae.spatial_neighbors][].
         Conversely, if there are some less that are really **far from each other**, but still connected, so may want to decrease the `radius` parameter to **disconnect** them.
 
     Args:
         adata: An AnnData object.
         ngh_threshold: Only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`). If `None`, cells are colored by the number of neighbors.
-        cell_size: Size of the dots for each cell.
+        cell_size: Size of the dots for each cell. By default, it is set to 80% of the median distance between cells.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         linewidths: Width of the lines/edges connecting the cells.
@@ -147,6 +151,7 @@ def connectivities(
         show: Whether to show the plot.
     """
     adatas = [adata] if isinstance(adata, AnnData) else adata
+    cell_size = cell_size or _get_default_cell_size(adatas)
 
     fig, axes = _subplots_per_slide(adatas, ncols, fig_size_per_slide)
 

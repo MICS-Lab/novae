@@ -3,6 +3,12 @@
 ### Fixed
 - Fix `model.plot_prototype_covariance`
 
+### Added
+- Infer default plot size for plots (`0.8 * median neighbor distrance`)
+
+### Changed
+- `novae.utils.spatial_neighbors` can be now called via `novae.spatial_neighbors`
+
 ## [0.2.2] - 2024-12-17
 
 ### Added

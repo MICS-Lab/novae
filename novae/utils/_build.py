@@ -297,7 +297,7 @@ def _technology_coords(adata: AnnData, technology: str) -> np.ndarray:
 
     assert (
         "spatial" not in adata.obsm
-    ), "Running `novae.utils.spatial_neighbors` with `technology` but `adata.obsm['spatial']` already exists."
+    ), "Running `novae.spatial_neighbors` with `technology` but `adata.obsm['spatial']` already exists."
 
     if technology == "cosmx":
         columns = ["CenterX_global_px", "CenterY_global_px"]
@@ -352,12 +352,12 @@ def _sanity_check_spatial_neighbors(adata: AnnData):
     if max_distance / mean_distance > Nums.MAX_MEAN_DISTANCE_RATIO:
         log.warning(
             f"The maximum distance between neighbors is {max_distance:.1f}, which is very high compared "
-            f"to the mean distance of {mean_distance:.1f}.\n Consider re-running `novae.utils.spatial_neighbors` with a different `radius` threshold."
+            f"to the mean distance of {mean_distance:.1f}.\n Consider re-running `novae.spatial_neighbors` with a different `radius` threshold."
         )
 
     mean_ngh = adata.obsp[Keys.ADJ].getnnz(axis=1).mean()
 
     if mean_ngh <= Nums.MEAN_NGH_TH_WARNING:
         log.warning(
-            f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `novae.utils.spatial_neighbors` with a different `radius` threshold."
+            f"The mean number of neighbors is {mean_ngh}, which is very low. Consider re-running `novae.spatial_neighbors` with a different `radius` threshold."
         )
