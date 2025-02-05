@@ -42,5 +42,4 @@ def _get_default_cell_size(adata: AnnData | list[AnnData]) -> float:
         Keys.ADJ in adata.obsp
     ), f"Expected {Keys.ADJ} in adata.obsp. Please run `novae.spatial_neighbors(...)` first."
 
-    median_distance = np.median(adata.obsp[Keys.ADJ].data)
-    return median_distance * 0.8
+    return np.median(adata.obsp[Keys.ADJ].data)

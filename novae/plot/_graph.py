@@ -141,7 +141,7 @@ def connectivities(
     Args:
         adata: An AnnData object.
         ngh_threshold: Only cells with a number of neighbors below this threshold are shown (with color `color_isolated_cells`). If `None`, cells are colored by the number of neighbors.
-        cell_size: Size of the dots for each cell. By default, it is set to 80% of the median distance between cells.
+        cell_size: Size of the dots for each cell. By default, it uses the median distance between neighbor cells.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         linewidths: Width of the lines/edges connecting the cells.

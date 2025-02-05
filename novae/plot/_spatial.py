@@ -41,7 +41,7 @@ def domains(
         adata: An `AnnData` object, or a list of `AnnData` objects.
         obs_key: Name of the key from `adata.obs` containing the Novae domains. By default, the last available domain key is shown.
         slide_name_key: Key of `adata.obs` that contains the slide names. By default, uses the Novae unique slide ID.
-        cell_size: Size of the cells or spots. By default, it is calculated based on the median distance between cells.
+        cell_size: Size of the cells or spots. By default, it uses the median distance between neighbor cells.
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
@@ -128,7 +128,7 @@ def spatially_variable_genes(
         adata: An `AnnData` object corresponding to one slide.
         obs_key: Key in `adata.obs` that contains the domains. By default, it will use the last available Novae domain key.
         top_k: Number of SVG to be shown.
-        cell_size: Size of the cells or spots (`spot_size` argument of `sc.pl.spatial`). By default, it is calculated based on the median distance between cells.
+        cell_size: Size of the cells or spots (`spot_size` argument of `sc.pl.spatial`). By default, it uses the median distance between neighbor cells.
         min_positive_ratio: Genes whose "ratio of cells expressing it" is lower than this threshold are not considered.
         return_list: Whether to return the list of SVG instead of plotting them.
         show: Whether to show the plot.
