@@ -5,8 +5,9 @@ import novae
 from novae._constants import Nums
 
 Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
+Nums.WARMUP_EPOCHS = 4
 
-suffix = "_constants_fit_all6"
+suffix = "_constants_fit_all7"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
