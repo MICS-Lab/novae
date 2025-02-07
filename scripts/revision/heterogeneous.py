@@ -7,7 +7,7 @@ from novae._constants import Nums
 Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
 Nums.WARMUP_EPOCHS = 4
 
-suffix = "_constants_fit_all7"
+suffix = "_constants_fit_all8"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -27,6 +27,12 @@ model = novae.Novae(
     adatas,
     scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
     min_prototypes_ratio=0.3,
+    heads=16,
+    hidden_size=128,
+    temperature=0.1,
+    num_prototypes=1048,
+    background_noise_lambda=5,
+    panel_subset_size=0.8,
     # num_prototypes=512,
     # temperature=0.5,
 )
