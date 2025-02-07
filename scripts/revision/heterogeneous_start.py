@@ -25,17 +25,17 @@ for adata in adatas:
 
 novae.utils.spatial_neighbors(adatas, radius=80)
 
-model = novae.Novae(adatas)
-model.mode.trained = True
-model.compute_representations(adatas)
-model.assign_domains(adatas)
+# model = novae.Novae(adatas)
+# model.mode.trained = True
+# model.compute_representations(adatas)
+# model.assign_domains(adatas)
 
-adata = sc.concat(adatas, join="inner")
-adata = sc.pp.subsample(adata, n_obs=100_000, copy=True)
-sc.pp.neighbors(adata, use_rep="novae_latent")
-sc.tl.umap(adata)
-sc.pl.umap(adata, color=["novae_domains_7", "novae_tissue"])
-plt.savefig(f"{dir_name}/umap_start{suffix}.png", bbox_inches="tight")
+# adata = sc.concat(adatas, join="inner")
+# adata = sc.pp.subsample(adata, n_obs=100_000, copy=True)
+# sc.pp.neighbors(adata, use_rep="novae_latent")
+# sc.tl.umap(adata)
+# sc.pl.umap(adata, color=["novae_domains_7", "novae_tissue"])
+# plt.savefig(f"{dir_name}/umap_start{suffix}.png", bbox_inches="tight")
 
 model = novae.Novae(
     adatas,
