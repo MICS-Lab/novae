@@ -2,6 +2,7 @@
 
 ### Fixed
 - Fix `model.plot_prototype_covariance` and `model.plot_prototype_weights`
+- Edge case: ensure that even negative max-weights are above the prototype threshold
 
 ## [0.2.2] - 2024-12-17
 

@@ -149,6 +149,7 @@ class SwavHead(L.LightningModule):
         max_projections = self.queue.max(dim=1).values
 
         thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
+        thresholds -= 1 - Nums.QUEUE_WEIGHT_THRESHOLD_RATIO  # ensure that for max-weights < 0 are above the threshold
 
         return max_projections, thresholds
 

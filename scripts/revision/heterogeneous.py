@@ -4,9 +4,9 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.99
+Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
 
-suffix = "_constants_fit_all5"
+suffix = "_constants_fit_all6"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -25,6 +25,7 @@ novae.utils.spatial_neighbors(adatas, radius=80)
 model = novae.Novae(
     adatas,
     scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
+    min_prototypes_ratio=0.3,
     # num_prototypes=512,
     # temperature=0.5,
 )
