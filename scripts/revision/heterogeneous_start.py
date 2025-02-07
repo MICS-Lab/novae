@@ -31,9 +31,10 @@ model.compute_representations(adatas)
 model.assign_domains(adatas)
 
 adata = sc.concat(adatas, join="inner")
+adata = sc.pp.subsample(adata, n_obs=100_000, copy=True)
 sc.pp.neighbors(adata, use_rep="novae_latent")
 sc.tl.umap(adata)
-sc.pl.umap(adata, color=["novae_domains_7", "novae_sid"])
+sc.pl.umap(adata, color=["novae_domains_7", "novae_tissue"])
 plt.savefig(f"{dir_name}/umap_start{suffix}.png", bbox_inches="tight")
 
 model = novae.Novae(
@@ -45,7 +46,8 @@ model.compute_representations(adatas)
 model.assign_domains(adatas)
 
 adata = sc.concat(adatas, join="inner")
+adata = sc.pp.subsample(adata, n_obs=100_000, copy=True)
 sc.pp.neighbors(adata, use_rep="novae_latent")
 sc.tl.umap(adata)
-sc.pl.umap(adata, color=["novae_domains_7", "novae_sid"])
+sc.pl.umap(adata, color=["novae_domains_7", "novae_tissue"])
 plt.savefig(f"{dir_name}/umap_start_scgpt{suffix}.png", bbox_inches="tight")
