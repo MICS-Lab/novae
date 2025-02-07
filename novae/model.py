@@ -293,7 +293,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         try:
             model = cls.load_from_checkpoint(artifact_path, map_location=map_location, strict=False, **kwargs)
-        except:
+        except TypeError:
             ckpt_version = torch.load(artifact_path, map_location=map_location).get(Keys.NOVAE_VERSION, "unknown")
             raise ValueError(f"The model was trained with `novae=={ckpt_version}`, but your version is {__version__}")
 
