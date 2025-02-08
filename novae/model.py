@@ -37,7 +37,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         embedding_size: int = 100,
-        min_prototypes_ratio: float = 0.6,
+        unshared_prototypes_ratio: float = 0.4,
         n_hops_local: int = 2,
         n_hops_view: int = 2,
         temperature: float = 0.1,
@@ -58,7 +58,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             embedding_size: Size of the embeddings of the genes (`E` in the article). Do not use it when loading embeddings from scGPT.
-            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
+            unshared_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
             n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
             temperature: Temperature used in the cross-entropy loss.
@@ -98,26 +98,25 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._num_workers = 0
         self._model_name = None
         self._datamodule = None
-        self.init_slide_queue(self.adatas, min_prototypes_ratio)
+        self.init_unshared_prototypes(self.adatas, unshared_prototypes_ratio)
 
-    def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float) -> None:
+    def init_unshared_prototypes(self, adata: AnnData | list[AnnData] | None, unshared_prototypes_ratio: float) -> None:
         """
         Initialize the slide-queue for the SwAV head.
         This can be used before training (`fit` or `fine_tune`) when there are potentially slide-specific or condition-specific prototypes.
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
+            unshared_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
         """
-        self.hparams.min_prototypes_ratio = min_prototypes_ratio
+        self.hparams.unshared_prototypes_ratio = unshared_prototypes_ratio
 
-        if adata is None or min_prototypes_ratio == 1:
+        if adata is None or unshared_prototypes_ratio == 0:
             return
 
         slide_ids = list(utils.unique_obs(adata, Keys.SLIDE_ID))
         if len(slide_ids) > 1:
-            self.swav_head.set_min_prototypes(min_prototypes_ratio)
-            self.swav_head.init_queue(slide_ids)
+            self.swav_head.init_unshared_prototypes(slide_ids, unshared_prototypes_ratio)
 
     def __repr__(self) -> str:
         info_dict = {
@@ -229,7 +228,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.datamodule.dataset.shuffle_obs_ilocs()
 
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
-        self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
+        require_grad = self.mode.pretrained or after_warm_up
+
+        self.swav_head._shared_prototypes.requires_grad_(require_grad)
+        if self.swav_head.unshared_prototypes is not None:
+            for prototypes in self.swav_head.unshared_prototypes.values():
+                prototypes.requires_grad_(require_grad)
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
@@ -420,32 +424,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **kwargs,
         )
 
-    def plot_prototype_weights(self, assign_zeros: bool = True, **kwargs: int):
-        """Plot the weights of the prototypes per slide."""
-
-        assert (
-            self.swav_head.queue is not None
-        ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
-
-        weights, thresholds = self.swav_head.queue_weights()
-        weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
-
-        if assign_zeros:
-            for i in range(len(weights)):
-                below_threshold_ilocs = np.where(weights[i] < thresholds)[0]
-                if len(thresholds) - len(below_threshold_ilocs) >= self.swav_head.min_prototypes:
-                    weights[i, below_threshold_ilocs] = 0
-                else:
-                    n_missing = len(thresholds) - self.swav_head.min_prototypes
-                    ilocs = below_threshold_ilocs[
-                        np.argpartition(weights[i, below_threshold_ilocs], n_missing)[:n_missing]
-                    ]
-                    weights[i, ilocs] = 0
-
-        plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
-
     def plot_prototype_covariance(self, vmax: float | None = None, **kwargs):
-        covariance = np.cov(self.swav_head.prototypes.data.numpy(force=True))
+        covariance = np.cov(self.swav_head._shared_prototypes.data.numpy(force=True))
 
         vmax = vmax or covariance.max()
 
@@ -517,7 +497,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         reference: str | int | Literal["all", "largest"] = "largest",
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        min_prototypes_ratio: float = 0.6,
+        unshared_prototypes_ratio: float = 0.4,
         lr: float = 1e-3,
         max_epochs: int = 4,
         **fit_kwargs: int,
@@ -529,7 +509,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             reference: Reference slide to use for the new prototypes. Can be the AnnData index, a unique slide id, or one of `["all", "largest"]`.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
-            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
+            unshared_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             lr: Model learning rate.
             max_epochs: Maximum number of training epochs.
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
@@ -545,10 +525,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
 
-        self.swav_head._prototypes = self.swav_head._kmeans_prototypes
+        self.swav_head._shared_prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes
 
-        self.init_slide_queue(adata, min_prototypes_ratio)
+        self.init_unshared_prototypes(adata, unshared_prototypes_ratio)
 
         self.fit(
             adata=adata,

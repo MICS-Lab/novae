@@ -1,11 +1,13 @@
 import logging
 import math
 
+import anndata
 import lightning as L
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from anndata import AnnData
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from torch import Tensor, nn
 
@@ -16,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    queue: None | Tensor  # (n_slides, QUEUE_SIZE, num_prototypes)
+    unshared_prototypes: nn.ParameterDict | None
 
     def __init__(
         self,
@@ -38,34 +40,32 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
 
-        self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
-        self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
-        self.normalize_prototypes()
-        self.min_prototypes = 0
-
-        self.queue = None
+        self._shared_prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
+        self._shared_prototypes = nn.init.kaiming_uniform_(self._shared_prototypes, a=math.sqrt(5), mode="fan_out")
+        self.normalize_prototypes(self._shared_prototypes)
+        self.unshared_prototypes = None
 
         self.reset_clustering()
 
-    def set_min_prototypes(self, min_prototypes_ratio: float):
-        self.min_prototypes = int(self.num_prototypes * min_prototypes_ratio)
+    def init_unshared_prototypes(self, slide_ids: list[str], unshared_prototypes_ratio: float) -> None:
+        n_unshared_prototypes = int(self.num_prototypes * unshared_prototypes_ratio)
 
-    def init_queue(self, slide_ids: list[str]) -> None:
-        """Initialize the slide-queue.
+        self.unshared_prototypes = nn.ParameterDict(
+            {
+                str(slide_id): nn.Parameter(torch.empty((n_unshared_prototypes, self.output_size)))
+                for slide_id in slide_ids
+            }
+        )
 
-        Args:
-            slide_ids: A list of slide ids.
-        """
-        del self.queue
-
-        shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
-        self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
-
-        self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}
+        for slide_id in slide_ids:
+            self.unshared_prototypes[str(slide_id)] = nn.init.kaiming_uniform_(
+                self.unshared_prototypes[str(slide_id)], a=math.sqrt(5), mode="fan_out"
+            )
+            self.normalize_prototypes(self.unshared_prototypes[str(slide_id)])
 
     @torch.no_grad()
-    def normalize_prototypes(self):
-        self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
+    def normalize_prototypes(self, prototypes: Tensor):
+        prototypes.data = F.normalize(prototypes.data, dim=1, p=2)
 
     def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
         """Compute the SwAV loss for two batches of neighborhood graph views.
@@ -77,17 +77,15 @@ class SwavHead(L.LightningModule):
         Returns:
             The SwAV loss, and the mean entropy normalized (for monitoring).
         """
-        self.normalize_prototypes()
+        self.normalize_prototypes(self._shared_prototypes)
+        if slide_id is not None:
+            self.normalize_prototypes(self.unshared_prototypes[str(slide_id)])
 
-        projections1 = self.projection(z1)  # (B, K)
-        projections2 = self.projection(z2)  # (B, K)
+        projections1 = self.projection(z1, slide_id)  # (B, K)
+        projections2 = self.projection(z2, slide_id)  # (B, K)
 
-        ilocs = self.prototype_ilocs(projections1, slide_id)
-
-        projections1, projections2 = projections1[:, ilocs], projections2[:, ilocs]
-
-        q1 = self.sinkhorn(projections1)  # (B, K) or (B, len(ilocs))
-        q2 = self.sinkhorn(projections2)  # (B, K) or (B, len(ilocs))
+        q1 = self.sinkhorn(projections1)  # (B, K)
+        q2 = self.sinkhorn(projections2)  # (B, K)
 
         loss = -0.5 * (self.cross_entropy_loss(q1, projections2) + self.cross_entropy_loss(q2, projections1))
 
@@ -96,7 +94,7 @@ class SwavHead(L.LightningModule):
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
-    def projection(self, z: Tensor) -> Tensor:
+    def projection(self, z: Tensor, slide_id: str | None) -> Tensor:
         """Compute the projection of the (normalized) representations over the prototypes.
 
         Args:
@@ -105,53 +103,13 @@ class SwavHead(L.LightningModule):
         Returns:
             The projections of size `(B, K)`.
         """
+        prototypes = self._shared_prototypes
+
+        if slide_id is not None:
+            prototypes = torch.cat([prototypes, self.unshared_prototypes[str(slide_id)]])
+
         z_normalized = F.normalize(z, dim=1, p=2)
-        return z_normalized @ self.prototypes.T
-
-    @torch.no_grad()
-    def prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
-        """Get the indices of the prototypes to use for the current slide.
-
-        Args:
-            projections: Projections of the (normalized) representations over the prototypes, of size `(B, K)`.
-            slide_id: ID of the slide, or `None`.
-
-        Returns:
-            The indices of the prototypes to use, or an `Ellipsis` if all prototypes.
-        """
-        if (self.queue is None) or (slide_id is None) or self.mode.zero_shot:
-            return ...
-
-        slide_index = self.slide_label_encoder[slide_id]
-
-        self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
-        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]  # top3 more robust than max
-
-        weights, thresholds = self.queue_weights()
-        slide_weights = weights[slide_index]
-
-        ilocs = torch.where(slide_weights >= thresholds)[0]
-
-        if len(ilocs) >= self.min_prototypes:
-            return ilocs
-
-        other_locs = torch.where(slide_weights < thresholds)[0]
-        other_locs = other_locs[torch.topk(slide_weights[other_locs], self.min_prototypes - len(ilocs)).indices]
-
-        return torch.cat([ilocs, other_locs])
-
-    def queue_weights(self) -> tuple[Tensor, Tensor]:
-        """Convert the queue to a matrix of prototype weight per slide.
-
-        Returns:
-            A tensor of shape `(n_slides, K)`, and a tensor of shape (K,).
-        """
-        max_projections = self.queue.max(dim=1).values
-
-        thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
-        thresholds -= 1 - Nums.QUEUE_WEIGHT_THRESHOLD_RATIO  # ensure that for max-weights < 0 are above the threshold
-
-        return max_projections, thresholds
+        return z_normalized @ prototypes.T
 
     @torch.no_grad()
     def sinkhorn(self, projections: Tensor) -> Tensor:
@@ -191,7 +149,7 @@ class SwavHead(L.LightningModule):
 
     @property
     def prototypes(self) -> nn.Parameter:
-        return self._kmeans_prototypes if self.mode.zero_shot else self._prototypes
+        return self._kmeans_prototypes if self.mode.zero_shot else self._shared_prototypes
 
     @property
     def clustering(self) -> AgglomerativeClustering:
@@ -264,6 +222,18 @@ class SwavHead(L.LightningModule):
             if _n_domains == n_domains:
                 return level
         raise ValueError(f"Could not find a level with {n_domains=}")
+
+    def _adata_prototypes(self) -> AnnData:
+        def _to_adata(prototypes: Tensor, name: str = "shared") -> AnnData:
+            adata = AnnData(X=prototypes.numpy(force=True))
+            adata.obs["name"] = name
+            return adata
+
+        return anndata.concat(
+            [_to_adata(self._shared_prototypes)]
+            + [_to_adata(protos, name=name) for name, protos in self.unshared_prototypes.items()],
+            index_unique="-",
+        )
 
 
 @torch.no_grad()
