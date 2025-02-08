@@ -7,7 +7,7 @@ from novae._constants import Nums
 Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
 Nums.WARMUP_EPOCHS = 4
 
-suffix = "_constants_fit_all8"
+suffix = "_constants_fit_all9"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -30,13 +30,13 @@ model = novae.Novae(
     heads=16,
     hidden_size=128,
     temperature=0.1,
-    num_prototypes=1048,
+    num_prototypes=1024,
     background_noise_lambda=5,
     panel_subset_size=0.8,
     # num_prototypes=512,
     # temperature=0.5,
 )
-model.fit(max_epochs=10)
+model.fit(max_epochs=30)
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
@@ -48,6 +48,8 @@ for level in range(7, 15):
 
 model.plot_prototype_weights()
 plt.savefig(f"{dir_name}/prototype_weights{suffix}.pdf", bbox_inches="tight")
+model.plot_prototype_weights(assign_zeros=False)
+plt.savefig(f"{dir_name}/prototype_weights{suffix}_nz.pdf", bbox_inches="tight")
 
 for i, adata in enumerate(adatas):
     del adata.X

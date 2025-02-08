@@ -420,7 +420,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **kwargs,
         )
 
-    def plot_prototype_weights(self, **kwargs: int):
+    def plot_prototype_weights(self, assign_zeros: bool = True, **kwargs: int):
         """Plot the weights of the prototypes per slide."""
 
         assert (
@@ -430,14 +430,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         weights, thresholds = self.swav_head.queue_weights()
         weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
 
-        for i in range(len(weights)):
-            below_threshold_ilocs = np.where(weights[i] < thresholds)[0]
-            if len(thresholds) - len(below_threshold_ilocs) >= self.swav_head.min_prototypes:
-                weights[i, below_threshold_ilocs] = 0
-            else:
-                n_missing = len(thresholds) - self.swav_head.min_prototypes
-                ilocs = below_threshold_ilocs[np.argpartition(weights[i, below_threshold_ilocs], n_missing)[:n_missing]]
-                weights[i, ilocs] = 0
+        if assign_zeros:
+            for i in range(len(weights)):
+                below_threshold_ilocs = np.where(weights[i] < thresholds)[0]
+                if len(thresholds) - len(below_threshold_ilocs) >= self.swav_head.min_prototypes:
+                    weights[i, below_threshold_ilocs] = 0
+                else:
+                    n_missing = len(thresholds) - self.swav_head.min_prototypes
+                    ilocs = below_threshold_ilocs[
+                        np.argpartition(weights[i, below_threshold_ilocs], n_missing)[:n_missing]
+                    ]
+                    weights[i, ilocs] = 0
 
         plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
 
