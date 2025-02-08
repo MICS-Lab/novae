@@ -5,7 +5,7 @@ import scanpy as sc
 
 import novae
 
-suffix = "_su_0"
+suffix = "_su_1"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -15,7 +15,16 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 adatas = [adata1_split, adata2_full]
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
-model = novae.Novae(adatas)
+model = novae.Novae(
+    adatas,
+    scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
+    heads=16,
+    hidden_size=128,
+    temperature=0.1,
+    num_prototypes=1024,
+    background_noise_lambda=5,
+    panel_subset_size=0.8,
+)
 
 adata_prototypes = model.swav_head._adata_prototypes()
 sc.pp.neighbors(adata_prototypes)
