@@ -1,7 +1,8 @@
 ## [0.2.3] - xxxx-xx-xx
 
 ### Fixed
-- Fix `model.plot_prototype_covariance`
+- Fix `model.plot_prototype_covariance` and `model.plot_prototype_weights`
+- Edge case: ensure that even negative max-weights are above the prototype threshold
 
 ### Added
 - Infer default plot size for plots (median neighbors distrance)

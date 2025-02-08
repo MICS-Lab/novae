@@ -11,4 +11,4 @@ module load anaconda3/2022.10/gcc-11.2.0 && source activate novae
 cd /gpfs/workdir/blampeyq/novae/scripts/revision
 
 # Execute training
-python -u $1.py
+python -u $1

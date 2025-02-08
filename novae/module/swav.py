@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class SwavHead(L.LightningModule):
-    queue: None | Tensor  # (n_slides, num_prototypes)
+    queue: None | Tensor  # (n_slides, QUEUE_SIZE, num_prototypes)
 
     def __init__(
         self,
@@ -131,17 +131,25 @@ class SwavHead(L.LightningModule):
         slide_weights = weights[slide_index]
 
         ilocs = torch.where(slide_weights >= thresholds)[0]
-        return ilocs if len(ilocs) >= self.min_prototypes else torch.topk(slide_weights, self.min_prototypes).indices
+
+        if len(ilocs) >= self.min_prototypes:
+            return ilocs
+
+        other_locs = torch.where(slide_weights < thresholds)[0]
+        other_locs = other_locs[torch.topk(slide_weights[other_locs], self.min_prototypes - len(ilocs)).indices]
+
+        return torch.cat([ilocs, other_locs])
 
     def queue_weights(self) -> tuple[Tensor, Tensor]:
         """Convert the queue to a matrix of prototype weight per slide.
 
         Returns:
-            A tensor of shape `(n_slides, K)`.
+            A tensor of shape `(n_slides, K)`, and a tensor of shape (K,).
         """
         max_projections = self.queue.max(dim=1).values
 
         thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
+        thresholds -= 1 - Nums.QUEUE_WEIGHT_THRESHOLD_RATIO  # ensure that for max-weights < 0 are above the threshold
 
         return max_projections, thresholds
 
