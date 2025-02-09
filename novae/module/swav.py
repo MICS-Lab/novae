@@ -94,7 +94,7 @@ class SwavHead(L.LightningModule):
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
 
-    def projection(self, z: Tensor, slide_id: str | None) -> Tensor:
+    def projection(self, z: Tensor, slide_id: str | None = None) -> Tensor:
         """Compute the projection of the (normalized) representations over the prototypes.
 
         Args:
@@ -103,10 +103,11 @@ class SwavHead(L.LightningModule):
         Returns:
             The projections of size `(B, K)`.
         """
-        prototypes = self._shared_prototypes
-
         if slide_id is not None:
+            prototypes = self._shared_prototypes
             prototypes = torch.cat([prototypes, self.unshared_prototypes[str(slide_id)]])
+        else:
+            prototypes = self.prototypes
 
         z_normalized = F.normalize(z, dim=1, p=2)
         return z_normalized @ prototypes.T
@@ -149,7 +150,10 @@ class SwavHead(L.LightningModule):
 
     @property
     def prototypes(self) -> nn.Parameter:
-        return self._kmeans_prototypes if self.mode.zero_shot else self._shared_prototypes
+        if self.mode.zero_shot:
+            return self._kmeans_prototypes
+        else:
+            return torch.cat([self._shared_prototypes] + list(self.unshared_prototypes.values()))
 
     @property
     def clustering(self) -> AgglomerativeClustering:

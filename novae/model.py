@@ -213,7 +213,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def training_step(self, batch: dict[str, Batch], batch_idx: int):
         z_dict: dict[str, Tensor] = self(batch)
-        slide_id = batch["main"].get("slide_id", [None])[0]
+        slide_id = batch["main"]["slide_id"][0]
 
         loss, mean_entropy_normalized = self.swav_head(z_dict["main"], z_dict["view"], slide_id)
 
