@@ -3,22 +3,28 @@ from pathlib import Path
 import scanpy as sc
 
 import novae
+from novae._constants import Nums
 
-suffix = "_one_latent99"
+Nums.WARMUP_EPOCHS = 3
+
+suffix = "_sub_select0"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
-adata1_full = sc.read_h5ad(path / "v1_full.h5ad")
 adata1_split = sc.read_h5ad(path / "v1_split.h5ad")
 adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
-adata2_split = sc.read_h5ad(path / "v2_split.h5ad")
+# adata2_split = sc.read_h5ad(path / "v2_split.h5ad")
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
 adatas = [adata1_split, adata2_full]
 
-model.fine_tune(adatas, min_prototypes_ratio=0.5)
-model.compute_representations(adatas)
+model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128)
+model.fit(max_epochs=20)
+model.compute_representations()
+
+# model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+# model.fine_tune(adatas, min_prototypes_ratio=0.5)
+# model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, level=7)
 
@@ -27,7 +33,7 @@ for adata in adatas:
 
 ### Save
 
-for adata, name in [(adata1_full, "v1_full"), (adata1_split, "v1_split"), (adata2_full, "v2_full")]:
+for adata, name in [(adata1_split, "v1_split"), (adata2_full, "v2_full")]:
     del adata.X
     for key in list(adata.layers.keys()):
         del adata.layers[key]

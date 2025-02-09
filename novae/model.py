@@ -228,6 +228,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
+        self.swav_head.update_ilocs()
+
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
         self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
 
@@ -420,29 +422,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             **kwargs,
         )
 
-    def plot_prototype_weights(self, assign_zeros: bool = True, **kwargs: int):
-        """Plot the weights of the prototypes per slide."""
+    def plot_prototype_weights(self, **kwargs: int):
+        import seaborn as sns
 
-        assert (
-            self.swav_head.queue is not None
-        ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
+        ilocs = np.zeros((len(self.swav_head.prototypes_ilocs), self.hparams.num_prototypes))
+        for i, indices in enumerate(self.swav_head.prototypes_ilocs):
+            ilocs[i, indices] = 1
 
-        weights, thresholds = self.swav_head.queue_weights()
-        weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
-
-        if assign_zeros:
-            for i in range(len(weights)):
-                below_threshold_ilocs = np.where(weights[i] < thresholds)[0]
-                if len(thresholds) - len(below_threshold_ilocs) >= self.swav_head.min_prototypes:
-                    weights[i, below_threshold_ilocs] = 0
-                else:
-                    n_missing = len(thresholds) - self.swav_head.min_prototypes
-                    ilocs = below_threshold_ilocs[
-                        np.argpartition(weights[i, below_threshold_ilocs], n_missing)[:n_missing]
-                    ]
-                    weights[i, ilocs] = 0
-
-        plot._weights_clustermap(weights, self.adatas, list(self.swav_head.slide_label_encoder.keys()), **kwargs)
+        sns.clustermap(ilocs)
 
     def plot_prototype_covariance(self, vmax: float | None = None, **kwargs):
         covariance = np.cov(self.swav_head.prototypes.data.numpy(force=True))

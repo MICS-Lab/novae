@@ -44,6 +44,7 @@ class SwavHead(L.LightningModule):
         self.min_prototypes = 0
 
         self.queue = None
+        self.prototypes_ilocs = None
 
         self.reset_clustering()
 
@@ -59,7 +60,7 @@ class SwavHead(L.LightningModule):
         del self.queue
 
         shape = (len(slide_ids), Nums.QUEUE_SIZE, self.num_prototypes)
-        self.register_buffer("queue", torch.full(shape, 1 / self.num_prototypes))
+        self.register_buffer("queue", torch.ones(shape))
 
         self.slide_label_encoder = {slide_id: i for i, slide_id in enumerate(slide_ids)}
 
@@ -82,7 +83,7 @@ class SwavHead(L.LightningModule):
         projections1 = self.projection(z1)  # (B, K)
         projections2 = self.projection(z2)  # (B, K)
 
-        ilocs = self.prototype_ilocs(projections1, slide_id)
+        ilocs = self.get_prototypes_ilocs(projections1, slide_id)
 
         projections1, projections2 = projections1[:, ilocs], projections2[:, ilocs]
 
@@ -109,7 +110,7 @@ class SwavHead(L.LightningModule):
         return z_normalized @ self.prototypes.T
 
     @torch.no_grad()
-    def prototype_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
+    def get_prototypes_ilocs(self, projections: Tensor, slide_id: str | None = None) -> Tensor:
         """Get the indices of the prototypes to use for the current slide.
 
         Args:
@@ -125,33 +126,51 @@ class SwavHead(L.LightningModule):
         slide_index = self.slide_label_encoder[slide_id]
 
         self.queue[slide_index, 1:] = self.queue[slide_index, :-1].clone()
-        self.queue[slide_index, 0] = projections.topk(3, dim=0).values[-1]  # top3 more robust than max
 
-        weights, thresholds = self.queue_weights()
-        slide_weights = weights[slide_index]
+        indices = projections.argmax(dim=1)
+        count = torch.bincount(indices, minlength=self.num_prototypes)
+        self.queue[slide_index, 0] = count / len(indices) * self.num_prototypes
 
-        ilocs = torch.where(slide_weights >= thresholds)[0]
+        if self.prototypes_ilocs is None:
+            return ...
 
-        if len(ilocs) >= self.min_prototypes:
-            return ilocs
+        return self.prototypes_ilocs[slide_index]
 
-        other_locs = torch.where(slide_weights < thresholds)[0]
-        other_locs = other_locs[torch.topk(slide_weights[other_locs], self.min_prototypes - len(ilocs)).indices]
+    def update_ilocs(self):
+        self.hierarchical_clustering()
 
-        return torch.cat([ilocs, other_locs])
+        groups = self.clusters_levels[-30]
 
-    def queue_weights(self) -> tuple[Tensor, Tensor]:
-        """Convert the queue to a matrix of prototype weight per slide.
+        df_count = pd.DataFrame(self.queue.mean(dim=1).numpy(force=True).T)
+        group_counts: pd.DataFrame = df_count.groupby(groups).sum()
+        group_counts[group_counts.sum(1) == 0] = self.num_prototypes
 
-        Returns:
-            A tensor of shape `(n_slides, K)`, and a tensor of shape (K,).
-        """
-        max_projections = self.queue.max(dim=1).values
+        group_size = pd.Series(groups).value_counts()[group_counts.index]
 
-        thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO
-        thresholds -= 1 - Nums.QUEUE_WEIGHT_THRESHOLD_RATIO  # ensure that for max-weights < 0 are above the threshold
+        for group_id, size in group_size.items():  # force all groups to be fully used
+            if group_counts.loc[group_id].max() < size:
+                group_counts.loc[group_id, group_counts.loc[group_id].argmax()] = size
 
-        return max_projections, thresholds
+        group_counts = group_counts.apply(np.ceil).astype(int).clip(0, group_size.values, axis=0)
+
+        for column in group_counts.columns:  # force using at least min_prototypes
+            if group_counts[column].sum() < self.min_prototypes:
+                group_counts.loc[:, column] = group_size.values
+
+        n_slides = len(group_counts.columns)
+        prototypes_ilocs = [[] for _ in range(n_slides)]
+
+        for group_id in group_counts.index:
+            proto_indices = np.where(groups == group_id)[0]
+            for i in range(n_slides):
+                n_selected = group_counts.loc[group_id, i]
+                if n_selected == len(proto_indices):
+                    prototypes_ilocs[i].extend(proto_indices.tolist())
+                elif n_selected > 0:
+                    selected: np.ndarray = np.random.choice(proto_indices, n_selected, replace=False)
+                    prototypes_ilocs[i].extend(selected.tolist())
+
+        self.prototypes_ilocs = [torch.tensor(ilocs) for ilocs in prototypes_ilocs]
 
     @torch.no_grad()
     def sinkhorn(self, projections: Tensor) -> Tensor:

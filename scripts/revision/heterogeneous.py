@@ -4,10 +4,10 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
-Nums.WARMUP_EPOCHS = 4
+# Nums.QUEUE_WEIGHT_THRESHOLD_RATIO = 0.9999999
+Nums.WARMUP_EPOCHS = 2
 
-suffix = "_constants_fit_all9"
+suffix = "_sub_select0"
 
 dir_name = "/gpfs/workdir/blampeyq/novae/data/_heterogeneous"
 
@@ -26,7 +26,7 @@ novae.utils.spatial_neighbors(adatas, radius=80)
 model = novae.Novae(
     adatas,
     scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
-    min_prototypes_ratio=0.3,
+    min_prototypes_ratio=0.4,
     heads=16,
     hidden_size=128,
     temperature=0.1,
@@ -48,8 +48,6 @@ for level in range(7, 15):
 
 model.plot_prototype_weights()
 plt.savefig(f"{dir_name}/prototype_weights{suffix}.pdf", bbox_inches="tight")
-model.plot_prototype_weights(assign_zeros=False)
-plt.savefig(f"{dir_name}/prototype_weights{suffix}_nz.pdf", bbox_inches="tight")
 
 for i, adata in enumerate(adatas):
     del adata.X
