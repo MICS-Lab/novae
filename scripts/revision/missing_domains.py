@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 import scanpy as sc
 
 import novae
+from novae._constants import Nums
 
-suffix = "_su_2"
+Nums.WARMUP_EPOCHS = 3
+
+suffix = "_su_3"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -24,6 +27,7 @@ model = novae.Novae(
     num_prototypes=1024,
     background_noise_lambda=5,
     panel_subset_size=0.8,
+    unshared_prototypes_ratio=0.3,
 )
 
 adata_prototypes = model.swav_head._adata_prototypes()
