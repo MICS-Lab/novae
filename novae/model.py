@@ -3,6 +3,7 @@ from typing import Literal
 
 import lightning as L
 import numpy as np
+import scanpy as sc
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
@@ -430,6 +431,26 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             ilocs[i, indices] = 1
 
         sns.clustermap(ilocs)
+
+    def umap_prototypes(self, level: int = 7):
+        key_added = f"{Keys.DOMAINS_PREFIX}{level}"
+
+        self.swav_head._clusters_levels[-level]
+        adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
+        adata_proto.obs[key_added] = self.swav_head._clusters_levels[-7]
+        adata_proto.obs[key_added] = "D" + adata_proto.obs[key_added].astype(str)
+
+        sc.pp.neighbors(adata_proto)
+        sc.tl.umap(adata_proto)
+
+        colors = [key_added]
+
+        for slide_id, index in self.swav_head.slide_label_encoder.items():
+            adata_proto.obs[slide_id] = 0
+            adata_proto.obs.iloc[self.swav_head.prototypes_ilocs[index].numpy(force=True), -1] = 1
+            colors.append(slide_id)
+
+        sc.pl.umap(adata_proto, color=colors, show=False)
 
     def plot_prototype_covariance(self, vmax: float | None = None, **kwargs):
         covariance = np.cov(self.swav_head.prototypes.data.numpy(force=True))

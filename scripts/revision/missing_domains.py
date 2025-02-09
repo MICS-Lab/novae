@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import scanpy as sc
 
 import novae
@@ -18,7 +19,7 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 
 adatas = [adata1_split, adata2_full]
 
-model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128)
+model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128, min_prototypes_ratio=0.7)
 model.fit(max_epochs=20)
 model.compute_representations()
 
@@ -27,6 +28,12 @@ model.compute_representations()
 # model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, level=7)
+
+model.plot_prototype_weights()
+plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
+
+model.umap_prototypes()
+plt.savefig(path / f"umap_prototypes{suffix}.png", bbox_inches="tight")
 
 for adata in adatas:
     adata.obs[f"{obs_key}_split_ft"] = adata.obs[obs_key]
