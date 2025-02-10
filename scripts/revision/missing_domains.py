@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select3"
+suffix = "_sub_select4"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -19,7 +19,7 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 
 adatas = [adata1_split, adata2_full]
 
-model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
+model = novae.Novae(adatas, num_prototypes=3000, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
 model.fit(max_epochs=20)
 model.compute_representations()
 
