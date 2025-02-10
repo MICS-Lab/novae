@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select4"
+suffix = "_sub_select5"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
