@@ -233,9 +233,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         if after_warm_up:
             self.swav_head.prototypes.requires_grad_(True)
+
+        if self.current_epoch >= Nums.WARMUP_ILOCS:
             self.swav_head.update_ilocs()
 
-        self.umap_prototypes(show=True)
+        # self.umap_prototypes(show=True)
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
@@ -438,6 +440,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def umap_prototypes(self, level: int = 7, show: bool = False):
         key_added = f"{Keys.DOMAINS_PREFIX}{level}"
 
+        self.swav_head.hierarchical_clustering()
         self.swav_head.clusters_levels[-level]
         adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
         adata_proto.obs[key_added] = self.swav_head.clusters_levels[-7]
@@ -578,7 +581,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         accelerator: str = "cpu",
         num_workers: int | None = None,
         lr: float = 1e-3,
-        min_delta: float = 0.1,
+        min_delta: float = 0.05,
         patience: int = 3,
         callbacks: list[Callback] | None = None,
         logger: Logger | list[Logger] | bool = False,

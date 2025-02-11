@@ -6,9 +6,11 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 1
+Nums.WARMUP_EPOCHS = 4
+Nums.WARMUP_ILOCS = 7
+Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select10"
+suffix = "_sub_select11"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -17,12 +19,12 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 # adata2_split = sc.read_h5ad(path / "v2_split.h5ad")
 
 
-# adatas = [adata1_split, adata2_full]
-
-shared_genes = adata1_split.var_names.intersection(adata2_full.var_names)
-adata1_split = adata1_split[:, shared_genes].copy()
-adata2_full = adata2_full[:, shared_genes].copy()
 adatas = [adata1_split, adata2_full]
+
+# shared_genes = adata1_split.var_names.intersection(adata2_full.var_names)
+# adata1_split = adata1_split[:, shared_genes].copy()
+# adata2_full = adata2_full[:, shared_genes].copy()
+# adatas = [adata1_split, adata2_full]
 
 model = novae.Novae(
     adatas,
@@ -32,7 +34,7 @@ model = novae.Novae(
     hidden_size=128,
     min_prototypes_ratio=0.8,
 )
-model.fit(max_epochs=20)
+model.fit()
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")

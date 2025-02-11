@@ -139,7 +139,7 @@ class SwavHead(L.LightningModule):
     def update_ilocs(self):
         self.hierarchical_clustering()
 
-        groups = self.clusters_levels[-10]
+        groups = self.clusters_levels[-Nums.LEVEL_SUBSELECT]
 
         df_count = pd.DataFrame(self.queue.mean(dim=1).numpy(force=True).T)
         group_counts: pd.DataFrame = df_count.groupby(groups).sum()
