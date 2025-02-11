@@ -6,11 +6,11 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 4
-Nums.WARMUP_ILOCS = 7
+Nums.WARMUP_EPOCHS = 3
+Nums.WARMUP_ILOCS = 6
 Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select11"
+suffix = "_sub_select12"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -41,7 +41,8 @@ model.compute_representations()
 # model.fine_tune(adatas, min_prototypes_ratio=0.5, reference="largest")
 # model.compute_representations(adatas)
 
-obs_key = model.assign_domains(adatas, level=7)
+# obs_key = model.assign_domains(adatas, level=7)
+obs_key = model.assign_domains(adatas)
 
 model.plot_prototype_weights()
 plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
