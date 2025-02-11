@@ -1,6 +1,6 @@
 from pathlib import Path
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import scanpy as sc
 
 import novae
@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select6"
+suffix = "_sub_select7"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -19,21 +19,21 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 
 adatas = [adata1_split, adata2_full]
 
-model = novae.Novae(adatas, num_prototypes=3000, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
-model.fit(max_epochs=20)
-model.compute_representations()
+# model = novae.Novae(adatas, num_prototypes=3000, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
+# model.fit(max_epochs=20)
+# model.compute_representations()
 
-# model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
-# model.fine_tune(adatas, min_prototypes_ratio=0.5)
-# model.compute_representations(adatas)
+model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+model.fine_tune(adatas, min_prototypes_ratio=0.5, reference="largest")
+model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, level=7)
 
-# model.plot_prototype_weights()
-# plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
+model.plot_prototype_weights()
+plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
 
-# model.umap_prototypes()
-# plt.savefig(path / f"umap_prototypes{suffix}.png", bbox_inches="tight")
+model.umap_prototypes()
+plt.savefig(path / f"umap_prototypes{suffix}.png", bbox_inches="tight")
 
 for adata in adatas:
     adata.obs[f"{obs_key}_split_ft"] = adata.obs[obs_key]

@@ -229,12 +229,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        # if self.current_epoch >= 3:
-        #     self.swav_head.update_ilocs()
-        #     print("n_proto used:", [len(x) for x in self.swav_head.prototypes_ilocs])
+        after_warm_up = (self.current_epoch >= Nums.WARMUP_EPOCHS) or self.mode.pretrained
 
-        after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
-        self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
+        if after_warm_up:
+            self.swav_head.prototypes.requires_grad_(True)
+            self.swav_head.update_ilocs()
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
