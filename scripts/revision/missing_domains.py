@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select9"
+suffix = "_sub_select10"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -24,7 +24,14 @@ adata1_split = adata1_split[:, shared_genes].copy()
 adata2_full = adata2_full[:, shared_genes].copy()
 adatas = [adata1_split, adata2_full]
 
-model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
+model = novae.Novae(
+    adatas,
+    scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
+    num_prototypes=512,
+    heads=8,
+    hidden_size=128,
+    min_prototypes_ratio=0.8,
+)
 model.fit(max_epochs=20)
 model.compute_representations()
 
