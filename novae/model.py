@@ -235,6 +235,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.swav_head.prototypes.requires_grad_(True)
             self.swav_head.update_ilocs()
 
+        self.umap_prototypes(show=True)
+
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
             f"train/{name}",
@@ -433,12 +435,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         sns.clustermap(ilocs)
 
-    def umap_prototypes(self, level: int = 7):
+    def umap_prototypes(self, level: int = 7, show: bool = False):
         key_added = f"{Keys.DOMAINS_PREFIX}{level}"
 
-        self.swav_head._clusters_levels[-level]
+        self.swav_head.clusters_levels[-level]
         adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
-        adata_proto.obs[key_added] = self.swav_head._clusters_levels[-7]
+        adata_proto.obs[key_added] = self.swav_head.clusters_levels[-7]
         adata_proto.obs[key_added] = "D" + adata_proto.obs[key_added].astype(str)
 
         sc.pp.neighbors(adata_proto)
@@ -446,12 +448,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         colors = [key_added]
 
-        for slide_id, index in self.swav_head.slide_label_encoder.items():
-            adata_proto.obs[slide_id] = 0
-            adata_proto.obs.iloc[self.swav_head.prototypes_ilocs[index].numpy(force=True), -1] = 1
-            colors.append(slide_id)
+        if self.swav_head.prototypes_ilocs is not None:
+            for slide_id, index in self.swav_head.slide_label_encoder.items():
+                adata_proto.obs[slide_id] = 0
+                adata_proto.obs.iloc[self.swav_head.prototypes_ilocs[index].numpy(force=True), -1] = 1
+                colors.append(slide_id)
 
-        sc.pl.umap(adata_proto, color=colors, show=False)
+        sc.pl.umap(adata_proto, color=colors, show=show)
 
     def plot_prototype_covariance(self, vmax: float | None = None, **kwargs):
         covariance = np.cov(self.swav_head.prototypes.data.numpy(force=True))
