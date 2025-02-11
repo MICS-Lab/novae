@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import scanpy as sc
 
 import novae
@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select5"
+suffix = "_sub_select6"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -29,11 +29,11 @@ model.compute_representations()
 
 obs_key = model.assign_domains(adatas, level=7)
 
-model.plot_prototype_weights()
-plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
+# model.plot_prototype_weights()
+# plt.savefig(path / f"prototype_weights{suffix}.pdf", bbox_inches="tight")
 
-model.umap_prototypes()
-plt.savefig(path / f"umap_prototypes{suffix}.png", bbox_inches="tight")
+# model.umap_prototypes()
+# plt.savefig(path / f"umap_prototypes{suffix}.png", bbox_inches="tight")
 
 for adata in adatas:
     adata.obs[f"{obs_key}_split_ft"] = adata.obs[obs_key]
