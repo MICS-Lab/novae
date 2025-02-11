@@ -8,7 +8,7 @@ from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
 
-suffix = "_sub_select8"
+suffix = "_sub_select9"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -17,15 +17,20 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 # adata2_split = sc.read_h5ad(path / "v2_split.h5ad")
 
 
+# adatas = [adata1_split, adata2_full]
+
+shared_genes = adata1_split.var_names.intersection(adata2_full.var_names)
+adata1_split = adata1_split[:, shared_genes].copy()
+adata2_full = adata2_full[:, shared_genes].copy()
 adatas = [adata1_split, adata2_full]
 
-# model = novae.Novae(adatas, num_prototypes=3000, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
-# model.fit(max_epochs=20)
-# model.compute_representations()
+model = novae.Novae(adatas, num_prototypes=512, heads=8, hidden_size=128, min_prototypes_ratio=0.8)
+model.fit(max_epochs=20)
+model.compute_representations()
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
-model.fine_tune(adatas, min_prototypes_ratio=0.5, reference="largest")
-model.compute_representations(adatas)
+# model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+# model.fine_tune(adatas, min_prototypes_ratio=0.5, reference="largest")
+# model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, level=7)
 
