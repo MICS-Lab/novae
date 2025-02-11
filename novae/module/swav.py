@@ -45,6 +45,7 @@ class SwavHead(L.LightningModule):
 
         self.queue = None
         self.prototypes_ilocs = None
+        self.slide_label_encoder = None
 
         self.reset_clustering()
 
@@ -137,6 +138,9 @@ class SwavHead(L.LightningModule):
         return self.prototypes_ilocs[slide_index]
 
     def update_ilocs(self):
+        if self.slide_label_encoder is None:
+            return
+
         self.hierarchical_clustering()
 
         groups = self.clusters_levels[-Nums.LEVEL_SUBSELECT]
