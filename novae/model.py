@@ -47,7 +47,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         hidden_size: int = 64,
         num_layers: int = 10,
         batch_size: int = 256,
-        num_prototypes: int = 256,
+        num_prototypes: int = 512,
         panel_subset_size: float = 0.6,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
@@ -229,15 +229,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        after_warm_up = (self.current_epoch >= Nums.WARMUP_EPOCHS) or self.mode.pretrained
-
-        if after_warm_up:
-            self.swav_head.prototypes.requires_grad_(True)
+        self.swav_head.prototypes.requires_grad_((self.current_epoch >= Nums.WARMUP_EPOCHS) or self.mode.pretrained)
 
         if self.current_epoch >= Nums.WARMUP_ILOCS:
             self.swav_head.update_ilocs()
 
-        # self.umap_prototypes(show=True)
+    def on_fit_end(self):
+        self.swav_head.hierarchical_clustering()
 
     def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
         self.log(
@@ -440,7 +438,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def umap_prototypes(self, level: int = 7, show: bool = False):
         key_added = f"{Keys.DOMAINS_PREFIX}{level}"
 
-        self.swav_head.hierarchical_clustering()
         self.swav_head.clusters_levels[-level]
         adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
         adata_proto.obs[key_added] = self.swav_head.clusters_levels[-7]
@@ -471,7 +468,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def assign_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        level: int = 7,
+        resolution: float = 1.5,
+        level: int | None = None,
         n_domains: int | None = None,
         key_added: str | None = None,
     ) -> str:
@@ -479,11 +477,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Note:
             You'll need to run [novae.Novae.compute_representations][] first.
+            By default, the domains are computed with leiden, but you can set `level` or `n_domains` to use the hierarchies or domains.
 
-            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
+            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is `res{resolution}` or the `level` argument.
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            resolution: Resolution for the Leiden clustering.
             level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
             n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
             key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
@@ -496,6 +496,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         assert all(
             Keys.LEAVES in adata.obs for adata in adatas
         ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
+
+        if level is None and n_domains is None:  # using leiden clustering on prototypes by default
+            _leiden_codes = self.swav_head._leiden_prototypes(resolution=resolution, return_codes=True)
+            key_added = f"{Keys.DOMAINS_PREFIX}res{resolution}"
+
+            for adata in adatas:
+                adata.obs[key_added] = adata.obs[Keys.LEAVES].map(
+                    lambda x: f"L{_leiden_codes[int(x[1:])]}" if isinstance(x, str) else x
+                )
+
+            return key_added
 
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)

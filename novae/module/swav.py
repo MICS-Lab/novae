@@ -4,8 +4,10 @@ import math
 import lightning as L
 import numpy as np
 import pandas as pd
+import scanpy as sc
 import torch
 import torch.nn.functional as F
+from anndata import AnnData
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from torch import Tensor, nn
 
@@ -138,12 +140,10 @@ class SwavHead(L.LightningModule):
         return self.prototypes_ilocs[slide_index]
 
     def update_ilocs(self):
-        if self.slide_label_encoder is None:
+        if self.queue is None:
             return
 
-        self.hierarchical_clustering()
-
-        groups = self.clusters_levels[-Nums.LEVEL_SUBSELECT]
+        groups = self._leiden_prototypes(min_groups=7)
 
         df_count = pd.DataFrame(self.queue.mean(dim=1).numpy(force=True).T)
         group_counts: pd.DataFrame = df_count.groupby(groups).sum()
@@ -287,6 +287,26 @@ class SwavHead(L.LightningModule):
             if _n_domains == n_domains:
                 return level
         raise ValueError(f"Could not find a level with {n_domains=}")
+
+    @torch.no_grad()
+    def _leiden_prototypes(
+        self, resolution: float = 1.5, return_codes: bool = True, min_groups: int | None = None
+    ) -> AnnData | np.ndarray:
+        adata_proto = AnnData(self.prototypes.numpy(force=True))
+
+        sc.pp.pca(adata_proto)
+        sc.pp.neighbors(adata_proto)
+        sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution)
+
+        if min_groups and len(adata_proto.obs["leiden"].cat.categories) < min_groups:
+            for i in range(5):
+                sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution + (i + 1) * 0.25)
+                if len(adata_proto.obs["leiden"].cat.categories) >= min_groups:
+                    break
+
+        if return_codes:
+            return adata_proto.obs["leiden"].values.codes
+        return adata_proto
 
 
 @torch.no_grad()
