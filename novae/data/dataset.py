@@ -110,21 +110,15 @@ class NovaeDataset(Dataset):
 
     def __len__(self) -> int:
         if self.sample_cells is not None:
-            return min(self.sample_cells, self.n_obs)
+            return min(self.sample_cells, len(self.shuffled_obs_ilocs))
 
         if self.training:
-            return self._clipped_dataset_length()
+            n_obs = len(self.shuffled_obs_ilocs)
+            return min(n_obs, max(Nums.MIN_DATASET_LENGTH, int(n_obs * Nums.MAX_DATASET_LENGTH_RATIO)))
 
         assert self.single_adata, "Multi-adata mode not supported for inference"
 
-        return self.n_obs
-
-    @property
-    def n_obs(self):
-        return sum(adata.n_obs for adata in self.adatas)
-
-    def _clipped_dataset_length(self) -> int:
-        return min(self.n_obs, max(Nums.MIN_DATASET_LENGTH, int(self.n_obs * Nums.MAX_DATASET_LENGTH_RATIO)))
+        return len(self.obs_ilocs)
 
     def __getitem__(self, index: int) -> dict[str, Data]:
         """Gets a sample from the dataset, with one "main" graph and its corresponding "view" graph (only during training).
