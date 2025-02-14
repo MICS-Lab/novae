@@ -468,7 +468,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def assign_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        resolution: float = 1.5,
+        resolution: float = 1,
         level: int | None = None,
         n_domains: int | None = None,
         key_added: str | None = None,
