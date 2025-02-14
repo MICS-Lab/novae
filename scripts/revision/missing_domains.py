@@ -6,9 +6,9 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 3
+Nums.WARMUP_EPOCHS = 0
 
-suffix = "_numproto_0"
+suffix = "_numproto_1"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
