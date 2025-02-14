@@ -3,6 +3,7 @@ from typing import Literal
 
 import lightning as L
 import numpy as np
+import scanpy as sc
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
@@ -456,21 +457,26 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def assign_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        level: int = 7,
+        level: int | None = 7,
         n_domains: int | None = None,
+        resolution: float | None = None,
         key_added: str | None = None,
     ) -> str:
         """Assign a domain to each cell based on the "leaves" classes.
+        It either (i) uses a specific `level` of the hierarchical tree,
+        (ii) enforces a precise number of `n_domains`,
+        or (iii) uses the Leiden clustering with a specific `resolution`.
 
         Note:
             You'll need to run [novae.Novae.compute_representations][] first.
 
-            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
+            The domains are saved in `adata.obs["novae_domains_X]`, where `X` is the `level` argument or `res{resolution}` if using Leiden.
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
             n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
+            resolution: Resolution for the Leiden clustering. If `None`, uses the hierarchical clustering instead.
             key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
         Returns:
@@ -481,6 +487,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         assert all(
             Keys.LEAVES in adata.obs for adata in adatas
         ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
+
+        if resolution is not None:
+            _leiden_codes = self._leiden_prototypes(resolution=resolution)
+
+            key_added = f"{Keys.DOMAINS_PREFIX}res{resolution}"
+
+            for adata in adatas:
+                adata.obs[key_added] = adata.obs[Keys.LEAVES].map(
+                    lambda x: f"L{_leiden_codes[int(x[1:])]}" if isinstance(x, str) else x
+                )
+
+            return key_added
 
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)
@@ -494,6 +512,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata.obs[key_added] = adata.obs[key_added].astype("category")
 
         return key_added
+
+    @torch.no_grad()
+    def _leiden_prototypes(self, resolution: float = 1, return_codes: bool = True) -> AnnData | np.ndarray:
+        adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
+
+        sc.pp.pca(adata_proto)
+        sc.pp.neighbors(adata_proto)
+        sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution)
+
+        if return_codes:
+            return adata_proto.obs["leiden"].values.codes
+        return adata_proto
 
     def batch_effect_correction(self, adata: AnnData | list[AnnData] | None = None, obs_key: str | None = None):
         """Correct batch effects from the spatial representations of cells.
