@@ -143,7 +143,7 @@ class SwavHead(L.LightningModule):
         if self.queue is None:
             return
 
-        groups = self._leiden_prototypes(min_groups=7)
+        groups = self._leiden_prototypes()
 
         df_count = pd.DataFrame(self.queue.mean(dim=1).numpy(force=True).T)
         group_counts: pd.DataFrame = df_count.groupby(groups).sum()
@@ -289,20 +289,12 @@ class SwavHead(L.LightningModule):
         raise ValueError(f"Could not find a level with {n_domains=}")
 
     @torch.no_grad()
-    def _leiden_prototypes(
-        self, resolution: float = 0.5, return_codes: bool = True, min_groups: int | None = None
-    ) -> AnnData | np.ndarray:
+    def _leiden_prototypes(self, resolution: float = 0.5, return_codes: bool = True) -> AnnData | np.ndarray:
         adata_proto = AnnData(self.prototypes.numpy(force=True))
 
         sc.pp.pca(adata_proto)
         sc.pp.neighbors(adata_proto)
         sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution)
-
-        if min_groups and len(adata_proto.obs["leiden"].cat.categories) < min_groups:
-            for i in range(5):
-                sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution + (i + 1) * 0.25)
-                if len(adata_proto.obs["leiden"].cat.categories) >= min_groups:
-                    break
 
         if return_codes:
             return adata_proto.obs["leiden"].values.codes
