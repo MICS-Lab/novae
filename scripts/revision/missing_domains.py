@@ -10,7 +10,7 @@ Nums.WARMUP_EPOCHS = 3
 Nums.WARMUP_ILOCS = 6
 Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select18"
+suffix = "_sub2_0"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 

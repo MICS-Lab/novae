@@ -296,6 +296,8 @@ class SwavHead(L.LightningModule):
         sc.pp.neighbors(adata_proto)
         sc.tl.leiden(adata_proto, flavor="igraph", resolution=resolution)
 
+        print("num_groups:", adata_proto.obs["leiden"].values.codes.max() + 1)
+
         if return_codes:
             return adata_proto.obs["leiden"].values.codes
         return adata_proto

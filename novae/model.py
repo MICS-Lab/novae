@@ -229,11 +229,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        self.swav_head.prototypes.requires_grad_(self.current_epoch < Nums.WARMUP_EPOCHS)
+        proto_require_grad = (self.current_epoch < 10) and (self.current_epoch % 2 == 0)
 
-        if self.current_epoch >= Nums.WARMUP_EPOCHS:
+        self.swav_head.prototypes.requires_grad_(proto_require_grad)
+
+        if not proto_require_grad:
             self.swav_head.update_ilocs()
-            self.umap_prototypes(show=True)
+            # self.umap_prototypes(show=True)
         else:
             self.swav_head.prototypes_ilocs = None
 
