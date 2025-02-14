@@ -10,7 +10,7 @@ Nums.WARMUP_EPOCHS = 3
 Nums.WARMUP_ILOCS = 6
 Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select15"
+suffix = "_sub_select16"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -28,8 +28,7 @@ adatas = [adata1_split, adata2_full]
 
 model = novae.Novae(
     adatas,
-    scgpt_model_dir="/gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human",
-    num_prototypes=512,
+    num_prototypes=3000,
     heads=8,
     hidden_size=128,
     min_prototypes_ratio=0.8,
