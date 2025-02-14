@@ -290,7 +290,7 @@ class SwavHead(L.LightningModule):
 
     @torch.no_grad()
     def _leiden_prototypes(
-        self, resolution: float = 1.5, return_codes: bool = True, min_groups: int | None = None
+        self, resolution: float = 1, return_codes: bool = True, min_groups: int | None = None
     ) -> AnnData | np.ndarray:
         adata_proto = AnnData(self.prototypes.numpy(force=True))
 
