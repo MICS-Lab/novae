@@ -6,11 +6,11 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 4
-Nums.WARMUP_ILOCS = 8
+Nums.WARMUP_EPOCHS = 3
+Nums.WARMUP_ILOCS = 6
 Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select14"
+suffix = "_sub_select15"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
