@@ -6,11 +6,11 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 0
-Nums.WARMUP_ILOCS = 1
+Nums.WARMUP_EPOCHS = 3
+Nums.WARMUP_ILOCS = 6
 Nums.LEVEL_SUBSELECT = 10
 
-suffix = "_sub_select17"
+suffix = "_sub_select18"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -26,19 +26,19 @@ adatas = [adata1_split, adata2_full]
 # adata2_full = adata2_full[:, shared_genes].copy()
 # adatas = [adata1_split, adata2_full]
 
-# model = novae.Novae(
-#     adatas,
-#     num_prototypes=3000,
-#     heads=8,
-#     hidden_size=128,
-#     min_prototypes_ratio=0.8,
-# )
-# model.fit()
-# model.compute_representations()
+model = novae.Novae(
+    adatas,
+    num_prototypes=3000,
+    heads=8,
+    hidden_size=128,
+    min_prototypes_ratio=0.8,
+)
+model.fit()
+model.compute_representations()
 
-model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
-model.fine_tune(adatas, max_epochs=15, min_prototypes_ratio=0.5, reference="largest")
-model.compute_representations(adatas)
+# model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+# model.fine_tune(adatas, min_prototypes_ratio=0.5, reference="largest")
+# model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adatas, resolution=1)
 obs_key = model.assign_domains(adatas, resolution=0.5)

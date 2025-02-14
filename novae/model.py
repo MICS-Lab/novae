@@ -229,10 +229,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         self.datamodule.dataset.shuffle_obs_ilocs()
 
-        self.swav_head.prototypes.requires_grad_((self.current_epoch >= Nums.WARMUP_EPOCHS) or self.mode.pretrained)
+        self.swav_head.prototypes.requires_grad_(self.current_epoch < Nums.WARMUP_EPOCHS)
 
-        if self.current_epoch >= Nums.WARMUP_ILOCS:
+        if self.current_epoch >= Nums.WARMUP_EPOCHS:
             self.swav_head.update_ilocs()
+            self.umap_prototypes(show=True)
+        else:
+            self.swav_head.prototypes_ilocs = None
 
     def on_fit_end(self):
         self.swav_head.hierarchical_clustering()
@@ -435,18 +438,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         sns.clustermap(ilocs)
 
-    def umap_prototypes(self, level: int = 7, show: bool = False):
-        key_added = f"{Keys.DOMAINS_PREFIX}{level}"
-
-        self.swav_head.clusters_levels[-level]
-        adata_proto = AnnData(self.swav_head.prototypes.numpy(force=True))
-        adata_proto.obs[key_added] = self.swav_head.clusters_levels[-7]
-        adata_proto.obs[key_added] = "D" + adata_proto.obs[key_added].astype(str)
-
-        sc.pp.neighbors(adata_proto)
+    def umap_prototypes(self, show: bool = False):
+        adata_proto = self.swav_head._leiden_prototypes(return_codes=False)
         sc.tl.umap(adata_proto)
 
-        colors = [key_added]
+        colors = ["leiden"]
 
         if self.swav_head.prototypes_ilocs is not None:
             for slide_id, index in self.swav_head.slide_label_encoder.items():

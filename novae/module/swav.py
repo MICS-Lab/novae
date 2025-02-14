@@ -289,7 +289,7 @@ class SwavHead(L.LightningModule):
         raise ValueError(f"Could not find a level with {n_domains=}")
 
     @torch.no_grad()
-    def _leiden_prototypes(self, resolution: float = 0.5, return_codes: bool = True) -> AnnData | np.ndarray:
+    def _leiden_prototypes(self, resolution: float = 1, return_codes: bool = True) -> AnnData | np.ndarray:
         adata_proto = AnnData(self.prototypes.numpy(force=True))
 
         sc.pp.pca(adata_proto)
