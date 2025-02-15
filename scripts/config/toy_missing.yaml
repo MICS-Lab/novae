@@ -1,0 +1,12 @@
+project: novae
+seed: 0
+
+data:
+  train_dataset: toy_ari/v2
+
+model_kwargs:
+  n_hops_view: 1
+  n_hops_local: 1
+
+fit_kwargs:
+  max_epochs: 30

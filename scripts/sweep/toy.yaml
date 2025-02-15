@@ -1,0 +1,46 @@
+method: random
+metric:
+  goal: maximize
+  name: metrics/ari
+parameters:
+  heads:
+    values: [ 8, 16, 32 ]
+  num_layers:
+    values: [ 2, 6, 9, 12, 15 ]
+  num_prototypes:
+    values: [ 512, 1024, 3000, 10_000 ]
+  batch_size:
+    values: [ 128, 256, 512, 1024 ]
+  temperature:
+    values: [ 0.05, 0.1, 0.2 ]
+  lr:
+    values: [ 0.00005, 0.0001, 0.0002, 0.0005, 0.001 ]
+  patience:
+    values: [ 0, 2, 4, 8 ]
+  min_delta:
+    values: [ 0.0001, 0.0002, 0.0005, 0.001, 0.002 ]
+  SWAV_EPSILON:
+    values: [ 0.05, 0.1, 0.2 ]
+  QUEUE_SIZE:
+    values: [ 2, 4, 8, 16 ]
+  QUEUE_WEIGHT_THRESHOLD_RATIO:
+    values: [ 0.5, 0.7, 0.9, 0.99 ]
+  WARMUP_EPOCHS:
+    values: [ 0, 2, 4, 8 ]
+  panel_subset_size:
+    min: 0.4
+    max: 0.9
+  background_noise_lambda:
+    min: 2
+    max: 8
+  min_prototypes_ratio:
+    min: 0.4
+    max: 0.9
+
+command:
+- python
+- -m
+- scripts.toy_missing_domain
+- --config
+- toy_missing.yaml
+- --sweep

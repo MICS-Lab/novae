@@ -12,7 +12,7 @@ from lightning.pytorch.loggers import WandbLogger
 
 import novae
 from novae import log
-from novae._constants import Keys
+from novae._constants import Keys, Nums
 from novae.monitor import (
     jensen_shannon_divergence,
     mean_fide_score,
@@ -33,11 +33,19 @@ def init_wandb_logger(config: Config) -> WandbLogger:
 
     if config.sweep:
         sweep_config = dict(wandb.config)
-        if "lr" in sweep_config:
-            config.fit_kwargs["lr"] = wandb.config.lr
-            del sweep_config["lr"]
+
+        fit_kwargs_args = ["lr", "patience", "min_delta"]
+
+        for arg in fit_kwargs_args:
+            if arg in sweep_config:
+                config.fit_kwargs[arg] = sweep_config[arg]
+                del sweep_config[arg]
         for key, value in sweep_config.items():
-            config.model_kwargs[key] = value
+            if hasattr(Nums, key):
+                log.info(f"Nums.{key} = {value}")
+                setattr(Nums, key, value)
+            else:
+                config.model_kwargs[key] = value
 
     log.info(f"Full config:\n{config.model_dump()}")
 
