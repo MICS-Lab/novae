@@ -11,7 +11,7 @@ module purge
 module load anaconda3/2022.10/gcc-11.2.0
 source activate novae-gpu
 
-cd /gpfs/workdir/blampeyq/novae/scripts
+cd /gpfs/workdir/blampeyq/novae
 
 # Get config
 SWEEP_ID=${1}
