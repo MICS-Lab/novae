@@ -31,7 +31,7 @@ def main(args: argparse.Namespace) -> None:
     ari = adjusted_rand_score(adatas[0].obs[obs_key], adatas[0].obs["domain"])
 
     adatas[0] = adatas[0][adatas[0].obs["domain"] != "domain_6", :].copy()
-    accuracy = (adatas[0].obs[obs_key].values.astype(str) == adatas[1].obs["domain"].values.astype(str)).mean()
+    accuracy = (adatas[0].obs[obs_key].values.astype(str) == adatas[1].obs[obs_key].values.astype(str)).mean()
 
     wandb.log({"metrics/score": ari * accuracy, "metrics/ari": ari, "metrics/accuracy": accuracy})
 

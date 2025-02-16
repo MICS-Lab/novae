@@ -11,3 +11,4 @@ model_kwargs:
 fit_kwargs:
   max_epochs: 30
   accelerator: "gpu"
+  num_workers: 4
