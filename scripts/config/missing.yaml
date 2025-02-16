@@ -1,0 +1,14 @@
+project: novae
+seed: 0
+
+data:
+  train_dataset: toy_ari/v2
+
+model_kwargs:
+  n_hops_view: 2
+  n_hops_local: 2
+
+fit_kwargs:
+  max_epochs: 40
+  accelerator: "gpu"
+  num_workers: 4

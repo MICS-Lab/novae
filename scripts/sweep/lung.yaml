@@ -1,0 +1,31 @@
+method: bayes
+metric:
+  goal: minimize
+  name: metrics/jsd
+parameters:
+  num_prototypes:
+    min: 1000
+    max: 8000
+  temperature:
+    min: 0.05
+    max: 0.20
+  lr:
+    min: 0.00005
+    max: 0.001
+  min_delta:
+    values: [ 0.001, 0.005, 0.01, 0.05, 0.1 ]
+  SWAV_EPSILON:
+    min: 0.005
+    max: 0.05
+  QUEUE_SIZE:
+    values: [ 2, 4, 8 ]
+  WARMUP_EPOCHS:
+    values: [ 0, 2, 4, 8 ]
+
+command:
+- python
+- -m
+- scripts.missing_domain
+- --config
+- missing.yaml
+- --sweep
