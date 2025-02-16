@@ -12,7 +12,7 @@ from .utils import init_wandb_logger, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.utils.toy_dataset(n_panels=2, xmax=1_000, n_domains=7, n_vars=300)
+    adatas = novae.utils.toy_dataset(n_panels=2, xmax=2_000, n_domains=7, n_vars=300)
 
     adatas[1] = adatas[1][adatas[1].obs["domain"] != "domain_6", :].copy()
     novae.spatial_neighbors(adatas)
@@ -28,13 +28,12 @@ def main(args: argparse.Namespace) -> None:
     novae.plot.domains(adatas, obs_key=obs_key, show=False)
     log_plt_figure(f"domains_{obs_key}")
 
-    ari = 1
-    for i, adata in enumerate(adatas):
-        _ari = adjusted_rand_score(adata.obs[obs_key], adata.obs["domain"])
-        ari *= _ari
-        wandb.log({f"metrics/ari_{i}": _ari})
+    ari = adjusted_rand_score(adatas[0].obs[obs_key], adatas[0].obs["domain"])
 
-    wandb.log({"metrics/ari": ari})
+    adatas[0] = adatas[0][adatas[0].obs["domain"] != "domain_6", :].copy()
+    accuracy = (adatas[0].obs[obs_key].values.astype(str) == adatas[1].obs["domain"].values.astype(str)).mean()
+
+    wandb.log({"metrics/score": ari * accuracy, "metrics/ari": ari, "metrics/accuracy": accuracy})
 
 
 if __name__ == "__main__":
