@@ -9,7 +9,7 @@ from novae._constants import Nums
 Nums.WARMUP_EPOCHS = 1
 Nums.SWAV_EPSILON = 0.01
 
-suffix = "_numproto_2"
+suffix = "_numproto_3"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -30,9 +30,9 @@ model = novae.Novae(
     num_prototypes=2000,
     heads=8,
     hidden_size=128,
-    min_prototypes_ratio=0.8,
+    min_prototypes_ratio=0.5,
 )
-model.fit(lr=1e-4)
+model.fit(lr=1e-4, max_epochs=50, min_delta=0.05)
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
