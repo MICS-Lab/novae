@@ -6,9 +6,10 @@ import scanpy as sc
 import novae
 from novae._constants import Nums
 
-Nums.WARMUP_EPOCHS = 0
+Nums.WARMUP_EPOCHS = 1
+Nums.SWAV_EPSILON = 0.01
 
-suffix = "_numproto_1"
+suffix = "_numproto_2"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -26,12 +27,12 @@ adatas = [adata1_split, adata2_full]
 
 model = novae.Novae(
     adatas,
-    num_prototypes=3000,
+    num_prototypes=2000,
     heads=8,
     hidden_size=128,
     min_prototypes_ratio=0.8,
 )
-model.fit()
+model.fit(lr=1e-4)
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
