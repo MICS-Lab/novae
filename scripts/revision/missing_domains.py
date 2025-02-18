@@ -8,9 +8,9 @@ import novae
 from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
-Nums.SWAV_EPSILON = 0.025
+Nums.SWAV_EPSILON = 0.05
 
-suffix = "_numproto_6"
+suffix = "_numproto_7"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -43,7 +43,7 @@ model.compute_representations()
 # model.compute_representations(adatas)
 
 obs_key = model.assign_domains(adata_join, resolution=1)
-for res in [0.3, 0.35, 0.4, 0.45, 0.5]:
+for res in [0.25, 0.3, 0.35, 0.4, 0.45, 0.5]:
     obs_key = model.assign_domains(adata_join, resolution=res)
 obs_key = model.assign_domains(adata_join, level=7)
 

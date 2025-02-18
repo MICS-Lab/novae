@@ -7,11 +7,11 @@ adatas = [
     anndata.read_h5ad("/gpfs/workdir/blampeyq/novae/data/_colon_seg/adata_default_graph.h5ad"),
 ]
 
-suffix = "_3"
+suffix = "_4"
 
 model = novae.Novae(
     adatas,
-    num_prototypes=3000,
+    num_prototypes=1000,
     heads=8,
     hidden_size=128,
     min_prototypes_ratio=1,
