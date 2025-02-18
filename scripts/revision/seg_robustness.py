@@ -7,7 +7,7 @@ adatas = [
     anndata.read_h5ad("/gpfs/workdir/blampeyq/novae/data/_colon_seg/adata_default_graph.h5ad"),
 ]
 
-suffix = "_2"
+suffix = "_3"
 
 model = novae.Novae(
     adatas,
@@ -16,7 +16,7 @@ model = novae.Novae(
     hidden_size=128,
     min_prototypes_ratio=1,
 )
-model.fit()
+model.fit(lr=5e-4, min_delta=0.025)
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
