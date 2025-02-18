@@ -8,9 +8,9 @@ import novae
 from novae._constants import Nums
 
 Nums.WARMUP_EPOCHS = 1
-# Nums.SWAV_EPSILON = 0.01
+Nums.SWAV_EPSILON = 0.025
 
-suffix = "_numproto_5"
+suffix = "_numproto_6"
 
 path = Path("/gpfs/workdir/blampeyq/novae/data/_lung_robustness")
 
@@ -30,12 +30,12 @@ novae.spatial_neighbors(adata_join, slide_key="slide_id", radius=80)
 
 model = novae.Novae(
     adata_join,
-    num_prototypes=2000,
+    num_prototypes=3_000,
     heads=8,
     hidden_size=128,
-    min_prototypes_ratio=0.5,
+    min_prototypes_ratio=0.3,
 )
-model.fit()
+model.fit(lr=5e-4)
 model.compute_representations()
 
 # model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
