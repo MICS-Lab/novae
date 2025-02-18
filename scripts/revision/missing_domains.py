@@ -21,6 +21,8 @@ adata2_full = sc.read_h5ad(path / "v2_full.h5ad")
 adata_join = anndata.concat([adata1_split, adata2_full], join="inner")
 # adatas = [adata1_split, adata2_full]
 
+novae.spatial_neighbors(adata_join, slide_key="novae_sid", radius=80)
+
 # shared_genes = adata1_split.var_names.intersection(adata2_full.var_names)
 # adata1_split = adata1_split[:, shared_genes].copy()
 # adata2_full = adata2_full[:, shared_genes].copy()
