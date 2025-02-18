@@ -1,7 +1,7 @@
 method: bayes
 metric:
-  goal: minimize
-  name: metrics/jsd
+  goal: maximize
+  name: metrics/cjsd
 parameters:
   num_prototypes:
     min: 1000
