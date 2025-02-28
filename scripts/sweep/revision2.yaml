@@ -5,10 +5,10 @@ metric:
 parameters:
   panel_subset_size:
     min: 0.4
-    max: 1
+    max: 0.95
   background_noise_lambda:
-    min: 0
-    max: 12
+    min: 0.5
+    max: 12.5
 
 command:
 - python
