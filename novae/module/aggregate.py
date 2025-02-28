@@ -1,12 +1,8 @@
 import lightning as L
-import torch
 from torch import Tensor, nn
 from torch_geometric.nn.aggr import Aggregation
 from torch_geometric.nn.inits import reset
-from torch_geometric.utils import scatter, softmax
-
-from .. import settings
-from .._constants import Nums
+from torch_geometric.utils import softmax
 
 
 class AttentionAggregation(Aggregation, L.LightningModule):
@@ -20,7 +16,6 @@ class AttentionAggregation(Aggregation, L.LightningModule):
         """
         super().__init__()
         self.attention_aggregation = ProjectionLayers(output_size)  # for backward compatibility when loading models
-        self._entropies = torch.tensor([], dtype=torch.float32)
 
     def forward(
         self,
@@ -43,11 +38,6 @@ class AttentionAggregation(Aggregation, L.LightningModule):
         x = self.attention_aggregation.nn(x)
 
         gate = softmax(gate, index, dim=dim)
-
-        if settings.store_attention_entropy:
-            att = softmax(gate / 0.01, index, dim=dim)
-            attention_entropy = scatter(-att * (att + Nums.EPS).log2(), index=index)[:, 0]
-            self._entropies = torch.cat([self._entropies, attention_entropy])
 
         return self.reduce(gate * x, index, dim=dim)
 

@@ -12,7 +12,7 @@ from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
 from torch_geometric.data import Batch
 
-from . import __version__, plot, settings, utils
+from . import __version__, plot, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -204,8 +204,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.to(device)
 
     def _embed_pyg_data(self, data: Batch) -> Batch:
-        if settings.shuffle_nodes:
-            utils.shuffle_nodes(data)
         if self.training:
             data = self.augmentation(data)
         return self.cell_embedder(data)
