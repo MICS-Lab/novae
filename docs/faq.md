@@ -79,6 +79,10 @@ By default, Novae automatically run data preprocessing for you. If you don't wan
 novae.settings.auto_preprocessing = False
 ```
 
+### How long does it take to use Novae?
+
+The `pip` installation of Novae usually takes less than a minute on a standard laptop. The inference time depends on the number of cells, but typically takes 5-20 minutes on a CPUs, or 30sec to 2 minutes on a GPU (expect it to be roughly 10x times faster on a GPU).
+
 ### How to contribute?
 
 If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
