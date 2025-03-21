@@ -1,12 +1,13 @@
-## [0.2.3] - xxxx-xx-xx
+## [0.2.3] - 2025-03-21
+
+### Added
+- New Visium-HD and Visium tutorials
+- Infer default plot size for plots (median neighbors distrance)
+- Can filter by technology in `load_dataset`
 
 ### Fixed
 - Fix `model.plot_prototype_covariance` and `model.plot_prototype_weights`
 - Edge case: ensure that even negative max-weights are above the prototype threshold
-
-### Added
-- Infer default plot size for plots (median neighbors distrance)
-- Can filter by technology in `load_dataset`
 
 ### Changed
 - `novae.utils.spatial_neighbors` can be now called via `novae.spatial_neighbors`
