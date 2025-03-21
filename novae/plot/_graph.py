@@ -114,7 +114,7 @@ def paga(adata: AnnData, obs_key: str | None = None, show: bool = True, **paga_p
 
 def connectivities(
     adata: AnnData,
-    ngh_threshold: int | None = 5,
+    ngh_threshold: int | None = 2,
     cell_size: int = 2,
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
