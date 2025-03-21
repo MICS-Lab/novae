@@ -6,9 +6,11 @@
 
 ### Added
 - Infer default plot size for plots (median neighbors distrance)
+- Can filter by technology in `load_dataset`
 
 ### Changed
 - `novae.utils.spatial_neighbors` can be now called via `novae.spatial_neighbors`
+- Store distances after `spatial_neighbors` instead of `1` when `coord_type="grid"`
 
 ## [0.2.2] - 2024-12-17
 

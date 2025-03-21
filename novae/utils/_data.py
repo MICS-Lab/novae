@@ -140,6 +140,7 @@ def load_dataset(
     pattern: str | None = None,
     tissue: list[str] | str | None = None,
     species: list[str] | str | None = None,
+    technology: list[str] | str | None = None,
     custom_filter: Callable[[pd.DataFrame], pd.Series] | None = None,
     top_k: int | None = None,
     dry_run: bool = False,
@@ -154,6 +155,7 @@ def load_dataset(
         pattern: Optional pattern to match the slides names.
         tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain", "colon"`.
         species: Optional species (or species list) to filter the slides. E.g., `"human", "mouse"`.
+        technology: Optional technology (or technology list) to filter the slides. E.g., `"xenium", or "visium_hd"`.
         custom_filter: Custom filter function that takes the metadata DataFrame (see above link) and returns a boolean Series to decide which rows should be kept.
         top_k: Optional number of slides to keep. If `None`, keeps all slides.
         dry_run: If `True`, the function will only return the metadata of slides that match the filters.
@@ -163,22 +165,19 @@ def load_dataset(
     """
     metadata = pd.read_csv("hf://datasets/MICS-Lab/novae/metadata.csv", index_col=0)
 
-    valid_species = metadata["species"].unique()
-    valid_tissues = metadata["tissue"].unique()
+    FILTER_COLUMN = [("species", species), ("tissue", tissue), ("technology", technology)]
+    VALID_VALUES = {column: metadata[column].unique() for column, _ in FILTER_COLUMN}
 
-    if species is not None:
-        species = [species] if isinstance(species, str) else species
-        assert all(
-            s in valid_species for s in species
-        ), f"Found invalid species in {species}. Valid species are {valid_species}."
-        metadata = metadata[metadata["species"].isin(species)]
+    for column, value in FILTER_COLUMN:
+        if value is not None:
+            values = [value] if isinstance(value, str) else value
+            valid_values = VALID_VALUES[column]
 
-    if tissue is not None:
-        tissues = [tissue] if isinstance(tissue, str) else tissue
-        assert all(
-            tissue in valid_tissues for tissue in tissues
-        ), f"Found invalid tissues in {tissues}. Valid tissues for the provided species are {valid_tissues}."
-        metadata = metadata[metadata["tissue"].isin(tissues)]
+            assert all(
+                value in valid_values for value in values
+            ), f"Found invalid {column} value in {values}. Valid values are {valid_values}."
+
+            metadata = metadata[metadata[column].isin(values)]
 
     if custom_filter is not None:
         metadata = metadata[custom_filter(metadata)]

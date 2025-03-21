@@ -225,8 +225,9 @@ def _build_grid(
         Dst = Adj.copy()
         Adj.data[:] = 1.0
     else:
-        Adj = _build_connectivity(coords, n_neighs=n_neighs, neigh_correct=True, delaunay=delaunay, set_diag=set_diag)
-        Dst = Adj.copy()
+        Adj, Dst = _build_connectivity(
+            coords, n_neighs=n_neighs, neigh_correct=True, delaunay=delaunay, set_diag=set_diag, return_distance=True
+        )
 
     Dst.setdiag(0.0)
 

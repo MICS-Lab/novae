@@ -9,11 +9,7 @@ from sklearn.cluster import AgglomerativeClustering
 
 from .. import utils
 from .._constants import Keys
-from ._utils import (
-    _get_default_cell_size,
-    _subplots_per_slide,
-    get_categorical_color_palette,
-)
+from ._utils import _subplots_per_slide, get_categorical_color_palette
 
 
 def _leaves_count(clustering: AgglomerativeClustering) -> np.ndarray:
@@ -118,8 +114,8 @@ def paga(adata: AnnData, obs_key: str | None = None, show: bool = True, **paga_p
 
 def connectivities(
     adata: AnnData,
-    ngh_threshold: int | None = 2,
-    cell_size: int | None = None,
+    ngh_threshold: int | None = 5,
+    cell_size: int = 2,
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
     linewidths: float = 0.1,
@@ -151,7 +147,6 @@ def connectivities(
         show: Whether to show the plot.
     """
     adatas = [adata] if isinstance(adata, AnnData) else adata
-    cell_size = cell_size or _get_default_cell_size(adatas)
 
     fig, axes = _subplots_per_slide(adatas, ncols, fig_size_per_slide)
 
