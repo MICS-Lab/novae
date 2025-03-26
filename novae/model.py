@@ -348,9 +348,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     ):
         """Compute prototypes based on the latent representations, and assign each cell to a leaf."""
         adatas = [adatas] if isinstance(adatas, AnnData) else adatas
-        adatas_reference = _get_reference(adatas, reference)
 
-        latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas_reference])
+        adatas_refs = _get_reference(adatas, reference)
+        adatas_refs = [adatas_refs] if isinstance(adatas_refs, AnnData) else adatas_refs
+
+        latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas_refs])
         self.swav_head.set_kmeans_prototypes(latent)
         self.swav_head.reset_clustering(only_zero_shot=True)
 
