@@ -6,13 +6,11 @@ from novae.monitor.eval import _jensen_shannon_divergence, entropy
 
 from ._utils import adata_concat, adatas
 
-true_distributions = np.array(
-    [
-        [0.2] * 5,
-        [0.4, 0.4, 0.2, 0, 0],
-        [0.75, 0.25, 0, 0, 0],
-    ]
-)
+true_distributions = np.array([
+    [0.2] * 5,
+    [0.4, 0.4, 0.2, 0, 0],
+    [0.75, 0.25, 0, 0, 0],
+])
 
 true_jsd = _jensen_shannon_divergence(true_distributions)
 
@@ -37,14 +35,12 @@ def test_jensen_shannon_divergence_manual():
     assert _jensen_shannon_divergence(np.ones((1, 5))) == approx(0.0)
     assert _jensen_shannon_divergence(np.ones((2, 5))) == approx(0.0)
 
-    distribution = np.array(
-        [
-            [0.3, 0.2, 0.5],
-            [0.1, 0.1, 0.8],
-            [0.2, 0.3, 0.5],
-            [0, 0, 1],
-        ]
-    )
+    distribution = np.array([
+        [0.3, 0.2, 0.5],
+        [0.1, 0.1, 0.8],
+        [0.2, 0.3, 0.5],
+        [0, 0, 1],
+    ])
 
     means = np.array([0.15, 0.15, 0.7])
 

@@ -78,7 +78,7 @@ class CellEmbedder(L.LightningModule):
 
         vocab_file = scgpt_model_dir / "vocab.json"
 
-        with open(vocab_file, "r") as file:
+        with open(vocab_file) as file:
             gene_to_index: dict[str, int] = json.load(file)
 
         checkpoint = torch.load(scgpt_model_dir / "best_model.pt", map_location=torch.device("cpu"))

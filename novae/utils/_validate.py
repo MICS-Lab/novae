@@ -2,7 +2,6 @@ import logging
 
 import anndata
 import numpy as np
-import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 
@@ -44,7 +43,7 @@ def prepare_adatas(
     elif isinstance(adata, list):
         adatas = adata
     else:
-        raise ValueError(f"Invalid type for `adata`: {type(adata)}")
+        raise TypeError(f"Invalid type for `adata`: {type(adata)}")
 
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
@@ -111,9 +110,9 @@ def _standardize_adatas(adatas: list[AnnData]):
 
 def check_has_spatial_adjancency(adata: AnnData):
     assert "spatial" in adata.obsm, "No spatial coordinates found in `adata.obsm['spatial']`"
-    assert Keys.ADJ in adata.obsp, (
-        "No spatial adjacency found in `adata.obsp['spatial_distances']`." "Consider running `novae.spatial_neighbors`"
-    )
+    assert (
+        Keys.ADJ in adata.obsp
+    ), "No spatial adjacency found in `adata.obsp['spatial_distances']`.Consider running `novae.spatial_neighbors`"
 
 
 def _lookup_highly_variable_genes(adatas: list[AnnData]):
@@ -159,7 +158,7 @@ def _select_novae_genes(adatas: list[AnnData], var_names: set | list[str] | None
     for adata in adatas:
         _lookup_known_genes(adata, var_names)
 
-        adata.var[Keys.USE_GENE] = _var_or_true(adata, Keys.HIGHLY_VARIABLE) & _var_or_true(adata, Keys.IS_KNOWN_GENE)
+        adata.var[Keys.USE_GENE] = adata.var.get(Keys.HIGHLY_VARIABLE, True) & adata.var.get(Keys.IS_KNOWN_GENE, True)
 
         n_used = adata.var[Keys.USE_GENE].sum()
         assert (
@@ -188,21 +187,13 @@ def _genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:
     return list(set.union(*[set(lower_var_names(var_names)) for var_names in var_names_list]))
 
 
-def _var_or_true(adata: AnnData, key: str) -> pd.Series | bool:
-    return adata.var[key] if key in adata.var else True
-
-
 def _is_multi_panel(adatas: list[AnnData]) -> bool:
     if len(adatas) == 1:
         return False
 
     first_panel = sorted(lower_var_names(adatas[0].var_names))
 
-    for adata in adatas[1:]:
-        if sorted(lower_var_names(adata.var_names)) != first_panel:
-            return True
-
-    return False
+    return any(sorted(lower_var_names(adata.var_names)) != first_panel for adata in adatas[1:])
 
 
 ERROR_ADVICE_OBS_KEY = "Please run `model.assign_domains(...)` first"

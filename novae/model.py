@@ -134,9 +134,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @property
     def datamodule(self) -> NovaeDatamodule:
-        assert (
-            self._datamodule is not None
-        ), "The datamodule was not initialized. You first need to fit the model, i.e. `model.fit(...)`"
+        assert self._datamodule is not None, (
+            "The datamodule was not initialized. You first need to fit the model, i.e. `model.fit(...)`"
+        )
         return self._datamodule
 
     @property
@@ -424,9 +424,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def plot_prototype_weights(self, assign_zeros: bool = True, **kwargs: int):
         """Plot the weights of the prototypes per slide."""
 
-        assert (
-            self.swav_head.queue is not None
-        ), "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
+        assert self.swav_head.queue is not None, (
+            "Swav queue not initialized. Initialize it with `model.init_slide_queue(...)`, then train or fine-tune the model."
+        )
 
         weights, thresholds = self.swav_head.queue_weights()
         weights, thresholds = weights.numpy(force=True), thresholds.numpy(force=True)
@@ -484,9 +484,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         adatas = self._to_anndata_list(adata)
 
-        assert all(
-            Keys.LEAVES in adata.obs for adata in adatas
-        ), f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
+        assert all(Keys.LEAVES in adata.obs for adata in adatas), (
+            f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
+        )
 
         if resolution is not None:
             _leiden_codes = self._leiden_prototypes(resolution=resolution)

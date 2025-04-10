@@ -102,7 +102,7 @@ def pathway_scores(
         log.info(f"Loaded {len(pathways)} pathway(s)")
 
     if len(pathways) == 1:
-        pathway_name = list(pathways.keys())[0]
+        pathway_name = next(iter(pathways.keys()))
 
     if pathway_name is not None:
         gene_names = pathways[pathway_name]
@@ -152,17 +152,17 @@ def pathway_scores(
 def _get_pathway_score(adata: AnnData, gene_names: list[str], min_pathway_size: int) -> bool:
     lower_var_names = adata.var_names.str.lower()
 
-    vars = np.array([gene_name.lower() for gene_name in gene_names])
-    vars = adata.var_names[np.isin(lower_var_names, vars)]
+    gene_names = np.array([gene_name.lower() for gene_name in gene_names])
+    gene_names = adata.var_names[np.isin(lower_var_names, gene_names)]
 
-    if len(vars) >= min_pathway_size:
-        sc.tl.score_genes(adata, vars, score_name=TEMP_KEY)
+    if len(gene_names) >= min_pathway_size:
+        sc.tl.score_genes(adata, gene_names, score_name=TEMP_KEY)
         return True
     return False
 
 
 def _load_gsea_json(path: str) -> dict[str, list[str]]:
-    with open(path, "r") as f:
+    with open(path) as f:
         content: dict = json.load(f)
         assert all(
             "geneSymbols" in value for value in content.values()

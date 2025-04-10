@@ -51,9 +51,9 @@ def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
         where = (adata_ref.obs[Keys.SLIDE_ID] == slide_id) & (adata_ref.obs[obs_key] == domain)
         return adata_ref.obsm[Keys.REPR][where].mean(0)
 
-    centroids_reference = pd.DataFrame(
-        {domain: _centroid_reference(domain, slide_id, obs_key) for domain, slide_id in ref_slide_ids.items()}
-    )
+    centroids_reference = pd.DataFrame({
+        domain: _centroid_reference(domain, slide_id, obs_key) for domain, slide_id in ref_slide_ids.items()
+    })
 
     for adata in adatas:
         adata.obsm[Keys.REPR_CORRECTED] = adata.obsm[Keys.REPR].copy()

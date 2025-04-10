@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
     if isinstance(adata, list):
         return set.union(*[unique_obs(adata_, obs_key) for adata_ in adata])
-    return set(list(adata.obs[obs_key].dropna().unique()))
+    return set(adata.obs[obs_key].dropna().unique())
 
 
 def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:

@@ -201,7 +201,7 @@ def load_dataset(
     return [_read_h5ad_from_hub(name, row) for name, row in metadata.iterrows()]
 
 
-def load_local_dataset(relative_path: str, files_black_list: list[str] = None) -> list[AnnData]:
+def load_local_dataset(relative_path: str, files_black_list: list[str] | None = None) -> list[AnnData]:
     """Load one or multiple AnnData objects based on a relative path from the data directory
 
     Args:
@@ -220,10 +220,7 @@ def load_local_dataset(relative_path: str, files_black_list: list[str] = None) -
         log.info(f"Loading one adata: {full_path}")
         return [anndata.read_h5ad(full_path)]
 
-    if ".h5ad" in relative_path:
-        all_paths = list(data_dir.rglob(relative_path))
-    else:
-        all_paths = list(full_path.rglob("*.h5ad"))
+    all_paths = list(data_dir.rglob(relative_path) if ".h5ad" in relative_path else full_path.rglob("*.h5ad"))
 
     all_paths = [path for path in all_paths if path.name not in files_black_list]
 

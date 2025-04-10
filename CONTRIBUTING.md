@@ -36,7 +36,7 @@ poetry install -E dev   # poetry installation
 
 ### Styling and formatting
 
-We use [`pre-commit`](https://pre-commit.com/) to run code quality controls before the commits. This includes running `black`, `isort`, `flake8`, and others.
+We use [`pre-commit`](https://pre-commit.com/) to run code quality controls before the commits. This will run `ruff` and others minor checks.
 
 
 You can set it up at the root of the repository like this:

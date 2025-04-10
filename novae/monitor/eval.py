@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 
 def mean_fide_score(
-    adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None, n_classes: int | None = None
+    adatas: AnnData | list[AnnData], obs_key: str, slide_key: str | None = None, n_classes: int | None = None
 ) -> float:
     """Mean FIDE score over all slides. A low score indicates a great domain continuity.
 
@@ -23,12 +23,10 @@ def mean_fide_score(
     Returns:
         The FIDE score averaged for all slides.
     """
-    return np.mean(
-        [
-            fide_score(adata, obs_key, n_classes=n_classes)
-            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
-        ]
-    )
+    return np.mean([
+        fide_score(adata, obs_key, n_classes=n_classes)
+        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+    ])
 
 
 def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> float:
@@ -62,7 +60,7 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     return np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean()
 
 
-def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str = None) -> float:
+def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str | None = None) -> float:
     """Jensen-Shannon divergence (JSD) over all slides
 
     Args:
@@ -80,7 +78,6 @@ def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, sli
 
     distributions = []
     for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key):
-
         value_counts = adata.obs[obs_key].value_counts(sort=False)
         distribution = np.zeros(len(all_categories))
 
@@ -123,14 +120,12 @@ def entropy(distribution: np.ndarray) -> float:
 
 
 def mean_normalized_entropy(
-    adatas: AnnData | list[AnnData], n_classes: int, obs_key: str, slide_key: str = None
+    adatas: AnnData | list[AnnData], n_classes: int, obs_key: str, slide_key: str | None = None
 ) -> float:
-    return np.mean(
-        [
-            _mean_normalized_entropy(adata, obs_key, n_classes=n_classes)
-            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
-        ]
-    )
+    return np.mean([
+        _mean_normalized_entropy(adata, obs_key, n_classes=n_classes)
+        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+    ])
 
 
 def _mean_normalized_entropy(adata: AnnData, obs_key: str, n_classes: int) -> float:
@@ -141,7 +136,7 @@ def _mean_normalized_entropy(adata: AnnData, obs_key: str, n_classes: int) -> fl
     return entropy_ / np.log2(n_classes)
 
 
-def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slide_key: str = None) -> float:
+def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slide_key: str | None = None) -> float:
     """Heuristic score to evaluate the quality of the clustering.
 
     Args:
@@ -153,9 +148,9 @@ def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slid
     Returns:
         The heuristic score.
     """
-    return np.mean(
-        [_heuristic(adata, obs_key, n_classes) for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)]
-    )
+    return np.mean([
+        _heuristic(adata, obs_key, n_classes) for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
+    ])
 
 
 def _heuristic(adata: AnnData, obs_key: str, n_classes: int) -> float:

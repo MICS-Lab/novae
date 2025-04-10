@@ -43,7 +43,7 @@ for adata in adatas:
 
             x = data.x
 
-            for i, (conv, norm) in enumerate(zip(gat.convs, gat.norms)):
+            for i, conv in enumerate(gat.convs):
                 x, (index, attentions) = conv(
                     x, data.edge_index, edge_attr=data.edge_attr, return_attention_weights=True
                 )

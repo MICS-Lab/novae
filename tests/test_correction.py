@@ -14,29 +14,25 @@ obs1 = pd.DataFrame(
     index=[f"{i}_1" for i in range(7)],
 )
 
-latent1 = np.array(
-    [
-        [1, 2],
-        [3, 4],
-        [5, 6],
-        [7, 8],
-        [9, 10],
-        [12, 13],
-        [-2, -2],
-    ]
-).astype(np.float32)
+latent1 = np.array([
+    [1, 2],
+    [3, 4],
+    [5, 6],
+    [7, 8],
+    [9, 10],
+    [12, 13],
+    [-2, -2],
+]).astype(np.float32)
 
-expected1 = np.array(
-    [
-        [7, 8],
-        [9, 10],
-        [5, 6],
-        [7, 8],
-        [9, 10],
-        [12, 13],
-        [-2 + 35, -2 + 34],
-    ]
-).astype(np.float32)
+expected1 = np.array([
+    [7, 8],
+    [9, 10],
+    [5, 6],
+    [7, 8],
+    [9, 10],
+    [12, 13],
+    [-2 + 35, -2 + 34],
+]).astype(np.float32)
 
 adata1 = AnnData(obs=obs1, obsm={Keys.REPR: latent1})
 
@@ -49,25 +45,21 @@ obs2 = pd.DataFrame(
     index=[f"{i}_2" for i in range(5)],
 )
 
-latent2 = np.array(
-    [
-        [-1, -3],
-        [0, -10],
-        [0, 0],
-        [0, -1],
-        [100, 100],
-    ]
-).astype(np.float32)
+latent2 = np.array([
+    [-1, -3],
+    [0, -10],
+    [0, 0],
+    [0, -1],
+    [100, 100],
+]).astype(np.float32)
 
-expected2 = np.array(
-    [
-        [-1, -3],
-        [0 + 8, -10 + 19],
-        [0, 0],
-        [0, -1],
-        [100, 100],
-    ]
-).astype(np.float32)
+expected2 = np.array([
+    [-1, -3],
+    [0 + 8, -10 + 19],
+    [0, 0],
+    [0, -1],
+    [100, 100],
+]).astype(np.float32)
 
 adata2 = AnnData(obs=obs2, obsm={Keys.REPR: latent2})
 

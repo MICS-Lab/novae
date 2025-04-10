@@ -5,10 +5,11 @@ Functions for building graphs from spatial coordinates.
 
 import logging
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from functools import partial
 from itertools import chain
-from typing import Iterable, Literal, get_args
+from typing import Literal, get_args
 
 import numpy as np
 import pandas as pd
@@ -88,7 +89,7 @@ def spatial_neighbors(
             )
         return
 
-    if isinstance(radius, float) or isinstance(radius, int):
+    if isinstance(radius, (float, int)):
         radius = [0.0, float(radius)]
 
     assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"

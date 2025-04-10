@@ -11,15 +11,13 @@ from novae.utils._build import _set_unique_slide_ids
 
 from ._utils import adata, adata_concat, adata_line
 
-true_connectivities = np.array(
-    [
-        [0, 1, 0, 0, 1],
-        [1, 0, 1, 0, 1],
-        [0, 1, 0, 0, 1],
-        [0, 0, 0, 0, 0],
-        [1, 1, 1, 0, 0],
-    ]
-)
+true_connectivities = np.array([
+    [0, 1, 0, 0, 1],
+    [1, 0, 1, 0, 1],
+    [0, 1, 0, 0, 1],
+    [0, 0, 0, 0, 0],
+    [1, 1, 1, 0, 0],
+])
 
 
 def test_build():
@@ -60,25 +58,23 @@ def test_build_slide_key():
     adata_ = adata_concat.copy()
     novae.utils.spatial_neighbors(adata_, radius=1.5, slide_key="slide_key")
 
-    true_connectivities = np.array(
-        [
-            [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
-        ]
-    )
+    true_connectivities = np.array([
+        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
+    ])
 
     assert (adata_.obsp["spatial_connectivities"].todense() == true_connectivities).all()
 
@@ -144,62 +140,54 @@ def test_to_adjacency_local():
 
     assert (
         (adjancency_local.todense() > 0)
-        == np.array(
-            [
-                [True, True, False, False, True],
-                [True, True, True, False, True],
-                [False, True, True, False, True],
-                [False, False, False, True, False],
-                [True, True, True, False, True],
-            ]
-        )
+        == np.array([
+            [True, True, False, False, True],
+            [True, True, True, False, True],
+            [False, True, True, False, True],
+            [False, False, False, True, False],
+            [True, True, True, False, True],
+        ])
     ).all()
 
     adjancency_local = _to_adjacency_local(adata.obsp["spatial_connectivities"], 2)
 
     assert (
         (adjancency_local.todense() > 0)
-        == np.array(
-            [
-                [True, True, True, False, True],
-                [True, True, True, False, True],
-                [True, True, True, False, True],
-                [False, False, False, False, False],  # unconnected node => no local connections with n_hop >= 2
-                [True, True, True, False, True],
-            ]
-        )
+        == np.array([
+            [True, True, True, False, True],
+            [True, True, True, False, True],
+            [True, True, True, False, True],
+            [False, False, False, False, False],  # unconnected node => no local connections with n_hop >= 2
+            [True, True, True, False, True],
+        ])
     ).all()
 
     adjancency_local = _to_adjacency_local(adata_line.obsp["spatial_connectivities"], 1)
 
     assert (
         (adjancency_local.todense() > 0)
-        == np.array(
-            [
-                [True, True, False, False, False, False],
-                [True, True, True, False, False, False],
-                [False, True, True, False, False, False],
-                [False, False, False, True, True, False],
-                [False, False, False, True, True, False],
-                [False, False, False, False, False, True],
-            ]
-        )
+        == np.array([
+            [True, True, False, False, False, False],
+            [True, True, True, False, False, False],
+            [False, True, True, False, False, False],
+            [False, False, False, True, True, False],
+            [False, False, False, True, True, False],
+            [False, False, False, False, False, True],
+        ])
     ).all()
 
     adjancency_local = _to_adjacency_local(adata_line.obsp["spatial_connectivities"], 2)
 
     assert (
         (adjancency_local.todense() > 0)
-        == np.array(
-            [
-                [True, True, True, False, False, False],
-                [True, True, True, False, False, False],
-                [True, True, True, False, False, False],
-                [False, False, False, True, True, False],
-                [False, False, False, True, True, False],
-                [False, False, False, False, False, False],  # unconnected node => no local connections with n_hop >= 2
-            ]
-        )
+        == np.array([
+            [True, True, True, False, False, False],
+            [True, True, True, False, False, False],
+            [True, True, True, False, False, False],
+            [False, False, False, True, True, False],
+            [False, False, False, True, True, False],
+            [False, False, False, False, False, False],  # unconnected node => no local connections with n_hop >= 2
+        ])
     ).all()
 
 
@@ -208,15 +196,13 @@ def test_to_adjacency_view():
 
     assert (
         (adjancency_view.todense() > 0)
-        == np.array(
-            [
-                [False, False, True, False, False],
-                [False, False, False, False, False],
-                [True, False, False, False, False],
-                [False, False, False, False, False],
-                [False, False, False, False, False],
-            ]
-        )
+        == np.array([
+            [False, False, True, False, False],
+            [False, False, False, False, False],
+            [True, False, False, False, False],
+            [False, False, False, False, False],
+            [False, False, False, False, False],
+        ])
     ).all()
 
     adjancency_view = _to_adjacency_view(adata.obsp["spatial_connectivities"], 3)
@@ -227,32 +213,28 @@ def test_to_adjacency_view():
 
     assert (
         (adjancency_view.todense() > 0)
-        == np.array(
-            [
-                [False, True, False, False, False, False],
-                [True, False, True, False, False, False],
-                [False, True, False, False, False, False],
-                [False, False, False, False, True, False],
-                [False, False, False, True, False, False],
-                [False, False, False, False, False, False],
-            ]
-        )
+        == np.array([
+            [False, True, False, False, False, False],
+            [True, False, True, False, False, False],
+            [False, True, False, False, False, False],
+            [False, False, False, False, True, False],
+            [False, False, False, True, False, False],
+            [False, False, False, False, False, False],
+        ])
     ).all()
 
     adjancency_view = _to_adjacency_view(adata_line.obsp["spatial_connectivities"], 2)
 
     assert (
         (adjancency_view.todense() > 0)
-        == np.array(
-            [
-                [False, False, True, False, False, False],
-                [False, False, False, False, False, False],
-                [True, False, False, False, False, False],
-                [False, False, False, False, False, False],
-                [False, False, False, False, False, False],
-                [False, False, False, False, False, False],
-            ]
-        )
+        == np.array([
+            [False, False, True, False, False, False],
+            [False, False, False, False, False, False],
+            [True, False, False, False, False, False],
+            [False, False, False, False, False, False],
+            [False, False, False, False, False, False],
+            [False, False, False, False, False, False],
+        ])
     ).all()
 
     adjancency_view = _to_adjacency_view(adata_line.obsp["spatial_connectivities"], 3)

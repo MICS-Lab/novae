@@ -79,7 +79,8 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
     if config.sweep:
         return validation_callback
 
-    return validation_callback + [
+    return [
+        *validation_callback,
         ModelCheckpoint(monitor="metrics/val_heuristic", mode="max", save_last=True, save_top_k=1),
         LogProtoCovCallback(),
         LogTissuePrototypeWeights(),
@@ -87,7 +88,7 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
 
 
 def read_config(args: argparse.Namespace) -> Config:
-    with open(novae.utils.repository_root() / "scripts" / "config" / args.config, "r") as f:
+    with open(novae.utils.repository_root() / "scripts" / "config" / args.config) as f:
         config = yaml.safe_load(f)
         config = Config(**config, sweep=args.sweep)
 
@@ -97,7 +98,7 @@ def read_config(args: argparse.Namespace) -> Config:
         return config
 
 
-def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
+def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):  # noqa: C901
     wandb.log({"num_parameters": sum(p.numel() for p in model.parameters())})
 
     keys_repr = ["log_umap", "log_metrics", "log_domains"]
@@ -119,14 +120,12 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):
             fide = mean_fide_score(adatas, obs_key, n_classes=n_domains)
             mne = mean_normalized_entropy(adatas, n_classes=n_domains, obs_key=obs_key)
             log.info(f"[{n_domains=}] JSD: {jsd}, FIDE: {fide}, MNE: {mne}")
-            wandb.log(
-                {
-                    f"metrics/jsd_{n_domains}_domains": jsd,
-                    f"metrics/fid_{n_domains}_domainse": fide,
-                    f"metrics/mne_{n_domains}_domains": mne,
-                    f"metrics/train_heuristic_{n_domains}_domains": fide * mne,
-                }
-            )
+            wandb.log({
+                f"metrics/jsd_{n_domains}_domains": jsd,
+                f"metrics/fid_{n_domains}_domainse": fide,
+                f"metrics/mne_{n_domains}_domains": mne,
+                f"metrics/train_heuristic_{n_domains}_domains": fide * mne,
+            })
 
     if config.post_training.log_umap:
         _log_umap(model, adatas, config)
@@ -174,10 +173,7 @@ def _log_umap(model: novae.Novae, adatas: list[AnnData], config: Config, n_obs_t
 
 def _save_h5ad(adata: AnnData, stem: str | None = None):
     if stem is None:
-        if "slide_id" in adata.obs:
-            stem = adata.obs["slide_id"].iloc[0]
-        else:
-            stem = str(id(adata))
+        stem = adata.obs["slide_id"].iloc[0] if "slide_id" in adata.obs else str(id(adata))
 
     out_path = wandb_results_dir() / f"{stem}.h5ad"
     log.info(f"Writing adata file to {out_path}: {adata}")

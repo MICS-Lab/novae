@@ -93,11 +93,11 @@ def domains(
 
     handles = [
         Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=8, linestyle="None")
-        for color in colors + [na_color]
+        for color in [*colors, na_color]
     ]
     fig.legend(
         handles,
-        all_domains + ["NA"],
+        [*all_domains, "NA"],
         loc="upper center" if i > 1 else "center left",
         bbox_to_anchor=(0.5, 1.1) if i > 1 else (1.04, 0.5),
         borderaxespad=0,
