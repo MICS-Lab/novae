@@ -173,9 +173,9 @@ def load_dataset(
             values = [value] if isinstance(value, str) else value
             valid_values = VALID_VALUES[column]
 
-            assert all(
-                value in valid_values for value in values
-            ), f"Found invalid {column} value in {values}. Valid values are {valid_values}."
+            assert all(value in valid_values for value in values), (
+                f"Found invalid {column} value in {values}. Valid values are {valid_values}."
+            )
 
             metadata = metadata[metadata[column].isin(values)]
 

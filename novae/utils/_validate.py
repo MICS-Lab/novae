@@ -47,9 +47,9 @@ def prepare_adatas(
 
     assert len(adatas) > 0, "No `adata` object found. Please provide an AnnData object, or a list of AnnData objects."
 
-    assert all(
-        Keys.ADJ in adata.obsp for adata in adatas
-    ), "You need to first run `novae.spatial_neighbors` to compute cell neighbors."
+    assert all(Keys.ADJ in adata.obsp for adata in adatas), (
+        "You need to first run `novae.spatial_neighbors` to compute cell neighbors."
+    )
 
     _check_has_slide_id(adatas)
     _standardize_adatas(adatas)  # log1p + spatial_neighbors
@@ -68,18 +68,18 @@ def _check_has_slide_id(adata: AnnData | list[AnnData]):
         for adata_ in adata:
             _check_has_slide_id(adata_)
         return
-    assert (
-        Keys.SLIDE_ID in adata.obs
-    ), f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.spatial_neighbors` first."
+    assert Keys.SLIDE_ID in adata.obs, (
+        f"Column `adata.obs['{Keys.SLIDE_ID}']` not found. Run `novae.spatial_neighbors` first."
+    )
 
 
 def _standardize_adatas(adatas: list[AnnData]):
     """
     Make sure all AnnData objects are preprocessed correctly and have a Delaunay graph
     """
-    assert hasattr(
-        adatas, "__iter__"
-    ), f"The input `adata` must be an AnnData object, or an iterable of AnnData objects. Found {type(adatas)}"
+    assert hasattr(adatas, "__iter__"), (
+        f"The input `adata` must be an AnnData object, or an iterable of AnnData objects. Found {type(adatas)}"
+    )
     assert all(isinstance(adata, AnnData) for adata in adatas), "All `adata` elements must be AnnData objects"
 
     count_raw = 0
@@ -110,9 +110,9 @@ def _standardize_adatas(adatas: list[AnnData]):
 
 def check_has_spatial_adjancency(adata: AnnData):
     assert "spatial" in adata.obsm, "No spatial coordinates found in `adata.obsm['spatial']`"
-    assert (
-        Keys.ADJ in adata.obsp
-    ), "No spatial adjacency found in `adata.obsp['spatial_distances']`.Consider running `novae.spatial_neighbors`"
+    assert Keys.ADJ in adata.obsp, (
+        "No spatial adjacency found in `adata.obsp['spatial_distances']`.Consider running `novae.spatial_neighbors`"
+    )
 
 
 def _lookup_highly_variable_genes(adatas: list[AnnData]):
@@ -161,9 +161,9 @@ def _select_novae_genes(adatas: list[AnnData], var_names: set | list[str] | None
         adata.var[Keys.USE_GENE] = adata.var.get(Keys.HIGHLY_VARIABLE, True) & adata.var.get(Keys.IS_KNOWN_GENE, True)
 
         n_used = adata.var[Keys.USE_GENE].sum()
-        assert (
-            n_used >= Nums.MIN_GENES
-        ), f"Too few genes ({n_used}) are both (i) known by the model and (ii) highly variable."
+        assert n_used >= Nums.MIN_GENES, (
+            f"Too few genes ({n_used}) are both (i) known by the model and (ii) highly variable."
+        )
 
 
 def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None):
@@ -219,9 +219,9 @@ def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> s
     assert len(available_obs_keys), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
     if obs_key is not None:
-        assert all(
-            obs_key in adata.obs for adata in adatas
-        ), f"Novae domains '{obs_key}' not available in all AnnData objects. {ERROR_ADVICE_OBS_KEY}. Or consider using one of {available_obs_keys} instead."
+        assert all(obs_key in adata.obs for adata in adatas), (
+            f"Novae domains '{obs_key}' not available in all AnnData objects. {ERROR_ADVICE_OBS_KEY}. Or consider using one of {available_obs_keys} instead."
+        )
         return obs_key
 
     obs_key = list(available_obs_keys)[-1]

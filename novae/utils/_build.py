@@ -105,9 +105,9 @@ def spatial_neighbors(
     elif technology is not None:
         adata.obsm["spatial"] = _technology_coords(adata, technology)
 
-    assert (
-        "spatial" in adata.obsm
-    ), "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
+    assert "spatial" in adata.obsm, (
+        "Key 'spatial' not found in adata.obsm. This should contain the 2D spatial coordinates of the cells"
+    )
 
     coord_type = CoordType(coord_type or "generic")
     delaunay = True if delaunay is None else delaunay
@@ -297,9 +297,9 @@ def _technology_coords(adata: AnnData, technology: str) -> np.ndarray:
 
     assert technology in VALID_TECHNOLOGIES, f"Invalid `technology` argument. Choose one of {VALID_TECHNOLOGIES}"
 
-    assert (
-        "spatial" not in adata.obsm
-    ), "Running `novae.spatial_neighbors` with `technology` but `adata.obsm['spatial']` already exists."
+    assert "spatial" not in adata.obsm, (
+        "Running `novae.spatial_neighbors` with `technology` but `adata.obsm['spatial']` already exists."
+    )
 
     if technology == "cosmx":
         columns = ["CenterX_global_px", "CenterY_global_px"]

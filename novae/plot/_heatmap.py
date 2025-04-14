@@ -164,7 +164,7 @@ def _get_pathway_score(adata: AnnData, gene_names: list[str], min_pathway_size: 
 def _load_gsea_json(path: str) -> dict[str, list[str]]:
     with open(path) as f:
         content: dict = json.load(f)
-        assert all(
-            "geneSymbols" in value for value in content.values()
-        ), "Missing 'geneSymbols' key in JSON file. Expected a valid GSEA JSON file."
+        assert all("geneSymbols" in value for value in content.values()), (
+            "Missing 'geneSymbols' key in JSON file. Expected a valid GSEA JSON file."
+        )
         return {key: value["geneSymbols"] for key, value in content.items()}

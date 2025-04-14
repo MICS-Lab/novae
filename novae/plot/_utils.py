@@ -38,8 +38,8 @@ def _get_default_cell_size(adata: AnnData | list[AnnData]) -> float:
     if isinstance(adata, list):
         adata = max(adata, key=lambda adata: adata.n_obs)
 
-    assert (
-        Keys.ADJ in adata.obsp
-    ), f"Expected {Keys.ADJ} in adata.obsp. Please run `novae.spatial_neighbors(...)` first."
+    assert Keys.ADJ in adata.obsp, (
+        f"Expected {Keys.ADJ} in adata.obsp. Please run `novae.spatial_neighbors(...)` first."
+    )
 
     return np.median(adata.obsp[Keys.ADJ].data)

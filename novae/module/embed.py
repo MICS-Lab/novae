@@ -173,6 +173,6 @@ def _check_gene_to_index(gene_to_index: dict[str, int]):
 
     assert len(values) == len(gene_to_index), "gene_to_index should be a dictionnary with unique values"
 
-    assert (
-        min(values) == 0 and max(values) == len(values) - 1
-    ), "gene_to_index should be a dictionnary with continuous indices starting from 0"
+    assert min(values) == 0 and max(values) == len(values) - 1, (
+        "gene_to_index should be a dictionnary with continuous indices starting from 0"
+    )

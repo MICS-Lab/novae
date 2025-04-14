@@ -177,9 +177,9 @@ class SwavHead(L.LightningModule):
         return Q / Q.sum(dim=1, keepdim=True)  # ensure rows sum to 1 (for cross-entropy loss)
 
     def set_kmeans_prototypes(self, latent: np.ndarray):
-        assert (
-            len(latent) >= self.num_prototypes
-        ), f"The number of valid cells ({len(latent)}) must be greater than the number of prototypes ({self.num_prototypes})."
+        assert len(latent) >= self.num_prototypes, (
+            f"The number of valid cells ({len(latent)}) must be greater than the number of prototypes ({self.num_prototypes})."
+        )
 
         kmeans = KMeans(n_clusters=self.num_prototypes, random_state=0, n_init="auto")
         X = latent / (Nums.EPS + np.linalg.norm(latent, axis=1)[:, None])

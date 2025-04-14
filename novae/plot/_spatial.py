@@ -152,9 +152,9 @@ def spatially_variable_genes(
 
     where = (adata.X > 0).mean(0) > min_positive_ratio
     valid_vars = adata.var_names[where.A1 if isinstance(where, np.matrix) else where]
-    assert (
-        len(valid_vars) >= top_k
-    ), f"Only {len(valid_vars)} genes are available. Please decrease `top_k` or `min_positive_ratio`."
+    assert len(valid_vars) >= top_k, (
+        f"Only {len(valid_vars)} genes are available. Please decrease `top_k` or `min_positive_ratio`."
+    )
 
     svg = df.std(1).loc[valid_vars].sort_values(ascending=False).head(top_k).index
 

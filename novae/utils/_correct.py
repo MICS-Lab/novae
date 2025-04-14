@@ -35,9 +35,9 @@ def _domains_counts_per_slide(adatas: list[AnnData], obs_key: str) -> pd.DataFra
 def batch_effect_correction(adatas: list[AnnData], obs_key: str) -> None:
     for adata in adatas:
         assert obs_key in adata.obs, f"Did not found `adata.obs['{obs_key}']`"
-        assert (
-            Keys.REPR in adata.obsm
-        ), f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representations(...)` first"
+        assert Keys.REPR in adata.obsm, (
+            f"Did not found `adata.obsm['{Keys.REPR}']`. Please run `model.compute_representations(...)` first"
+        )
 
     adata_indices, slides_obs_indices = _slides_indices(adatas)
 
