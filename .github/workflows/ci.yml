@@ -1,4 +1,5 @@
-name: test_deploy_publish
+name: ci
+
 on:
   push:
     tags:
@@ -14,41 +15,54 @@ jobs:
       - uses: actions/setup-python@v3
       - uses: pre-commit/action@v3.0.1
 
-  build:
+  tests:
     needs: [pre-commit]
+    name: "pytest"
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - run: pip install '.[dev]'
 
-      - name: Run tests
-        run: pytest --cov
+      - name: Tests
+        run: uv run pytest
 
-      - name: Deploy doc
-        if: matrix.python-version == '3.10' && contains(github.ref, 'tags')
-        run: mkdocs gh-deploy --force
-
-      - name: Upload results to Codecov
-        if: matrix.python-version == '3.10'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-  publish:
-    needs: [build]
+  deploy-docs:
+    needs: [tests]
     if: contains(github.ref, 'tags')
+    name: "Deploy documentation"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1.17
-        with:
-          python_version: "3.10"
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+      - uses: actions/checkout@v4
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      - name: Build documentation
+        run: uv run mkdocs gh-deploy --force
+
+  pypi-release:
+    needs: [tests]
+    if: contains(github.ref, 'tags')
+    name: "PyPI release"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      - name: Build
+        run: uv build
+
+      - name: Publish
+        run: uv publish -t ${{ secrets.PYPI_TOKEN }}

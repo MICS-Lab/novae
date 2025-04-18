@@ -1,3 +1,11 @@
+## [0.2.5] - xxxx-xx-xx
+
+## Changed
+- Migrate to `uv` + `ruff`
+
+## Fixed
+- Removed scaling in the data loader
+
 ## [0.2.4] - 2025-03-26
 
 Hotfix (#18)

@@ -1,6 +1,6 @@
 ## Installation
 
-Novae can be installed on every OS via `pip` or [`poetry`](https://python-poetry.org/docs/), on any Python version from `3.10` to `3.12` (included). By default, we recommend using `python==3.10`.
+Novae can be installed on every OS via `pip` on any Python version from `3.10` to `3.12` (included). By default, we recommend using `python==3.10`.
 
 !!! note "Advice (optional)"
 
@@ -28,16 +28,15 @@ Choose one of the following, depending on your needs. It should take at most a f
     cd novae
 
     pip install -e . # no extra
-    pip install -e '.[dev]' # all extras
     ```
 
-=== "Poetry (editable mode)"
+=== "uv (editable mode)"
 
     ``` bash
     git clone https://github.com/MICS-Lab/novae.git
     cd novae
 
-    poetry install --all-extras
+    uv sync --all-extras --dev
     ```
 
 ## Next steps

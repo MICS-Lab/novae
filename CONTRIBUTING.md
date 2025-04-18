@@ -22,14 +22,14 @@ To add some new code to **novae**, you should:
 
 When contributing, installing `novae` in editable mode is recommended. We also recommend installing the `dev` extra.
 
-For that, choose between `pip` and `poetry` as below:
+For that, choose between `pip` and `uv` as below:
 
 ```sh
 git clone https://github.com/MICS-Lab/novae.git
 cd novae
 
 pip install -e '.[dev]' # pip installation
-poetry install -E dev   # poetry installation
+uv sync --all-extras --dev   # uv installation
 ```
 
 ## Coding guidelines
