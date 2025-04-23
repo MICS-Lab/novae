@@ -8,6 +8,7 @@ class Keys:
     # obsm keys
     REPR: str = "novae_latent"
     REPR_CORRECTED: str = "novae_latent_corrected"
+    HISTO_EMBEDDINGS: str = "histo_embeddings"
 
     # obsp keys
     ADJ: str = "spatial_distances"
@@ -58,3 +59,4 @@ class Nums:
     MEAN_NGH_TH_WARNING: float = 3.5
     N_OBS_THRESHOLD: int = 2_000_000  # above this number, lazy loading is used
     RATIO_VALID_CELLS_TH: float = 0.7
+    HE_PATCH_WIDTH: int = 224

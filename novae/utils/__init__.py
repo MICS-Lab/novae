@@ -19,3 +19,4 @@ from ._data import load_local_dataset, load_wandb_artifact, toy_dataset, load_da
 from ._mode import Mode
 from ._correct import batch_effect_correction
 from ._preprocess import quantile_scaling
+from ._histo import compute_he_embeddings

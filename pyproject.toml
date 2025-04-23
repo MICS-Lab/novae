@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-multimodal = ["spatialdata>=0.3.0"]
+multimodal = ["sopa>=2.0.4"]
 
 [dependency-groups]
 dev = [
