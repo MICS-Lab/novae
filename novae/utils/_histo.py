@@ -1,11 +1,15 @@
+import logging
 from typing import TYPE_CHECKING
 
+import numpy as np
 from anndata import AnnData
 
 if TYPE_CHECKING:
     from spatialdata import SpatialData
 
 from .._constants import Keys, Nums
+
+log = logging.getLogger(__name__)
 
 
 def compute_he_embeddings(
@@ -48,11 +52,26 @@ def compute_he_embeddings(
         image_key=image_key,
         device=device,
         batch_size=batch_size,
+        # roi_key=shapes_key,  # consider only patches behind the cells
     )
 
     patches_centroids = sdata[SopaKeys.EMBEDDINGS_PATCHES].centroid
-    closest_patch_index = patches_centroids.sindex.nearest(cells.centroid, return_all=False)[1]
+    indices, distances = patches_centroids.sindex.nearest(cells.centroid, return_all=False, return_distance=True)
 
-    adata.obsm[Keys.HISTO_EMBEDDINGS] = sdata.tables[f"{model}_embeddings"].X[closest_patch_index]
+    _quality_control_join(distances)
+
+    adata.obsm[Keys.HISTO_EMBEDDINGS] = sdata.tables[f"{model}_embeddings"].X[indices[1]]
 
     return adata
+
+
+def _quality_control_join(distances: np.ndarray):
+    ADVICE = "Consider increasing the `patch_overlap_ratio`, or check that no cell is out of the image."
+
+    mean_distance = distances.mean()
+    if mean_distance > Nums.HE_PATCH_WIDTH / 4:
+        log.warning(f"The mean distance between patches and cells is {mean_distance:.2f}, which is high. {ADVICE}")
+
+    ratio_cells_far = (distances > Nums.HE_PATCH_WIDTH / 3).mean()
+    if ratio_cells_far > 0.1:
+        log.warning(f"More than {ratio_cells_far:.2%} of cells are far from their patches. {ADVICE}")
