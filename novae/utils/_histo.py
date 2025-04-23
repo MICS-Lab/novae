@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from anndata import AnnData
+from sklearn.decomposition import PCA
 
 if TYPE_CHECKING:
     from spatialdata import SpatialData
@@ -12,7 +13,7 @@ from .._constants import Keys, Nums
 log = logging.getLogger(__name__)
 
 
-def compute_he_embeddings(
+def compute_histo_embeddings(
     sdata: "SpatialData",
     model: str,
     table_key: str = "table",
@@ -60,7 +61,8 @@ def compute_he_embeddings(
 
     _quality_control_join(distances)
 
-    adata.obsm[Keys.HISTO_EMBEDDINGS] = sdata.tables[f"{model}_embeddings"].X[indices[1]]
+    adata.obs["embedding_key"] = f"{model}_embeddings"
+    adata.obs["embedding_index"] = indices[1]
 
     return adata
 
@@ -75,3 +77,22 @@ def _quality_control_join(distances: np.ndarray):
     ratio_cells_far = (distances > Nums.HE_PATCH_WIDTH / 3).mean()
     if ratio_cells_far > 0.1:
         log.warning(f"More than {ratio_cells_far:.2%} of cells are far from their patches. {ADVICE}")
+
+
+def compute_histo_pca(sdatas: "SpatialData" | list["SpatialData"], n_components: int = 50, table_key: str = "table"):
+    from spatialdata import SpatialData
+
+    if isinstance(sdatas, SpatialData):
+        sdatas = [sdatas]
+
+    X = [sdata[sdata[table_key].obs["embedding_key"]].X for sdata in sdatas]
+    X = np.concatenate(X, axis=0)
+
+    pca = PCA(n_components=n_components)
+    pca.fit(X)
+
+    for sdata in sdatas:
+        adata: AnnData = sdata[sdata[table_key]]
+        adata.obsm[Keys.HISTO_EMBEDDINGS] = pca.transform(
+            sdata[adata.obs["embedding_key"]].X[adata.obs["embedding_index"]]
+        )
