@@ -7,8 +7,6 @@ if TYPE_CHECKING:
 
 from .._constants import Keys, Nums
 
-PATCH_WIDTH = 224
-
 
 def compute_he_embeddings(
     sdata: "SpatialData",
