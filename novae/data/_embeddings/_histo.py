@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Callable, Union
 
 import numpy as np
 from anndata import AnnData
@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def compute_histo_embeddings(
     sdata: "SpatialData",
-    model: str,
+    model: str | Callable,
     table_key: str = "table",
     patch_overlap_ratio: float = 0.5,
     image_key: str | None = None,
@@ -61,7 +61,10 @@ def compute_histo_embeddings(
 
     _quality_control_join(distances)
 
-    adata.obs["embedding_key"] = f"{model}_embeddings"
+    # TODO: use key_added from sopa when > 2.0.6
+    key_added = f"{model if isinstance(model, str) else model.__class__.__name__}_embeddings"
+
+    adata.obs["embedding_key"] = key_added
     adata.obs["embedding_index"] = indices[1]
 
     return adata
@@ -74,8 +77,8 @@ def _quality_control_join(distances: np.ndarray):
     if mean_distance > Nums.HE_PATCH_WIDTH / 4:
         log.warning(f"The mean distance between patches and cells is {mean_distance:.2f}, which is high. {ADVICE}")
 
-    ratio_cells_far = (distances > Nums.HE_PATCH_WIDTH / 3).mean()
-    if ratio_cells_far > 0.1:
+    ratio_cells_far = (distances > Nums.HE_PATCH_WIDTH).mean()
+    if ratio_cells_far > 0.05:
         log.warning(f"More than {ratio_cells_far:.2%} of cells are far from their patches. {ADVICE}")
 
 
@@ -87,14 +90,15 @@ def compute_histo_pca(
     if isinstance(sdatas, SpatialData):
         sdatas = [sdatas]
 
-    X = [sdata[sdata[table_key].obs["embedding_key"]].X for sdata in sdatas]
-    X = np.concatenate(X, axis=0)
+    def _histo_emb(sdata: "SpatialData") -> np.ndarray:
+        embedding_key = sdata.tables[table_key].obs["embedding_key"].iloc[0]
+        return sdata.tables[embedding_key].X
+
+    X = np.concatenate([_histo_emb(sdata) for sdata in sdatas], axis=0)
 
     pca = PCA(n_components=n_components)
     pca.fit(X)
 
     for sdata in sdatas:
-        adata: AnnData = sdata[sdata[table_key]]
-        adata.obsm[Keys.HISTO_EMBEDDINGS] = pca.transform(
-            sdata[adata.obs["embedding_key"]].X[adata.obs["embedding_index"]]
-        )
+        adata: AnnData = sdata[table_key]
+        adata.obsm[Keys.HISTO_EMBEDDINGS] = pca.transform(_histo_emb(sdata)[adata.obs["embedding_index"]])
