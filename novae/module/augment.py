@@ -12,6 +12,7 @@ class GraphAugmentation(L.LightningModule):
         panel_subset_size: float,
         background_noise_lambda: float,
         sensitivity_noise_std: float,
+        dropout_rate: float,
     ):
         """
 
@@ -24,6 +25,7 @@ class GraphAugmentation(L.LightningModule):
         self.panel_subset_size = panel_subset_size
         self.background_noise_lambda = background_noise_lambda
         self.sensitivity_noise_std = sensitivity_noise_std
+        self.dropout_rate = dropout_rate
 
         self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda)))
 
@@ -43,9 +45,22 @@ class GraphAugmentation(L.LightningModule):
             start, stop = data.ptr[i], data.ptr[i + 1]
             data.x[start:stop] = data.x[start:stop] * factors[i] + additions[i]
 
+    def dropout(self, data: Batch):
+        """Set to 0 the expression of some genes (inplace).
+
+        Args:
+            data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
+        """
+        if self.dropout_rate == 0:
+            return
+
+        mask = torch.rand(data.x.shape[1], device=self.device) < self.dropout_rate
+        data.x[:, mask] = 0
+
     def panel_subset(self, data: Batch):
         """
         Keep a ratio of `panel_subset_size` of the input genes (inplace operation).
+        Contrary to the dropout, it doesn't set the expression to 0, but removes the genes from the panel.
 
         Args:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.

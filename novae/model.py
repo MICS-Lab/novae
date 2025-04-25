@@ -51,6 +51,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         panel_subset_size: float = 0.8,
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
+        dropout_rate: float = 0.0,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
     ) -> None:
@@ -72,6 +73,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             panel_subset_size: Ratio of genes kept from the panel during augmentation.
             background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
+            dropout_rate: Dropout rate for the genes during augmentation.
             scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
             var_names: Only used when loading a pretrained model. Do not use it yourself.
         """
@@ -92,7 +94,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
-        self.augmentation = GraphAugmentation(panel_subset_size, background_noise_lambda, sensitivity_noise_std)
+        self.augmentation = GraphAugmentation(
+            panel_subset_size, background_noise_lambda, sensitivity_noise_std, dropout_rate
+        )
         self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
 
         ### Misc
