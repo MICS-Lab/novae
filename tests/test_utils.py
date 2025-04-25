@@ -7,7 +7,7 @@ from anndata import AnnData
 import novae
 from novae._constants import Keys
 from novae.data.dataset import _to_adjacency_local, _to_adjacency_view
-from novae.utils._build import _set_unique_slide_ids
+from novae.utils.build import _set_unique_slide_ids
 
 from ._utils import adata, adata_concat, adata_line
 
@@ -29,7 +29,7 @@ def test_build():
 
 
 def test_set_unique_slide_ids():
-    adatas = novae.utils.toy_dataset(
+    adatas = novae.data.toy_dataset(
         xmax=200,
         n_panels=2,
         n_slides_per_panel=1,
@@ -41,7 +41,7 @@ def test_set_unique_slide_ids():
 
     assert adatas[0].obs[Keys.SLIDE_ID].iloc[0] == f"{id(adatas[0])}_slide_0"
 
-    adatas = novae.utils.toy_dataset(
+    adatas = novae.data.toy_dataset(
         xmax=200,
         n_panels=2,
         n_slides_per_panel=1,
@@ -80,7 +80,7 @@ def test_build_slide_key():
 
 
 def test_build_slide_key_disjoint_indices():
-    adata = novae.utils.toy_dataset(
+    adata = novae.data.toy_dataset(
         n_panels=1,
         n_slides_per_panel=1,
         xmax=100,

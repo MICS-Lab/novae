@@ -1,9 +1,9 @@
 import argparse
 
-import wandb
 from sklearn.metrics.cluster import adjusted_rand_score
 
 import novae
+import wandb
 from novae.monitor.log import log_plt_figure
 
 from .utils import init_wandb_logger, read_config
@@ -12,7 +12,7 @@ from .utils import init_wandb_logger, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.utils.toy_dataset(n_panels=2, xmax=2_000, n_domains=7, n_vars=300)
+    adatas = novae.data.toy_dataset(n_panels=2, xmax=2_000, n_domains=7, n_vars=300)
 
     adatas[1] = adatas[1][adatas[1].obs["domain"] != "domain_6", :].copy()
     novae.spatial_neighbors(adatas)

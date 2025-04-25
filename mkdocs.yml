@@ -19,6 +19,7 @@ nav:
   - Spot/bin technologies: tutorials/resolutions.ipynb
 - API:
   - Novae model: api/Novae.md
+  - Data: api/data.md
   - Utils: api/utils.md
   - Plotting: api/plot.md
   - Advanced:

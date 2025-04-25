@@ -14,7 +14,7 @@ from torch_geometric.data import Batch
 
 from . import __version__, plot, utils
 from ._constants import Keys, Nums
-from .data import NovaeDatamodule, NovaeDataset
+from .data import NovaeDatamodule, NovaeDataset, _load_wandb_artifact
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
 
 log = logging.getLogger(__name__)
@@ -291,7 +291,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     @classmethod
     def _load_wandb_artifact(cls, model_name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
-        artifact_path = utils.load_wandb_artifact(model_name) / "model.ckpt"
+        artifact_path = _load_wandb_artifact(model_name) / "model.ckpt"
 
         try:
             model = cls.load_from_checkpoint(artifact_path, map_location=map_location, strict=False, **kwargs)

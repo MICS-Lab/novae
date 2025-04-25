@@ -1,6 +1,12 @@
-## [0.2.5] - xxxx-xx-xx
+## [1.0.0] - xxxx-xx-xx
+
+First post-publication release.
+Starting from this version, it will be as backward compatible as possible.
 
 ## Changed
+- Move `novae.utils.load_dataset` to `novae.load_dataset`
+- Move `novae.utils.quantile_scaling` to `novae.data.quantile_scaling`
+- Move `novae.utils.toy_dataset` to `novae.data.toy_dataset`
 - Migrate to `uv` + `ruff`
 
 ## Fixed

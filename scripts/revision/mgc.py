@@ -5,7 +5,7 @@ import novae
 
 adata = anndata.read_h5ad("/gpfs/workdir/blampeyq/novae/data/_mgc/MGC_merged_adata_clean_graph.h5ad")
 
-novae.utils.quantile_scaling(adata)
+novae.data.quantile_scaling(adata)
 
 model = novae.Novae(adata, embedding_size=62)  # 63 proteins
 

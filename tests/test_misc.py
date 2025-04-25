@@ -1,7 +1,7 @@
 import novae
 from novae._constants import Nums
 
-adata = novae.utils.toy_dataset(xmax=200)[0]
+adata = novae.data.toy_dataset(xmax=200)[0]
 
 
 def test_settings():

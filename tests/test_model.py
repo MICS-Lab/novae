@@ -8,9 +8,9 @@ import torch
 
 import novae
 from novae._constants import Keys
-from novae.utils._data import GENE_NAMES_SUBSET
+from novae.data.toy import GENE_NAMES_SUBSET
 
-adatas = novae.utils.toy_dataset(
+adatas = novae.data.toy_dataset(
     n_panels=2,
     n_slides_per_panel=2,
     xmax=100,
@@ -46,7 +46,7 @@ def test_load_huggingface_model():
 
 
 def test_train():
-    adatas = novae.utils.toy_dataset(
+    adatas = novae.data.toy_dataset(
         n_panels=2,
         n_slides_per_panel=2,
         xmax=60,
@@ -90,7 +90,7 @@ def test_train():
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
 def test_representation_single_panel(slide_key: str | None):
-    adata = novae.utils.toy_dataset(
+    adata = novae.data.toy_dataset(
         n_panels=1,
         n_slides_per_panel=2,
         xmax=100,
@@ -137,7 +137,7 @@ def test_representation_single_panel(slide_key: str | None):
 
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
 def test_representation_multi_panel(slide_key: str | None):
-    adatas = novae.utils.toy_dataset(
+    adatas = novae.data.toy_dataset(
         n_panels=3,
         n_slides_per_panel=2,
         xmax=100,
@@ -174,7 +174,7 @@ def test_representation_multi_panel(slide_key: str | None):
 @pytest.mark.parametrize("slide_key", [None, "slide_key"])
 @pytest.mark.parametrize("scgpt_model_dir", [None, "tests"])
 def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | None):
-    adata = novae.utils.toy_dataset(
+    adata = novae.data.toy_dataset(
         n_panels=1,
         n_slides_per_panel=2,
         xmax=100,
@@ -243,7 +243,7 @@ def test_safetensors_parameters_names():
 
 
 def test_reset_clusters_zero_shot():
-    adata = novae.utils.toy_dataset()[0]
+    adata = novae.data.toy_dataset()[0]
 
     novae.utils.spatial_neighbors(adata)
 

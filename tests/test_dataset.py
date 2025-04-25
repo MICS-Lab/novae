@@ -8,7 +8,7 @@ N_PANELS = 2
 N_SLIDES_PER_PANEL = 3
 
 
-adatas = novae.utils.toy_dataset(n_panels=N_PANELS, n_slides_per_panel=N_SLIDES_PER_PANEL)
+adatas = novae.data.toy_dataset(n_panels=N_PANELS, n_slides_per_panel=N_SLIDES_PER_PANEL)
 
 single_adata = adatas[0]
 
