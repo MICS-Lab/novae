@@ -21,7 +21,24 @@ def compute_histo_embeddings(
     image_key: str | None = None,
     device: str | None = None,
     batch_size: int = 32,
-):
+) -> None:
+    """Compute histology embeddings for a given model on a grid of overlapping patches.
+
+    It will add a new `AnnData` object to the `SpatialData` object, containing the embeddings of the patches, and
+    add a column in the cells table with the index of the closest patch.
+
+    !!! warning "Installation"
+        This function requires the `multimodal` extra. You can install it with `pip install novae[multimodal]`.
+
+    Args:
+        sdata: A `SpatialData` object containing the data.
+        model: The model to use for computing embeddings. See the [sopa documentation](https://gustaveroussy.github.io/sopa/api/patches/#sopa.patches.compute_embeddings) for more details.
+        table_key: Name of the `AnnData` object containing the cells.
+        patch_overlap_ratio: Ratio of overlap between patches.
+        image_key: Name of the histology image. If None, the function will try to find the image key automatically.
+        device: Torch device to use for computation.
+        batch_size: Mini-batch size for computation.
+    """
     try:
         import sopa
         from sopa._constants import SopaAttrs, SopaKeys
@@ -67,8 +84,6 @@ def compute_histo_embeddings(
     adata.obs["embedding_key"] = key_added
     adata.obs["embedding_index"] = indices[1]
 
-    return adata
-
 
 def _quality_control_join(distances: np.ndarray):
     ADVICE = "Consider increasing the `patch_overlap_ratio`, or check that no cell is out of the image."
@@ -84,7 +99,18 @@ def _quality_control_join(distances: np.ndarray):
 
 def compute_histo_pca(
     sdatas: Union["SpatialData", list["SpatialData"]], n_components: int = 50, table_key: str = "table"
-):
+) -> None:
+    """Run PCA on the histology embeddings associated to each cell (from the closest patch).
+    The embedding is stored in `adata.obsm["histo_embeddings"]`, where `adata` is the table of cell expression.
+
+    !!! info
+        You need to run [novae.data.compute_histo_embeddings][] before running this function.
+
+    Args:
+        sdatas: One or several `SpatialData` object(s).
+        n_components: Number of components for the PCA.
+        table_key: Name of the `AnnData` object containing the cells.
+    """
     from spatialdata import SpatialData
 
     if isinstance(sdatas, SpatialData):
