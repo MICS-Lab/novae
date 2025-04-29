@@ -1,5 +1,5 @@
 data:
-  train_dataset: /gpfs/workdir/blampeyq/novae/data/_brain2
+  train_dataset: /gpfs/workdir/blampeyq/novae/data/brain2
 
 model_kwargs:
   scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
