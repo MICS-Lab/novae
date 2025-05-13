@@ -5,7 +5,10 @@ This is **not** the actual Novae source code. Instead, see the `novae` directory
 
 import argparse
 
+from anndata import AnnData
+
 import novae
+from novae._constants import Keys
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 
@@ -17,6 +20,10 @@ def main(args: argparse.Namespace) -> None:
         config.data.train_dataset, files_black_list=config.data.files_black_list
     )
     adatas_val = novae.data.load.load_local_dataset(config.data.val_dataset) if config.data.val_dataset else None
+
+    _check_sid(adatas)
+    if adatas_val is not None:
+        _check_sid(adatas_val)
 
     logger = init_wandb_logger(config)
     callbacks = get_callbacks(config, adatas_val)
@@ -31,6 +38,13 @@ def main(args: argparse.Namespace) -> None:
         model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)
 
     post_training(model, adatas, config)
+
+
+def _check_sid(adatas: list[AnnData]):
+    for adata in adatas:
+        if Keys.SLIDE_ID not in adata.obs:
+            assert "slide_id" in adata.obs
+            adata.obs[Keys.SLIDE_ID] = adata.obs["slide_id"].astype("category")  # backwards compatibility
 
 
 if __name__ == "__main__":

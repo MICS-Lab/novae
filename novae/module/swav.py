@@ -71,7 +71,7 @@ class SwavHead(L.LightningModule):
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
+    def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, dict[str, Tensor]]:
         """Compute the SwAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -95,10 +95,10 @@ class SwavHead(L.LightningModule):
 
         loss = -0.5 * (self.cross_entropy_loss(q1, projections2) + self.cross_entropy_loss(q2, projections1))
 
-        if self.koleo_loss_weight > 0:
-            loss += self.koleo_loss_weight * self.koleo_loss(z1)
+        koleo_loss = self.koleo_loss_weight * self.koleo_loss(z1) if self.koleo_loss_weight > 0 else 0
+        loss += koleo_loss
 
-        return loss, _mean_entropy_normalized(q1)
+        return loss, {"mean_entropy_normalized": _mean_entropy_normalized(q1), "koleo_loss": koleo_loss}
 
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))

@@ -220,10 +220,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         z_dict: dict[str, Tensor] = self(batch)
         slide_id = batch["main"].get("slide_id", [None])[0]
 
-        loss, mean_entropy_normalized = self.swav_head(z_dict["main"], z_dict["view"], slide_id)
+        loss, other_loss_terms = self.swav_head.forward(z_dict["main"], z_dict["view"], slide_id)
 
         self._log_progress_bar("loss", loss)
-        self._log_progress_bar("entropy", mean_entropy_normalized, on_epoch=False)
+        self._log_progress_bar("koleo_loss", other_loss_terms["koleo_loss"], prog_bar=False)
+        self._log_progress_bar("entropy", other_loss_terms["mean_entropy_normalized"], on_epoch=False)
 
         return loss
 
@@ -235,14 +236,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         after_warm_up = self.current_epoch >= Nums.WARMUP_EPOCHS
         self.swav_head.prototypes.requires_grad_(after_warm_up or self.mode.pretrained)
 
-    def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, **kwargs):
+    def _log_progress_bar(self, name: str, value: float, on_epoch: bool = True, prog_bar: bool = True, **kwargs):
         self.log(
             f"train/{name}",
             value,
             on_epoch=on_epoch,
             on_step=True,
             batch_size=self.hparams.batch_size,
-            prog_bar=True,
+            prog_bar=prog_bar,
             **kwargs,
         )
 
