@@ -77,3 +77,33 @@ class ValidationCallback(Callback):
         model.log("metrics/val_max_heuristic", self._max_heuristic)
 
         model.mode.zero_shot = False
+
+
+class PrototypeUMAPCallback(Callback):
+    MAX_SLIDES: int = 8
+    LEVEL: int = 15
+
+    def on_train_epoch_end(self, trainer: Trainer, model: Novae):
+        adata_proto = AnnData(model.swav_head.prototypes.data.numpy(force=True))
+
+        sc.pp.neighbors(adata_proto)
+        sc.tl.umap(adata_proto)
+
+        obs_key = f"level_{self.LEVEL}"
+
+        adata_proto.obs[obs_key] = model.swav_head.clusters_levels[-self.LEVEL]
+        adata_proto.obs[obs_key] = adata_proto.obs[obs_key].astype("category")
+
+        sc.pl.umap(adata_proto, color=obs_key, show=False)
+        log_plt_figure("prototype_umap")
+
+        weights, _ = model.swav_head.queue_weights()
+        weights = weights.numpy(force=True)
+
+        slide_ids = list(model.swav_head.slide_label_encoder.keys())[: self.MAX_SLIDES]
+        weights = weights[[model.swav_head.slide_label_encoder[slide_id] for slide_id in slide_ids], :]
+
+        adata_proto.obs[slide_ids] = weights.T
+
+        sc.pl.umap(adata_proto, color=slide_ids, vmax="p95", show=False, ncols=4)
+        log_plt_figure("prototype_umap_slide_weights")

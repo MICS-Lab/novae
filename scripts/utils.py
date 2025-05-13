@@ -4,23 +4,20 @@ import lightning as L
 import numpy as np
 import pandas as pd
 import scanpy as sc
-import wandb
 import yaml
 from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 import novae
+import wandb
 from novae import log
 from novae._constants import Keys, Nums
-from novae.monitor import (
-    jensen_shannon_divergence,
-    mean_fide_score,
-    mean_normalized_entropy,
-)
+from novae.monitor import jensen_shannon_divergence, mean_fide_score, mean_normalized_entropy
 from novae.monitor.callback import (
     LogProtoCovCallback,
     LogTissuePrototypeWeights,
+    PrototypeUMAPCallback,
     ValidationCallback,
 )
 from novae.monitor.log import log_plt_figure, wandb_results_dir
@@ -84,6 +81,7 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
         ModelCheckpoint(monitor="metrics/val_heuristic", mode="max", save_last=True, save_top_k=1),
         LogProtoCovCallback(),
         LogTissuePrototypeWeights(),
+        PrototypeUMAPCallback(),
     ]
 
 

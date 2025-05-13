@@ -6,12 +6,13 @@ data:
 
 model_kwargs:
   embedding_size: 50
+  koleo_loss_weight: 1
 
 fit_kwargs:
   max_epochs: 2
   accelerator: "cpu"
 
 post_training:
-  n_domains: [2, 3]
+  n_domains: [ 2, 3 ]
   log_umap: true
   log_domains: true
