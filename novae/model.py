@@ -52,6 +52,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
         dropout_rate: float = 0.0,
+        koleo_loss_weight: float = 0.0,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
     ) -> None:
@@ -97,7 +98,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.augmentation = GraphAugmentation(
             panel_subset_size, background_noise_lambda, sensitivity_noise_std, dropout_rate
         )
-        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
+        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature, koleo_loss_weight)
 
         ### Misc
         self._num_workers = 0
