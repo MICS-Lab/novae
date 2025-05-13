@@ -97,6 +97,8 @@ class PrototypeUMAPCallback(Callback):
         sc.pl.umap(adata_proto, color=obs_key, show=False)
         log_plt_figure("prototype_umap")
 
+        model.swav_head.reset_clustering()
+
         weights, _ = model.swav_head.queue_weights()
         weights = weights.numpy(force=True)
 
