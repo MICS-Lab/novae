@@ -162,6 +162,11 @@ class NovaeDataset(Dataset):
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
+        histo_embeddings = None
+        if Keys.HISTO_EMBEDDINGS in adata.obsm:
+            histo_embeddings = adata.obsm[Keys.HISTO_EMBEDDINGS][[obs_index]]
+            histo_embeddings = torch.tensor(histo_embeddings, dtype=torch.float32)
+
         x, genes_indices = self.anndata_torch[adata_index, obs_indices]
 
         return Data(
@@ -170,6 +175,7 @@ class NovaeDataset(Dataset):
             edge_attr=edge_attr,
             genes_indices=genes_indices,
             slide_id=adata.obs[Keys.SLIDE_ID].iloc[0],
+            histo_embeddings=histo_embeddings,
         )
 
     def shuffle_obs_ilocs(self):

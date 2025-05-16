@@ -1,5 +1,6 @@
 import lightning as L
-from torch import Tensor
+import torch
+from torch import Tensor, nn
 from torch_geometric.data import Batch
 from torch_geometric.nn.models import GAT
 
@@ -16,6 +17,7 @@ class GraphEncoder(L.LightningModule):
         num_layers: int,
         output_size: int,
         heads: int,
+        histo_embedding_size: int,
     ) -> None:
         """
         Args:
@@ -39,6 +41,14 @@ class GraphEncoder(L.LightningModule):
 
         self.node_aggregation = AttentionAggregation(output_size)
 
+        self.mlp_fusion = nn.Sequential(
+            nn.Linear(histo_embedding_size + output_size, histo_embedding_size + output_size),
+            nn.ReLU(),
+            nn.Linear(histo_embedding_size + output_size, output_size),
+            nn.ReLU(),
+            nn.Linear(output_size, output_size),
+        )
+
     def forward(self, data: Batch) -> Tensor:
         """Encode the input data.
 
@@ -49,4 +59,9 @@ class GraphEncoder(L.LightningModule):
             A tensor of shape `(B, O)` containing the encoded graphs.
         """
         out = self.gnn(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
-        return self.node_aggregation(out, index=data.batch)
+        out = self.node_aggregation(out, index=data.batch)
+
+        if hasattr(data, "histo_embeddings"):
+            out = self.mlp_fusion(torch.cat([out, data.histo_embeddings], dim=-1))
+
+        return out

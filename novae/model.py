@@ -53,6 +53,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         sensitivity_noise_std: float = 0.05,
         dropout_rate: float = 0.0,
         koleo_loss_weight: float = 0.0,
+        histo_embedding_size: int = 50,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
     ) -> None:
@@ -94,7 +95,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.mode = utils.Mode()
 
         ### Initialize modules
-        self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads)
+        self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads, histo_embedding_size)
         self.augmentation = GraphAugmentation(
             panel_subset_size, background_noise_lambda, sensitivity_noise_std, dropout_rate
         )
