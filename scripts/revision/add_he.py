@@ -1,4 +1,5 @@
 import spatialdata
+from sopa.segmentation.shapes import _ensure_polygon
 from torchvision import transforms
 from transformers import AutoModel
 
@@ -20,8 +21,8 @@ def get_conch():
 def main():
     sdata = spatialdata.read_zarr("/gpfs/workdir/shared/prime/spatial/sdata_lung_s3.zarr")
 
-    for gdf in sdata.shapes.values():
-        gdf.geometry = gdf.geometry.make_valid()
+    for geo_df in sdata.shapes.values():
+        geo_df.geometry = geo_df.geometry.map(_ensure_polygon)
 
     novae.data.compute_histo_embeddings(
         sdata, get_conch(), patch_overlap_ratio=0.6, table_key="table_nuclei", image_key="he"
