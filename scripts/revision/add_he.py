@@ -24,7 +24,9 @@ def main():
 
     sdata = spatialdata.read_zarr(path)
 
-    novae.data.compute_histo_embeddings(sdata, get_conch(), patch_overlap_ratio=0.6)
+    novae.data.compute_histo_embeddings(
+        sdata, get_conch(), patch_overlap_ratio=0.6, table_key="table_cells", image_key="he"
+    )
 
 
 if __name__ == "__main__":
