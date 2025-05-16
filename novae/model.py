@@ -368,21 +368,21 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     @torch.no_grad()
     def _compute_representations_datamodule(
         self, adata: AnnData | None, datamodule: NovaeDatamodule, return_representations: bool = False
-    ) -> Tensor | None:
+    ) -> np.ndarray | None:
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, projections = [], []
 
         for batch in utils.tqdm(datamodule.predict_dataloader(), desc="Computing representations"):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
-            batch_repr = self.encoder(self._embed_pyg_data(batch["main"]))
+            batch_repr: Tensor = self.encoder(self._embed_pyg_data(batch["main"]))
 
-            representations.append(batch_repr)
+            representations.append(batch_repr.numpy(force=True))
 
             if not self.mode.zero_shot:
                 batch_projections = self.swav_head.projection(batch_repr)
-                projections.append(batch_projections)
+                projections.append(batch_projections.numpy(force=True))
 
-        representations = torch.cat(representations)
+        representations = np.concatenate(representations)
 
         if return_representations:
             return representations
@@ -390,18 +390,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata.obsm[Keys.REPR] = utils.fill_invalid_indices(representations, adata.n_obs, valid_indices, fill_value=0)
 
         if not self.mode.zero_shot:
-            projections = torch.cat(projections)
+            projections = np.concatenate(projections)
             self._compute_leaves(adata, projections, valid_indices)
 
-    def _compute_leaves(self, adata: AnnData, projections: Tensor | None, valid_indices: np.ndarray | None):
+    def _compute_leaves(self, adata: AnnData, projections: np.ndarray | None, valid_indices: np.ndarray | None):
         assert (projections is None) is (valid_indices is None)
 
         if projections is None:
             valid_indices = utils.valid_indices(adata)
             representations = torch.tensor(adata.obsm[Keys.REPR][valid_indices])
-            projections = self.swav_head.projection(representations)
+            projections = self.swav_head.projection(representations).numpy(force=True)
 
-        leaves_predictions = projections.argmax(dim=1).numpy(force=True)
+        leaves_predictions = projections.argmax(axis=1)
         leaves_predictions = utils.fill_invalid_indices(leaves_predictions, adata.n_obs, valid_indices)
         adata.obs[Keys.LEAVES] = [x if np.isnan(x) else f"D{int(x)}" for x in leaves_predictions]
 
@@ -579,7 +579,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self._prepare_adatas(_get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
         )
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
-        self.swav_head.set_kmeans_prototypes(latent.numpy(force=True))
+        self.swav_head.set_kmeans_prototypes(latent)
 
         self.swav_head._prototypes = self.swav_head._kmeans_prototypes
         del self.swav_head._kmeans_prototypes

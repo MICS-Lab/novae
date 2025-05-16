@@ -8,6 +8,7 @@ Starting from this version, it will be as backward compatible as possible.
 - Move `novae.utils.quantile_scaling` to `novae.data.quantile_scaling`
 - Move `novae.utils.toy_dataset` to `novae.data.toy_dataset`
 - Migrate to `uv` + `ruff`
+- Move representations to `numpy` when torch is not needed anymore
 
 ## Fixed
 - Removed scaling in the data loader

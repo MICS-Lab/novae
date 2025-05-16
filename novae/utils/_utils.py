@@ -6,11 +6,8 @@ import numpy as np
 import pandas as pd
 import torch
 from anndata import AnnData
-from lightning.pytorch.trainer.connectors.accelerator_connector import (
-    _AcceleratorConnector,
-)
+from lightning.pytorch.trainer.connectors.accelerator_connector import _AcceleratorConnector
 from scipy.sparse import csr_matrix
-from torch import Tensor
 
 from .._constants import Keys
 
@@ -44,15 +41,12 @@ def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
 
 
 def fill_invalid_indices(
-    out: np.ndarray | Tensor,
+    out: np.ndarray,
     n_obs: int,
     valid_indices: list[int],
     fill_value: float | str = np.nan,
     dtype: object = None,
 ) -> np.ndarray:
-    if isinstance(out, Tensor):
-        out = out.numpy(force=True)
-
     dtype = np.float32 if dtype is None else dtype
 
     if isinstance(fill_value, str):
