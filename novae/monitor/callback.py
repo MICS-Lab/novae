@@ -39,6 +39,7 @@ class ValidationCallback(Callback):
         num_workers: int = 0,
         slide_name_key: str = "slide_id",
         k: int = 7,
+        res: float = 0.5,
     ):
         assert adatas is None or len(adatas) == 1, "ValidationCallback only supports single slide mode for now"
         self.adata = adatas[0] if adatas is not None else None
@@ -46,6 +47,7 @@ class ValidationCallback(Callback):
         self.num_workers = num_workers
         self.slide_name_key = slide_name_key
         self.k = k
+        self.res = res
 
         self._max_heuristic = 0.0
 
@@ -75,6 +77,18 @@ class ValidationCallback(Callback):
 
         self._max_heuristic = max(self._max_heuristic, heuristic_)
         model.log("metrics/val_max_heuristic", self._max_heuristic)
+
+        obs_key = model.assign_domains(self.adata, resolution=self.res)
+
+        plt.figure()
+        sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
+        log_plt_figure(f"val_res{self.res}_{self.adata.obs[slide_name_key].iloc[0]}")
+
+        fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=self.k)
+        model.log(f"metrics/val_mean_fide_score_res{self.res}", fide)
+
+        heuristic_ = heuristic(self.adata, obs_key=obs_key, n_classes=self.k)
+        model.log(f"metrics/val_heuristic_res{self.res}", heuristic_)
 
         model.mode.zero_shot = False
 

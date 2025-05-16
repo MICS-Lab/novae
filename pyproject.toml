@@ -22,6 +22,7 @@ dependencies = [
   "huggingface-hub>=0.24.0",
   "safetensors>=0.4.3",
   "pandas>=2.0.0",
+  "igraph>=0.11.8",
 ]
 
 [project.optional-dependencies]

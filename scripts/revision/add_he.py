@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import spatialdata
 from torchvision import transforms
 from transformers import AutoModel
@@ -20,12 +18,10 @@ def get_conch():
 
 
 def main():
-    path = Path("/gpfs/workdir/shared/prime/spatial/sdata_lung_s3.zarr")
-
-    sdata = spatialdata.read_zarr(path)
+    sdata = spatialdata.read_zarr("/gpfs/workdir/shared/prime/spatial/sdata_lung_s3.zarr")
 
     novae.data.compute_histo_embeddings(
-        sdata, get_conch(), patch_overlap_ratio=0.6, table_key="table_cells", image_key="he"
+        sdata, get_conch(), patch_overlap_ratio=0.6, table_key="table_nuclei", image_key="he"
     )
 
 
