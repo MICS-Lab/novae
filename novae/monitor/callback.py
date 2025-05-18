@@ -84,10 +84,11 @@ class ValidationCallback(Callback):
         sc.pl.spatial(self.adata, color=obs_key, spot_size=20, img_key=None, show=False)
         log_plt_figure(f"val_res{self.res}_{self.adata.obs[slide_name_key].iloc[0]}")
 
-        fide = mean_fide_score(self.adata, obs_key=obs_key, n_classes=self.k)
+        fide = mean_fide_score(self.adata, obs_key=obs_key)
         model.log(f"metrics/val_mean_fide_score_res{self.res}", fide)
 
-        heuristic_ = heuristic(self.adata, obs_key=obs_key, n_classes=self.k)
+        n_classes = len(self.adata.obs[obs_key].cat.categories)
+        heuristic_ = heuristic(self.adata, obs_key=obs_key, n_classes=n_classes)
         model.log(f"metrics/val_heuristic_res{self.res}", heuristic_)
 
         model.mode.zero_shot = False
