@@ -24,7 +24,6 @@ class SwavHead(L.LightningModule):
         output_size: int,
         num_prototypes: int,
         temperature: float,
-        koleo_loss_weight: float,
     ):
         """SwavHead module, adapted from the paper ["Unsupervised Learning of Visual Features by Contrasting Cluster Assignments"](https://arxiv.org/abs/2006.09882).
 
@@ -38,14 +37,11 @@ class SwavHead(L.LightningModule):
         self.output_size = output_size
         self.num_prototypes = num_prototypes
         self.temperature = temperature
-        self.koleo_loss_weight = koleo_loss_weight
 
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
         self.normalize_prototypes()
         self.min_prototypes = 0
-
-        self.koleo_loss = KoLeoLoss()
 
         self.queue = None
 
@@ -95,10 +91,7 @@ class SwavHead(L.LightningModule):
 
         loss = -0.5 * (self.cross_entropy_loss(q1, projections2) + self.cross_entropy_loss(q2, projections1))
 
-        koleo_loss = self.koleo_loss_weight * self.koleo_loss(z1) if self.koleo_loss_weight > 0 else 0
-        loss += koleo_loss
-
-        return loss, {"mean_entropy_normalized": _mean_entropy_normalized(q1), "koleo_loss": koleo_loss}
+        return loss, _mean_entropy_normalized(q1)
 
     def cross_entropy_loss(self, q: Tensor, p: Tensor) -> Tensor:
         return torch.mean(torch.sum(q * F.log_softmax(p / self.temperature, dim=1), dim=1))
@@ -278,40 +271,3 @@ def _mean_entropy_normalized(q: Tensor) -> Tensor:
     entropy = -(q * torch.log2(q + Nums.EPS)).sum(-1)
     max_entropy = torch.log2(torch.tensor(q.shape[-1]))
     return (entropy / max_entropy).mean()
-
-
-class KoLeoLoss(L.LightningModule):
-    # Adapted from https://github.com/facebookresearch/dinov2/blob/main/dinov2/loss/koleo_loss.py
-    #
-    # Copyright (c) Meta Platforms, Inc. and affiliates.
-    #
-    # This source code is licensed under the Apache License, Version 2.0
-    """Kozachenko-Leonenko entropic loss regularizer from Sablayrolles et al. - 2018 - Spreading vectors for similarity search"""
-
-    def __init__(self):
-        super().__init__()
-        self.pdist = nn.PairwiseDistance(2, eps=Nums.EPS)
-
-    def pairwise_nn_inner(self, x: Tensor) -> Tensor:
-        """
-        Pairwise nearest neighbors for L2-normalized vectors.
-        """
-        dots = torch.mm(x, x.t())
-        dots.view(-1)[:: (x.shape[0] + 1)].fill_(-1)  # trick to fill diagonal with -1
-        _, indices = torch.max(dots, dim=1)  # max inner prod -> min distance
-
-        return indices
-
-    def forward(self, z: Tensor) -> Tensor:
-        """
-        Compute the Kozachenko-Leonenko loss.
-
-        Args:
-            z: output of the encoder of shape `(B, D)`
-        """
-        z = F.normalize(z, p=2, dim=1, eps=Nums.EPS)
-
-        indices = self.pairwise_nn_inner(z)
-
-        distances = self.pdist(z, z[indices])  # BxD, BxD -> B
-        return -torch.log(distances + Nums.EPS).mean()

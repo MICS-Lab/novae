@@ -52,7 +52,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         background_noise_lambda: float = 8.0,
         sensitivity_noise_std: float = 0.05,
         dropout_rate: float = 0.0,
-        koleo_loss_weight: float = 0.0,
         histo_embedding_size: int = 50,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
@@ -99,7 +98,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.augmentation = GraphAugmentation(
             panel_subset_size, background_noise_lambda, sensitivity_noise_std, dropout_rate
         )
-        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature, koleo_loss_weight)
+        self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
 
         ### Misc
         self._num_workers = 0
@@ -221,11 +220,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         z_dict: dict[str, Tensor] = self(batch)
         slide_id = batch["main"].get("slide_id", [None])[0]
 
-        loss, other_loss_terms = self.swav_head.forward(z_dict["main"], z_dict["view"], slide_id)
+        loss, mean_entropy_normalized = self.swav_head.forward(z_dict["main"], z_dict["view"], slide_id)
 
         self._log_progress_bar("loss", loss)
-        self._log_progress_bar("koleo_loss", other_loss_terms["koleo_loss"], prog_bar=False)
-        self._log_progress_bar("entropy", other_loss_terms["mean_entropy_normalized"], on_epoch=False)
+        self._log_progress_bar("entropy", mean_entropy_normalized, on_epoch=False)
 
         return loss
 
