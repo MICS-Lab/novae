@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Callable, Union
 import numpy as np
 from anndata import AnnData
 from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 if TYPE_CHECKING:
     from spatialdata import SpatialData
@@ -61,7 +63,7 @@ def compute_histo_embeddings(
     cells = sopa.utils.to_intrinsic(sdata, shapes_key, image_key)
     cells = cells.loc[adata.obs[instance_key]]
 
-    sopa.patches.compute_embeddings(
+    key_added = sopa.patches.compute_embeddings(
         sdata,
         model,
         level=0,
@@ -77,9 +79,6 @@ def compute_histo_embeddings(
     indices, distances = patches_centroids.sindex.nearest(cells.centroid, return_all=False, return_distance=True)
 
     _quality_control_join(distances)
-
-    # TODO: use key_added from sopa when > 2.0.6
-    key_added = f"{model if isinstance(model, str) else model.__class__.__name__}_embeddings"
 
     adata.obs["embedding_key"] = key_added
     adata.obs["embedding_index"] = indices[1]
@@ -117,14 +116,21 @@ def compute_histo_pca(
         sdatas = [sdatas]
 
     def _histo_emb(sdata: "SpatialData") -> np.ndarray:
-        embedding_key = sdata.tables[table_key].obs["embedding_key"].iloc[0]
+        _table: AnnData = sdata.tables[table_key]
+
+        assert "embedding_key" in _table.obs, (
+            "Could not find `embedding_key` in adata.obs. Did you run `novae.data.compute_histo_embeddings` first?"
+        )
+        embedding_key = _table.obs["embedding_key"].iloc[0]
         return sdata.tables[embedding_key].X
 
     X = np.concatenate([_histo_emb(sdata) for sdata in sdatas], axis=0)
 
     pca = PCA(n_components=n_components)
-    pca.fit(X)
+    pipeline = Pipeline(("pca", pca), ("scaler", StandardScaler()))
+
+    pipeline.fit(X)
 
     for sdata in sdatas:
         adata: AnnData = sdata[table_key]
-        adata.obsm[Keys.HISTO_EMBEDDINGS] = pca.transform(_histo_emb(sdata)[adata.obs["embedding_index"]])
+        adata.obsm[Keys.HISTO_EMBEDDINGS] = pipeline.transform(_histo_emb(sdata)[adata.obs["embedding_index"]])

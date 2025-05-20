@@ -2019,7 +2019,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "safetensors", specifier = ">=0.4.3" },
     { name = "scanpy", specifier = ">=1.9.8" },
-    { name = "sopa", marker = "extra == 'multimodal'", specifier = ">=2.0.6" },
+    { name = "sopa", marker = "extra == 'multimodal'", specifier = ">=2.0.7" },
     { name = "torch", specifier = ">=2.2.1" },
     { name = "torch-geometric", specifier = ">=2.5.2" },
 ]
@@ -3712,7 +3712,7 @@ wheels = [
 
 [[package]]
 name = "sopa"
-version = "2.0.6"
+version = "2.0.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anndata" },
@@ -3724,9 +3724,9 @@ dependencies = [
     { name = "spatialdata-plot" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/62/742ff5600bee3eef3eb4637b71aab6ce8625d2b28d45e3b41a7717004d40/sopa-2.0.6.tar.gz", hash = "sha256:bd3415d391762e38581dda86a5292f858a0415b482719d0131d663703e18f77d", size = 125899 }
+sdist = { url = "https://files.pythonhosted.org/packages/90/26/5479afa947596fd1cdb1eba8d809801d67dc0641c5ab4440d8750a13345a/sopa-2.0.7.tar.gz", hash = "sha256:ca8dc05784c53ed1946e7ad21dc3028608d1d71668644dd2f82079e74ace711e", size = 126207 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/50/983e65f0508d248e2d87a461461627352792743c40024a81c4694c63ce38/sopa-2.0.6-py3-none-any.whl", hash = "sha256:70e64ece4a5aca882c6c12ed5d2d4166a680d579c428f1a0eb4bd991d895c3e0", size = 167719 },
+    { url = "https://files.pythonhosted.org/packages/85/32/b50f71a74a1b3b2e05c5b5e6d1f26e4aafe01568a1c490e044bca6590af5/sopa-2.0.7-py3-none-any.whl", hash = "sha256:d7b5562fe496ae679556b1b5dd1ee5b0c83b9e9b0bc506bdcaf91abe90fb94bd", size = 168067 },
 ]
 
 [[package]]
