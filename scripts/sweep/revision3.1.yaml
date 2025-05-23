@@ -14,10 +14,6 @@ parameters:
     max: 0.1
   dropout_rate:
     values: [ 0.0, 0.1, 0.25, 0.5 ]
-  n_hops_view:
-    values: [ 1, 2, 3 ]
-  n_hops_local:
-    values: [ 1, 2, 3 ]
 
 command:
 - python
