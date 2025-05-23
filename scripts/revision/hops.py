@@ -32,7 +32,7 @@ def main(args):
                 model = novae.Novae(adata, n_hops_local=n_hops_local, n_hops_view=n_hops_view)
 
                 model.fit(adata, accelerator="cuda", num_workers=4)
-                model.compute_representations(adata, accelerator="cuda", num_workers=4)
+                model.compute_representations(adata, accelerator="cuda", num_workers=8)
 
                 obs_key = model.assign_domains(adata, n_domains=n_classes)
                 _heuristic = heuristic(adata, obs_key, n_classes=n_classes)
