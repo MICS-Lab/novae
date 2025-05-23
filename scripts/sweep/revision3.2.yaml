@@ -1,0 +1,24 @@
+method: random
+metric:
+  goal: maximize
+  name: metrics/train_heuristic_8_domains
+parameters:
+  panel_subset_size:
+    min: 0.4
+    max: 0.95
+  background_noise_lambda:
+    min: 0.5
+    max: 12.5
+  sensitivity_noise_std:
+    min: 0.01
+    max: 0.1
+  dropout_rate:
+    values: [ 0.0, 0.1, 0.25, 0.5 ]
+
+command:
+- python
+- -m
+- scripts.train
+- --config
+- revision3.2.yaml
+- --sweep

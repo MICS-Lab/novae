@@ -1,0 +1,20 @@
+data:
+  train_dataset: /gpfs/workdir/blampeyq/novae/data/brain2
+
+model_kwargs:
+  scgpt_model_dir: /gpfs/workdir/blampeyq/checkpoints/scgpt/scGPT_human
+  background_noise_lambda: 5
+  panel_subset_size: 0.8
+  min_prototypes_ratio: 0.6
+
+fit_kwargs:
+  max_epochs: 40
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 5
+  min_delta: 0.015
+
+post_training:
+  n_domains: [ 8, 10, 12 ]
+  log_metrics: true
+  log_domains: true
