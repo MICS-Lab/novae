@@ -14,4 +14,4 @@ source activate novae-gpu
 cd /gpfs/workdir/blampeyq/novae/scripts/revision
 
 # Execute training
-python -u $1
+python -u "$@"
