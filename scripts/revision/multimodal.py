@@ -20,7 +20,7 @@ def main():
 
     del adata.obsm["histo_embeddings"]
 
-    model = novae.Novae(adata)
+    model = novae.Novae(adata, heads=4, hidden_size=64, num_prototypes=256, panel_subset_size=0.6)
     model.fit(adata, accelerator="cuda", num_workers=4)
     model.compute_representations(adata, accelerator="cuda", num_workers=4)
 
