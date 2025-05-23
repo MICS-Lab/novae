@@ -15,6 +15,8 @@ def main(args):
 
     adata = sc.read_h5ad(path)
 
+    novae.spatial_neighbors(adata, radius=80)
+
     data = {
         "heuristic": [],
         "n_classes": [],
@@ -41,7 +43,11 @@ def main(args):
                 data["n_hops_view"].append(n_hops_view)
 
     data = pd.DataFrame(data)
-    data.to_csv(path.parent / f"heuristic_{path.stem}.csv", index=False)
+
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/heuristic_hops_{path.stem}_{n_classes}.csv"
+    print(f"Saving to {out_file}")
+
+    data.to_csv(out_file)
 
 
 if __name__ == "__main__":
