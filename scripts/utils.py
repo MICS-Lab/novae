@@ -103,13 +103,18 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):  #
     if any(getattr(config.post_training, key) for key in keys_repr):
         model.compute_representations(adatas, **_get_hardware_kwargs(config), zero_shot=config.zero_shot)
         for n_domains in config.post_training.n_domains:
-            model.assign_domains(adatas, n_domains=n_domains)
+            try:
+                obs_key = model.assign_domains(adatas, n_domains=n_domains)
+            except:
+                log.warning(f"Assigning domains with level as n_domains={n_domains} failed")
+                obs_key = model.assign_domains(adatas, level=n_domains)
 
     if config.post_training.log_domains:
         for n_domains in config.post_training.n_domains:
             try:
                 obs_key = model.assign_domains(adatas, n_domains=n_domains)
             except:
+                log.warning(f"Assigning domains with level as n_domains={n_domains} failed")
                 obs_key = model.assign_domains(adatas, level=n_domains)
             novae.plot.domains(adatas, obs_key, show=False)
             log_plt_figure(f"domains_{n_domains=}")
