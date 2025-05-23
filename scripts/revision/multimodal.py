@@ -21,7 +21,7 @@ def main():
     del adata.obsm["histo_embeddings"]
 
     model = novae.Novae(adata)
-    model.fit(adata, accelerator="cuda", num_workers=4, lr=1e-4)
+    model.fit(adata, accelerator="cuda", num_workers=4, lr=2e-4, max_epochs=40)
     model.compute_representations(adata, accelerator="cuda", num_workers=4)
 
     model.assign_domains(adata, level=8)
