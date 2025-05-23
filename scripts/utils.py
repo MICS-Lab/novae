@@ -107,7 +107,10 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):  #
 
     if config.post_training.log_domains:
         for n_domains in config.post_training.n_domains:
-            obs_key = model.assign_domains(adatas, n_domains=n_domains)
+            try:
+                obs_key = model.assign_domains(adatas, n_domains=n_domains)
+            except:
+                obs_key = model.assign_domains(adatas, level=n_domains)
             novae.plot.domains(adatas, obs_key, show=False)
             log_plt_figure(f"domains_{n_domains=}")
 
