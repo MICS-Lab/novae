@@ -34,7 +34,11 @@ def main(args):
                 model.fit(adata, accelerator="cuda", num_workers=4)
                 model.compute_representations(adata, accelerator="cuda", num_workers=8)
 
-                obs_key = model.assign_domains(adata, n_domains=n_classes)
+                try:
+                    obs_key = model.assign_domains(adata, n_domains=n_classes)
+                except:
+                    obs_key = model.assign_domains(adata, level=n_classes)
+
                 _heuristic = heuristic(adata, obs_key, n_classes=n_classes)
 
                 data["heuristic"].append(_heuristic)
