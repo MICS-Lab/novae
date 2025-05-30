@@ -9,6 +9,8 @@ DIR = Path("/gpfs/workdir/shared/prime/spatial/inter_batch_effect_simulation")
 names = ["lung_st", "brain_st"]
 domains = [7, 15]
 
+novae.settings.auto_preprocessing = False
+
 
 def main():
     total = []
