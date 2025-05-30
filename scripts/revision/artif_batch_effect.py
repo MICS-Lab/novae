@@ -29,7 +29,7 @@ def main():
 
         model = novae.Novae(adatas)
 
-        model.fit(accelerator="cuda", num_workers=4)
+        model.fit(accelerator="cuda", num_workers=4, lr=1e-4)
         model.compute_representations(accelerator="cuda", num_workers=8)
 
         obs_key = model.assign_domains(adatas, n_domains=domain)
