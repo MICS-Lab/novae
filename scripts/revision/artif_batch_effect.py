@@ -11,10 +11,17 @@ domains = [7, 15]
 
 
 def main():
+    total = []
+
     for domain, name in zip(domains, names):
         adatas = [sc.read_h5ad(DIR / name / f"{name}.h5ad")] + [
             sc.read_h5ad(DIR / name / f"{name}_level_{i}.h5ad") for i in range(1, 6)
         ]
+
+        for adata in adatas[1:]:
+            adata.X = adata.layers["raw_counts"]
+            sc.pp.normalize_total(adata)
+            sc.pp.log1p(adata)
 
         novae.utils.spatial_neighbors(adatas, radius=80)
 
@@ -42,7 +49,12 @@ def main():
 
             adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/{name}_level_{i}_domains.h5ad")
 
-        print(f"Domain: {domain}, Name: {name}, Scores: {scores}")
+        _res = f"Domain: {domain}, Name: {name}, Scores: {scores}"
+
+        print(_res)
+        total.append(_res)
+
+    print(total)
 
 
 if __name__ == "__main__":
