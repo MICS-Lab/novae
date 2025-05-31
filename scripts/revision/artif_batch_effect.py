@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import pandas as pd
 import scanpy as sc
+from sklearn.metrics.cluster import adjusted_rand_score
 
 import novae
 
@@ -12,51 +14,64 @@ domains = [7, 15]
 novae.settings.auto_preprocessing = False
 
 
-def main():
-    total = []
+def _process_one(domain: str, name: str):
+    data = {
+        "domain": [],
+        "name": [],
+        "level": [],
+        "accuracy": [],
+        "ari": [],
+    }
 
-    for domain, name in zip(domains, names):
-        adatas = [sc.read_h5ad(DIR / name / f"{name}.h5ad")] + [
-            sc.read_h5ad(DIR / name / f"{name}_level_{i}.h5ad") for i in range(1, 6)
-        ]
+    adatas = [sc.read_h5ad(DIR / name / f"{name}.h5ad")] + [
+        sc.read_h5ad(DIR / name / f"{name}_level_{i}.h5ad") for i in range(1, 6)
+    ]
 
-        for adata in adatas[1:]:
-            adata.X = adata.layers["raw_counts"]
-            sc.pp.normalize_total(adata)
-            sc.pp.log1p(adata)
+    for adata in adatas[1:]:
+        adata.X = adata.layers["raw_counts"]
+        sc.pp.normalize_total(adata)
+        sc.pp.log1p(adata)
 
-        novae.utils.spatial_neighbors(adatas, radius=80)
+    novae.utils.spatial_neighbors(adatas, radius=80)
 
-        model = novae.Novae(adatas)
+    for min_prototypes_ratio in [0, 0.25, 0.5, 0.75, 1]:
+        model = novae.Novae(adatas, min_prototypes_ratio=min_prototypes_ratio)
 
-        model.fit(accelerator="cuda", num_workers=4, lr=1e-4)
+        model.fit(accelerator="cuda", num_workers=8, lr=1e-4)
         model.compute_representations(accelerator="cuda", num_workers=8)
 
         obs_key = model.assign_domains(adatas, n_domains=domain)
 
         adata_reference = adatas[0]
 
-        scores = []
-        for adata in adatas[1:]:
-            gt = adata_reference.obs[obs_key]
-            pred = adata.obs[obs_key]
-
-            keep = ~gt.isna()
-            accuracy = (gt[keep] == pred[keep]).mean()
-            scores.append(accuracy)
-
         for i, adata in enumerate(adatas):
             if i > 0:
                 del adata.X
-
             adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/{name}_level_{i}_domains.h5ad")
 
-        _res = f"Domain: {domain}, Name: {name}, Scores: {scores}"
+            y_ref = adata_reference.obs[obs_key]
+            y_other = adata.obs[obs_key]
 
-        print(_res)
-        total.append(_res)
+            keep = ~y_ref.isna()
+            accuracy = (y_ref[keep] == y_other[keep]).mean()
+            ari = adjusted_rand_score(y_ref[keep], y_other[keep])
 
-    print(total)
+            data["domain"].append(domain)
+            data["name"].append(name)
+            data["level"].append(i)
+            data["accuracy"].append(accuracy)
+            data["ari"].append(ari)
+
+    df = pd.DataFrame(data)
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/batch_effect_{name}.csv"
+
+    print(f"Saving to {out_file}")
+    df.to_csv(out_file)
+
+
+def main():
+    for domain, name in zip(domains, names):
+        _process_one(domain, name)
 
 
 if __name__ == "__main__":
