@@ -49,8 +49,8 @@ def _process_one(domain: str, name: str):
                 del adata.X
             adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/{name}_level_{i}_domains.h5ad")
 
-            y_ref = adata_reference.obs[obs_key]
-            y_other = adata.obs[obs_key]
+            y_ref = adata_reference.obs[obs_key].astype(str)
+            y_other = adata.obs[obs_key].astype(str)
 
             keep = ~y_ref.isna()
             accuracy = (y_ref[keep] == y_other[keep]).mean()

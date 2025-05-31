@@ -11,8 +11,8 @@ from novae.monitor import heuristic
 seed_kwargs = [
     {"heads": 4, "hidden_size": 64, "temperature": 0.1, "num_layers": 12},
     {"heads": 8, "hidden_size": 128, "temperature": 0.125, "num_layers": 8},
-    {"heads": 12, "hidden_size": 64, "temperature": 0.1, "num_layers": 10},
-    {"heads": 8, "hidden_size": 64, "temperature": 0.125, "num_layers": 8},
+    {"heads": 4, "hidden_size": 64, "temperature": 0.125, "num_layers": 10},
+    {"heads": 8, "hidden_size": 64, "temperature": 0.1, "num_layers": 8},
     {"heads": 8, "hidden_size": 32, "temperature": 0.08, "num_layers": 10},
 ]
 
