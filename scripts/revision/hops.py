@@ -8,6 +8,14 @@ import scanpy as sc
 import novae
 from novae.monitor import heuristic
 
+seed_kwargs = [
+    {"heads": 4, "hidden_size": 64, "temperature": 0.1, "num_layers": 12},
+    {"heads": 8, "hidden_size": 128, "temperature": 0.125, "num_layers": 8},
+    {"heads": 12, "hidden_size": 64, "temperature": 0.1, "num_layers": 10},
+    {"heads": 8, "hidden_size": 64, "temperature": 0.125, "num_layers": 8},
+    {"heads": 8, "hidden_size": 32, "temperature": 0.08, "num_layers": 10},
+]
+
 
 def main(args):
     path = Path(args.path)
@@ -29,7 +37,12 @@ def main(args):
             for seed in range(5):
                 L.seed_everything(seed)
 
-                model = novae.Novae(adata, n_hops_local=n_hops_local, n_hops_view=n_hops_view)
+                model = novae.Novae(
+                    adata,
+                    n_hops_local=n_hops_local,
+                    n_hops_view=n_hops_view,
+                    **seed_kwargs[seed],
+                )
 
                 model.fit(adata, accelerator="cuda", num_workers=4)
                 model.compute_representations(adata, accelerator="cuda", num_workers=8)
