@@ -14,13 +14,14 @@ domains = [7, 15]
 novae.settings.auto_preprocessing = False
 
 
-def _process_one(domain: str, name: str):
+def _process_one(domain: int, name: str):
     data = {
         "domain": [],
         "name": [],
         "level": [],
         "accuracy": [],
         "ari": [],
+        "min_prototypes_ratio": [],
     }
 
     adatas = [sc.read_h5ad(DIR / name / f"{name}.h5ad")] + [
@@ -43,11 +44,10 @@ def _process_one(domain: str, name: str):
         obs_key = model.assign_domains(adatas, n_domains=domain)
 
         adata_reference = adatas[0]
+        adata_reference.obs[f"domains_ref_{min_prototypes_ratio}"] = adata_reference.obs[obs_key]
 
-        for i, adata in enumerate(adatas):
-            if i > 0:
-                del adata.X
-            adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/{name}_level_{i}_domains.h5ad")
+        for i, adata in enumerate(adatas[1:]):
+            adata_reference.obs[f"domains_level{i}_{min_prototypes_ratio}"] = adata.obs[obs_key]
 
             y_ref = adata_reference.obs[obs_key].astype(str)
             y_other = adata.obs[obs_key].astype(str)
@@ -58,9 +58,14 @@ def _process_one(domain: str, name: str):
 
             data["domain"].append(domain)
             data["name"].append(name)
-            data["level"].append(i)
+            data["level"].append(i + 1)
             data["accuracy"].append(accuracy)
             data["ari"].append(ari)
+            data["min_prototypes_ratio"].append(min_prototypes_ratio)
+
+        adata_reference.write_h5ad(
+            f"/gpfs/workdir/shared/prime/spatial/temp/{name}_{min_prototypes_ratio}_domains.h5ad"
+        )
 
     df = pd.DataFrame(data)
     out_file = f"/gpfs/workdir/blampeyq/res_novae/batch_effect_{name}.csv"
