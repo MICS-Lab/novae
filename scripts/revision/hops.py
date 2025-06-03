@@ -32,8 +32,8 @@ def main(args):
         "n_hops_view": [],
     }
 
-    for n_hops_local in [1, 2, 3]:
-        for n_hops_view in [1, 2, 3]:
+    for n_hops_local in [2, 3, 4]:
+        for n_hops_view in [2, 3, 4]:
             for seed in range(5):
                 L.seed_everything(seed)
 
@@ -52,6 +52,9 @@ def main(args):
                 except:
                     obs_key = model.assign_domains(adata, level=n_classes)
 
+                if seed == 0:
+                    adata.obs[f"domains_{n_hops_local}_{n_hops_view}"] = adata.obs[obs_key]
+
                 _heuristic = heuristic(adata, obs_key, n_classes=n_classes)
 
                 data["heuristic"].append(_heuristic)
@@ -65,6 +68,8 @@ def main(args):
     print(f"Saving to {out_file}")
 
     data.to_csv(out_file)
+
+    adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/hops_{path.stem}_{n_classes}.h5ad")
 
 
 if __name__ == "__main__":
