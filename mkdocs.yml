@@ -6,6 +6,9 @@ theme:
   name: material
   logo: assets/logo_small_black.png
   favicon: assets/logo_favicon.png
+  features:
+  - content.code.annotate
+  - content.code.copy
   palette:
     scheme: slate
     primary: white
