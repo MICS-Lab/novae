@@ -189,7 +189,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
     def configure_optimizers(self):
-        lr = self._lr if hasattr(self, "_lr") else 3e-4
+        lr = self._lr if hasattr(self, "_lr") else 1e-3
         return optim.Adam(self.parameters(), lr=lr)
 
     def _parse_hardware_args(self, accelerator: str, num_workers: int | None, use_device: bool = False) -> None:
@@ -559,7 +559,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         accelerator: str = "cpu",
         num_workers: int | None = None,
         min_prototypes_ratio: float = 0.3,
-        lr: float = 3e-4,
+        lr: float = 1e-3,
         max_epochs: int = 4,
         **fit_kwargs: int,
     ):
@@ -606,7 +606,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        lr: float = 3e-4,
+        lr: float = 1e-3,
         min_delta: float = 0.1,
         patience: int = 3,
         callbacks: list[Callback] | None = None,
