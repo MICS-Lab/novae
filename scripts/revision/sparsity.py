@@ -15,26 +15,27 @@ def main(args):
 
     adata = sc.read_h5ad(path)
 
-    novae.spatial_neighbors(adata, radius=80)
-
     data = {
         "ari": [],
         "dropout": [],
         "n_cells": [],
         "accuracy": [],
     }
-    model = novae.Novae(adata)
 
+    novae.spatial_neighbors(adata)
+    model = novae.Novae(adata)
     model.fit(adata, accelerator="cuda", num_workers=4)
     model.compute_representations(adata, accelerator="cuda", num_workers=8)
-    obs_key = model.assign_domains(adata, n_domains=n_classes)
 
-    y_ref = adata.obs[obs_key].astype(str)
+    obs_key_ref = model.assign_domains(adata, n_domains=n_classes)
 
     for dropout in [0.05, 0.1, 0.2, 0.3, 0.45, 0.6, 0.75, 0.9]:
         n_cells = int(adata.n_obs * dropout)
-        adata_ = adata[np.random.choice(adata.n_obs, n_cells, replace=False)].copy()
+        indices = np.random.choice(adata.n_obs, n_cells, replace=False)
+        adata_ = adata[indices].copy()
 
+        novae.spatial_neighbors(adata)
+        model = novae.Novae(adata)
         model.fit(adata_, accelerator="cuda", num_workers=4)
         model.compute_representations(adata_, accelerator="cuda", num_workers=8)
 
@@ -44,11 +45,11 @@ def main(args):
             print("Failed to compute domains")
             obs_key = model.assign_domains(adata_, level=n_classes)
 
+        y_ref = adata.obs[obs_key_ref].iloc[indices].astype(str)
         y_other = adata_.obs[obs_key].astype(str)
 
-        keep = ~y_ref.isna()
-        accuracy = (y_ref[keep] == y_other[keep]).mean()
-        ari = adjusted_rand_score(y_ref[keep], y_other[keep])
+        accuracy = (y_ref == y_other).mean()
+        ari = adjusted_rand_score(y_ref, y_other)
 
         data["accuracy"].append(accuracy)
         data["ari"].append(ari)
