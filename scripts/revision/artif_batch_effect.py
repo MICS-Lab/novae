@@ -35,18 +35,20 @@ def _process_one(domain: int, name: str):
 
     novae.utils.spatial_neighbors(adatas, radius=80)
 
-    for min_prototypes_ratio in [0, 0.25, 0.5, 0.75, 1]:
-        model = novae.Novae(adatas, min_prototypes_ratio=min_prototypes_ratio)
+    adata_reference = adatas[0]
 
-        model.fit(accelerator="cuda", num_workers=8, lr=1e-4)
-        model.compute_representations(accelerator="cuda", num_workers=8)
-
-        obs_key = model.assign_domains(adatas, n_domains=domain)
-
-        adata_reference = adatas[0]
-        adata_reference.obs[f"domains_ref_{min_prototypes_ratio}"] = adata_reference.obs[obs_key]
-
+    for min_prototypes_ratio in [0, 0.33, 0.67, 1]:
         for i, adata in enumerate(adatas[1:]):
+            adatas_ = [adata_reference, adata]
+            model = novae.Novae(adatas_, min_prototypes_ratio=min_prototypes_ratio)
+
+            model.fit(accelerator="cuda", num_workers=8, lr=1e-4)
+            model.compute_representations(accelerator="cuda", num_workers=8)
+
+            obs_key = model.assign_domains(adatas_, n_domains=domain)
+
+            adata_reference.obs[f"domains_ref_{min_prototypes_ratio}"] = adata_reference.obs[obs_key]
+
             adata_reference.obs[f"domains_level{i}_{min_prototypes_ratio}"] = adata.obs[obs_key]
 
             y_ref = adata_reference.obs[obs_key].astype(str)
