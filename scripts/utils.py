@@ -121,7 +121,11 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):  #
 
     if config.post_training.log_metrics:
         for n_domains in config.post_training.n_domains:
-            obs_key = model.assign_domains(adatas, n_domains=n_domains)
+            try:
+                obs_key = model.assign_domains(adatas, n_domains=n_domains)
+            except:
+                log.warning(f"Assigning domains with level as n_domains={n_domains} failed")
+                obs_key = model.assign_domains(adatas, level=n_domains)
             jsd = jensen_shannon_divergence(adatas, obs_key)
             fide = mean_fide_score(adatas, obs_key, n_classes=n_domains)
             mne = mean_normalized_entropy(adatas, n_classes=n_domains, obs_key=obs_key)
@@ -151,7 +155,11 @@ def _log_umap(model: novae.Novae, adatas: list[AnnData], config: Config, n_obs_t
             adata.obs["tissue"] = adata.uns["novae_tissue"]
 
     for n_domains in config.post_training.n_domains:
-        obs_key = model.assign_domains(adatas, n_domains=n_domains)
+        try:
+            obs_key = model.assign_domains(adatas, n_domains=n_domains)
+        except:
+            log.warning(f"Assigning domains with level as n_domains={n_domains} failed")
+            obs_key = model.assign_domains(adatas, level=n_domains)
         model.batch_effect_correction(adatas, obs_key=obs_key)
 
         latent_conc = np.concatenate([adata.obsm[Keys.REPR_CORRECTED] for adata in adatas], axis=0)
