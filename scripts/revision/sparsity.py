@@ -25,29 +25,31 @@ def main(args):
     adata_ref = adata.copy()
 
     novae.spatial_neighbors(adata_ref)
-    model = novae.Novae(adata_ref)
-    model.fit(adata_ref, accelerator="cuda", num_workers=4)
-    model.compute_representations(adata_ref, accelerator="cuda", num_workers=8)
+    # model = novae.Novae(adata_ref)
+    # model.fit(adata_ref, accelerator="cuda", num_workers=4)
+    # model.compute_representations(adata_ref, accelerator="cuda", num_workers=8)
 
-    obs_key_ref = model.assign_domains(adata_ref, n_domains=n_classes)
+    # obs_key_ref = model.assign_domains(adata_ref, n_domains=n_classes)
 
     for dropout in [0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.45, 0.6, 0.75, 0.9]:
         n_cells = int(adata.n_obs * (1 - dropout))
         indices = np.random.choice(adata.n_obs, n_cells, replace=False)
         adata_ = adata[indices].copy()
 
-        novae.spatial_neighbors(adata_)
-        model = novae.Novae(adata_)
-        model.fit(adata_, accelerator="cuda", num_workers=4)
-        model.compute_representations(adata_, accelerator="cuda", num_workers=8)
+        adatas = [adata_ref, adata_]
+
+        novae.spatial_neighbors(adatas)
+        model = novae.Novae(adatas)
+        model.fit(adatas, accelerator="cuda", num_workers=4)
+        model.compute_representations(adatas, accelerator="cuda", num_workers=8)
 
         try:
-            obs_key = model.assign_domains(adata_, n_domains=n_classes)
+            obs_key = model.assign_domains(adatas, n_domains=n_classes)
         except:
             print("Failed to compute domains")
-            obs_key = model.assign_domains(adata_, level=n_classes)
+            obs_key = model.assign_domains(adatas, level=n_classes)
 
-        y_ref = adata_ref.obs[obs_key_ref].iloc[indices].astype(str)
+        y_ref = adata_ref.obs[obs_key].iloc[indices].astype(str)
         y_other = adata_.obs[obs_key].astype(str)
 
         accuracy = (y_ref == y_other).mean()
