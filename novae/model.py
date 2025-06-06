@@ -125,6 +125,15 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.swav_head.set_min_prototypes(min_prototypes_ratio)
             self.swav_head.init_queue(slide_ids)
 
+    def init_prototypes(
+        self, adata: AnnData | list[AnnData] | None = None, reference: str | int | Literal["all", "largest"] = "largest"
+    ):
+        datamodule = self._init_datamodule(
+            self._prepare_adatas(_get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
+        )
+        latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
+        self.swav_head._prototypes = self.swav_head.compute_kmeans_prototypes(latent)
+
     def __repr__(self) -> str:
         info_dict = {
             "Known genes": self.cell_embedder.voc_size,
@@ -358,7 +367,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adatas_refs = [adatas_refs] if isinstance(adatas_refs, AnnData) else adatas_refs
 
         latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas_refs])
-        self.swav_head.set_kmeans_prototypes(latent)
+        self.swav_head._kmeans_prototypes = self.swav_head.compute_kmeans_prototypes(latent)
         self.swav_head.reset_clustering(only_zero_shot=True)
 
         for adata in adatas:
@@ -580,15 +589,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        datamodule = self._init_datamodule(
-            self._prepare_adatas(_get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
-        )
-        latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
-        self.swav_head.set_kmeans_prototypes(latent)
-
-        self.swav_head._prototypes = self.swav_head._kmeans_prototypes
-        del self.swav_head._kmeans_prototypes
-
+        self.init_prototypes(adata, reference=reference)
         self.init_slide_queue(adata, min_prototypes_ratio)
 
         self.fit(

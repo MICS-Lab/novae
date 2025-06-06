@@ -13,6 +13,7 @@ Starting from this version, it will be as backward compatible as possible.
 
 ## Fixed
 - Removed scaling in the data loader
+- Slide-id passed correctly to dataloader for one-adata multi-slide mode
 
 ## [0.2.4] - 2025-03-26
 

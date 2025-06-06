@@ -174,7 +174,7 @@ class NovaeDataset(Dataset):
             edge_index=edge_index,
             edge_attr=edge_attr,
             genes_indices=genes_indices,
-            slide_id=adata.obs[Keys.SLIDE_ID].iloc[0],
+            slide_id=adata.obs[Keys.SLIDE_ID].iloc[obs_index],
             histo_embeddings=histo_embeddings,
         )
 

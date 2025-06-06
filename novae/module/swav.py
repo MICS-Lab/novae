@@ -43,6 +43,8 @@ class SwavHead(L.LightningModule):
         self.normalize_prototypes()
         self.min_prototypes = 0
 
+        self._kmeans_prototypes: nn.Parameter | None = None
+
         self.queue = None
 
         self.reset_clustering()
@@ -176,7 +178,7 @@ class SwavHead(L.LightningModule):
 
         return Q / Q.sum(dim=1, keepdim=True)  # ensure rows sum to 1 (for cross-entropy loss)
 
-    def set_kmeans_prototypes(self, latent: np.ndarray):
+    def compute_kmeans_prototypes(self, latent: np.ndarray) -> nn.Parameter:
         assert len(latent) >= self.num_prototypes, (
             f"The number of valid cells ({len(latent)}) must be greater than the number of prototypes ({self.num_prototypes})."
         )
@@ -187,7 +189,7 @@ class SwavHead(L.LightningModule):
         kmeans_prototypes = kmeans.fit(X).cluster_centers_
         kmeans_prototypes = kmeans_prototypes / (Nums.EPS + np.linalg.norm(kmeans_prototypes, axis=1)[:, None])
 
-        self._kmeans_prototypes = torch.nn.Parameter(torch.tensor(kmeans_prototypes))
+        return torch.nn.Parameter(torch.tensor(kmeans_prototypes))
 
     @property
     def prototypes(self) -> nn.Parameter:
