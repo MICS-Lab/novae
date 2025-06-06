@@ -49,13 +49,16 @@ def main(args):
 
                 try:
                     obs_key = model.assign_domains(adata, n_domains=n_classes)
+                    _heuristic = heuristic(adata, obs_key, n_classes=n_classes)
                 except:
+                    print(
+                        f"Failed to compute heuristic for {n_hops_local} hops local and {n_hops_view} hops view with seed {seed}"
+                    )
                     obs_key = model.assign_domains(adata, level=n_classes)
+                    _heuristic = 0
 
                 if seed == 0:
                     adata.obs[f"domains_{n_hops_local}_{n_hops_view}"] = adata.obs[obs_key]
-
-                _heuristic = heuristic(adata, obs_key, n_classes=n_classes)
 
                 data["heuristic"].append(_heuristic)
                 data["n_classes"].append(n_classes)
