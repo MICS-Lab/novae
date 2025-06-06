@@ -59,7 +59,7 @@ def main(args):
 
     data = pd.DataFrame(data)
 
-    out_file = f"/gpfs/workdir/blampeyq/res_novae/sparsity_{path.stem}_{n_classes}.csv"
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/sparsity2_{path.stem}_{n_classes}.csv"
     print(f"Saving to {out_file}")
 
     data.to_csv(out_file)

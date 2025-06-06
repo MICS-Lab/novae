@@ -6,7 +6,6 @@ from ._utils import (
     pretty_model_repr,
     pretty_num_parameters,
     repository_root,
-    sparse_std,
     tqdm,
     unique_leaves_indices,
     unique_obs,

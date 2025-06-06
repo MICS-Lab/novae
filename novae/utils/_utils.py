@@ -7,7 +7,6 @@ import pandas as pd
 import torch
 from anndata import AnnData
 from lightning.pytorch.trainer.connectors.accelerator_connector import _AcceleratorConnector
-from scipy.sparse import csr_matrix
 
 from .._constants import Keys
 
@@ -33,11 +32,6 @@ def lower_var_names(var_names: pd.Index | list[str]) -> pd.Index | list[str]:
     if isinstance(var_names, pd.Index):
         return var_names.str.lower()
     return [name.lower() for name in var_names]
-
-
-def sparse_std(a: csr_matrix, axis=None) -> np.matrix:
-    a_squared = a.multiply(a)
-    return np.sqrt(a_squared.mean(axis) - np.square(a.mean(axis)))
 
 
 def fill_invalid_indices(
