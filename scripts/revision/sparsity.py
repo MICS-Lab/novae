@@ -35,6 +35,9 @@ def main(args):
         n_cells = int(adata.n_obs * (1 - dropout))
         indices = np.random.choice(adata.n_obs, n_cells, replace=False)
         adata_ = adata[indices].copy()
+        n_genes_drop = int(adata.n_vars * dropout)
+        genes_indices = np.random.choice(adata.n_vars, n_genes_drop, replace=False)
+        adata_.X[:, genes_indices] = 0
 
         adatas = [adata_ref, adata_]
 
@@ -64,7 +67,7 @@ def main(args):
 
     data = pd.DataFrame(data)
 
-    out_file = f"/gpfs/workdir/blampeyq/res_novae/sparsity3_{path.stem}_{n_classes}.csv"
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/sparsity4_{path.stem}_{n_classes}.csv"
     print(f"Saving to {out_file}")
 
     data.to_csv(out_file)
