@@ -167,7 +167,7 @@ def _select_novae_genes(adatas: list[AnnData], var_names: set | list[str] | None
 
 
 def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None):
-    if var_names is None or Keys.IS_KNOWN_GENE in adata.var:
+    if var_names is None:
         return
 
     adata.var[Keys.IS_KNOWN_GENE] = np.isin(lower_var_names(adata.var_names), list(var_names))
