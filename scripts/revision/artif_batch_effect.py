@@ -32,9 +32,10 @@ def main(args):
 
     for adata in adatas[1:]:
         adata.X = adata.layers["raw_counts"]
+        print(adata.X.max())
         sc.pp.normalize_total(adata)
         sc.pp.log1p(adata)
-        adata.X = adata.X.clip(0, 9)
+        adata.X.data = adata.X.data.clip(0, 9)
 
     print("max values:", [adata.X.max() for adata in adatas])
 

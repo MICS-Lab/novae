@@ -89,8 +89,7 @@ class NovaeDataset(Dataset):
                 adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
                 adata.uns[Keys.NOVAE_UNS]["n_hops_view"] = self.n_hops_view
 
-            if Keys.IS_VALID_OBS not in adata.obs:
-                adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
+            adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 
         ratio_valid_obs = pd.concat([adata.obs[Keys.IS_VALID_OBS] for adata in self.adatas]).mean()
         if ratio_valid_obs < Nums.RATIO_VALID_CELLS_TH:
