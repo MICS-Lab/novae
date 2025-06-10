@@ -28,13 +28,14 @@ def main(args):
         "n_hops_view": [],
     }
 
-    for n_hops_local in [2, 3, 4]:
-        for n_hops_view in [2, 3, 4]:
+    adata = sc.read_h5ad(path)
+
+    novae.spatial_neighbors(adata, radius=80)
+
+    for n_hops_local in [1, 2, 3]:
+        for n_hops_view in [1, 2, 3]:
             for seed in range(5):
                 L.seed_everything(seed)
-                adata = sc.read_h5ad(path)
-
-                novae.spatial_neighbors(adata, radius=80)
 
                 model = novae.Novae(adata, n_hops_local=n_hops_local, n_hops_view=n_hops_view, **seed_kwargs[seed])
 

@@ -78,10 +78,17 @@ class NovaeDataset(Dataset):
         for adata in self.adatas:
             adjacency: csr_matrix = adata.obsp[Keys.ADJ]
 
-            if Keys.ADJ_LOCAL not in adata.obsp:
+            if Keys.NOVAE_UNS not in adata.uns:
+                adata.uns[Keys.NOVAE_UNS] = {}
+
+            if Keys.ADJ_LOCAL not in adata.obsp or adata.uns[Keys.NOVAE_UNS].get("n_hops_local") != self.n_hops_local:
                 adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
-            if Keys.ADJ_PAIR not in adata.obsp:
+                adata.uns[Keys.NOVAE_UNS]["n_hops_local"] = self.n_hops_local
+
+            if Keys.ADJ_PAIR not in adata.obsp or adata.uns[Keys.NOVAE_UNS].get("n_hops_view") != self.n_hops_view:
                 adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
+                adata.uns[Keys.NOVAE_UNS]["n_hops_view"] = self.n_hops_view
+
             if Keys.IS_VALID_OBS not in adata.obs:
                 adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
 

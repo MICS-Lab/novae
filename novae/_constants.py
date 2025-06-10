@@ -25,6 +25,9 @@ class Keys:
     # layer keys
     COUNTS_LAYER: str = "counts"
 
+    # uns keys
+    NOVAE_UNS: str = "novae_attrs"
+
     # misc keys
     UNS_TISSUE: str = "novae_tissue"
     ADATA_INDEX: str = "adata_index"
