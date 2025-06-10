@@ -30,7 +30,7 @@ def main(args):
 
     for n_hops_local in [1, 2, 3, 4]:
         for n_hops_view in [1, 2, 3, 4]:
-            for seed in range(5):
+            for seed in range(3):
                 adata = sc.read_h5ad(path)
 
                 novae.spatial_neighbors(adata, radius=80)
