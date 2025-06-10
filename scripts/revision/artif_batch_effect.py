@@ -15,6 +15,7 @@ names = ["lung_st", "brain_st"]
 def main(args):
     name = args.name
     domain = 7 if name == "lung_st" else 15
+    t = args.temperature
 
     data = {
         "domain": [],
@@ -44,7 +45,9 @@ def main(args):
     for min_prototypes_ratio in [0, 0.33, 0.67, 1]:
         for i, adata in enumerate(adatas[1:]):
             adatas_ = [adata_reference, adata]
-            model = novae.Novae(adatas_, min_prototypes_ratio=min_prototypes_ratio, temperature=args.temperature)
+            model = novae.Novae(adatas_, min_prototypes_ratio=min_prototypes_ratio, temperature=t)
+
+            model.init_prototypes(adatas, reference="all")
 
             model.fit(accelerator="cuda", num_workers=8, lr=1e-4)
             model.compute_representations(accelerator="cuda", num_workers=8)
@@ -72,11 +75,11 @@ def main(args):
         print("Current data:", pd.DataFrame(data))
 
         adata_reference.write_h5ad(
-            f"/gpfs/workdir/shared/prime/spatial/temp/{name}_{min_prototypes_ratio}_domains2.h5ad"
+            f"/gpfs/workdir/shared/prime/spatial/temp/{name}_{min_prototypes_ratio}_domains2_{t}.h5ad"
         )
 
     df = pd.DataFrame(data)
-    out_file = f"/gpfs/workdir/blampeyq/res_novae/batch_effect2_{name}.csv"
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/batch_effect2_{name}_{t}.csv"
 
     print(f"Saving to {out_file}")
     df.to_csv(out_file)
