@@ -69,6 +69,8 @@ def main(args):
             data["ari"].append(ari)
             data["min_prototypes_ratio"].append(min_prototypes_ratio)
 
+        print("Current data:", pd.DataFrame(data))
+
         adata_reference.write_h5ad(
             f"/gpfs/workdir/shared/prime/spatial/temp/{name}_{min_prototypes_ratio}_domains2.h5ad"
         )
