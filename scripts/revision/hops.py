@@ -28,9 +28,9 @@ def main(args):
         "n_hops_view": [],
     }
 
-    for n_hops_local in [1, 2, 3]:
-        for n_hops_view in [1, 2, 3]:
-            for seed in range(1):
+    for n_hops_local in [1, 2, 3, 4]:
+        for n_hops_view in [1, 2, 3, 4]:
+            for seed in range(5):
                 adata = sc.read_h5ad(path)
 
                 novae.spatial_neighbors(adata, radius=80)
@@ -59,16 +59,16 @@ def main(args):
                 data["n_hops_local"].append(n_hops_local)
                 data["n_hops_view"].append(n_hops_view)
 
-        print("Current data:", pd.DataFrame(data))
+            print("Current data:", pd.DataFrame(data))
 
     data = pd.DataFrame(data)
 
-    out_file = f"/gpfs/workdir/blampeyq/res_novae/heuristic_hops2_{path.stem}_{n_classes}.csv"
+    out_file = f"/gpfs/workdir/blampeyq/res_novae/heuristic_hops3_{path.stem}_{n_classes}.csv"
     print(f"Saving to {out_file}")
 
     data.to_csv(out_file)
 
-    adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/hops2_{path.stem}_{n_classes}.h5ad")
+    adata.write_h5ad(f"/gpfs/workdir/shared/prime/spatial/temp/hops3_{path.stem}_{n_classes}.h5ad")
 
 
 if __name__ == "__main__":
