@@ -60,6 +60,8 @@ def main(args):
                 data["n_hops_local"].append(n_hops_local)
                 data["n_hops_view"].append(n_hops_view)
 
+        print("Current data:", pd.DataFrame(data))
+
     data = pd.DataFrame(data)
 
     out_file = f"/gpfs/workdir/blampeyq/res_novae/heuristic_hops_{path.stem}_{n_classes}.csv"
