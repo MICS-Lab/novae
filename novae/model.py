@@ -34,6 +34,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```
     """
 
+    adatas: list[AnnData] | None = None
+
     def __init__(
         self,
         adata: AnnData | list[AnnData] | None = None,
@@ -105,6 +107,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._model_name = None
         self._datamodule = None
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
+        self.mode.update_multimodal_mode(self.adatas)
 
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float) -> None:
         """
@@ -139,6 +142,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             "Known genes": self.cell_embedder.voc_size,
             "Parameters": utils.pretty_num_parameters(self),
             "Model name": self._model_name,
+            "Trained": self.mode.trained,
+            "Multimodal": self.mode.multimodal,
         }
         return utils.pretty_model_repr(info_dict)
 
@@ -379,6 +384,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     ) -> np.ndarray | None:
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, projections = [], []
+
+        if adata is not None:
+            assert self.mode.multimodal is (Keys.HISTO_EMBEDDINGS in adata.obsm), (
+                "Mismatch between multimodal mode and histology embeddings in `adata.obsm`."
+            )
 
         for batch in utils.tqdm(datamodule.predict_dataloader(), desc="Computing representations"):
             batch = self.transfer_batch_to_device(batch, self.device, dataloader_idx=0)
@@ -637,6 +647,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
 
         ### Misc
+        self.mode.update_multimodal_mode(self.adatas)
         self._lr = lr
         self.swav_head.reset_clustering()  # ensure we don't re-use old clusters
         self._parse_hardware_args(accelerator, num_workers)

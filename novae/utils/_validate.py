@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     var_names: set | list[str] | None = None,
-) -> list[AnnData]:
+) -> tuple[list[AnnData], list[str]]:
     """Ensure the AnnData objects are ready to be used by the model.
 
     Note:
@@ -53,8 +53,12 @@ def prepare_adatas(
 
     _check_has_slide_id(adatas)
     _standardize_adatas(adatas)  # log1p + spatial_neighbors
+
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
+    if not settings.disable_multimodal:
+        _check_he_embeddings(adatas)
+
     _select_novae_genes(adatas, var_names)
 
     if var_names is None:
@@ -63,7 +67,15 @@ def prepare_adatas(
     return adatas, var_names
 
 
-def _check_has_slide_id(adata: AnnData | list[AnnData]):
+def _check_he_embeddings(adatas: list[AnnData]) -> None:
+    n_multimodal = sum(Keys.HISTO_EMBEDDINGS in adata.obsm for adata in adatas)
+    assert n_multimodal == 0 or n_multimodal == len(adatas), (
+        f"Found {n_multimodal} AnnData objects with H&E embeddings, but not for all of them. "
+        "Either disable multimodal support with `novae.settings.disable_multimodal = True`, or make sure all AnnData objects have H&E embeddings."
+    )
+
+
+def _check_has_slide_id(adata: AnnData | list[AnnData]) -> None:
     if not isinstance(adata, AnnData):
         for adata_ in adata:
             _check_has_slide_id(adata_)
@@ -73,7 +85,7 @@ def _check_has_slide_id(adata: AnnData | list[AnnData]):
     )
 
 
-def _standardize_adatas(adatas: list[AnnData]):
+def _standardize_adatas(adatas: list[AnnData]) -> None:
     """
     Make sure all AnnData objects are preprocessed correctly and have a Delaunay graph
     """
@@ -108,14 +120,14 @@ def _standardize_adatas(adatas: list[AnnData]):
         )
 
 
-def check_has_spatial_adjancency(adata: AnnData):
+def check_has_spatial_adjancency(adata: AnnData) -> None:
     assert "spatial" in adata.obsm, "No spatial coordinates found in `adata.obsm['spatial']`"
     assert Keys.ADJ in adata.obsp, (
         "No spatial adjacency found in `adata.obsp['spatial_distances']`.Consider running `novae.spatial_neighbors`"
     )
 
 
-def _lookup_highly_variable_genes(adatas: list[AnnData]):
+def _lookup_highly_variable_genes(adatas: list[AnnData]) -> None:
     if len(adatas) == 1 or _is_multi_panel(adatas):
         for adata in adatas:
             _highly_variable_genes(adata)
@@ -134,7 +146,7 @@ def _lookup_highly_variable_genes(adatas: list[AnnData]):
         adata.var.loc[highly_variable_genes, Keys.HIGHLY_VARIABLE] = True
 
 
-def _highly_variable_genes(adata: AnnData, set_default_true: bool = False):
+def _highly_variable_genes(adata: AnnData, set_default_true: bool = False) -> None:
     if Keys.HIGHLY_VARIABLE in adata.var:  # already computed
         return
 
@@ -166,7 +178,7 @@ def _select_novae_genes(adatas: list[AnnData], var_names: set | list[str] | None
         )
 
 
-def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None):
+def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None) -> None:
     if var_names is None:
         return
 

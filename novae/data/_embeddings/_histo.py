@@ -127,7 +127,7 @@ def compute_histo_pca(
     X = np.concatenate([_histo_emb(sdata) for sdata in sdatas], axis=0)
 
     pca = PCA(n_components=n_components)
-    pipeline = Pipeline(("pca", pca), ("scaler", StandardScaler()))
+    pipeline = Pipeline([("pca", pca), ("scaler", StandardScaler())])
 
     pipeline.fit(X)
 

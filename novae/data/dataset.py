@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_scipy_sparse_matrix
 
-from .. import utils
+from .. import settings, utils
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
 from . import AnnDataTorch
@@ -169,7 +169,7 @@ class NovaeDataset(Dataset):
         edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
 
         histo_embeddings = None
-        if Keys.HISTO_EMBEDDINGS in adata.obsm:
+        if Keys.HISTO_EMBEDDINGS in adata.obsm and not settings.disable_multimodal:
             histo_embeddings = adata.obsm[Keys.HISTO_EMBEDDINGS][[obs_index]]
             histo_embeddings = torch.tensor(histo_embeddings, dtype=torch.float32)
 
