@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 def compute_histo_embeddings(
     sdata: "SpatialData",
-    model: str | Callable,
+    model: str | Callable = "conch",
     table_key: str = "table",
     patch_overlap_ratio: float = 0.5,
     image_key: str | None = None,

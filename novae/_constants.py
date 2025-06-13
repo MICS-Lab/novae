@@ -13,7 +13,7 @@ class Keys:
     # obsp keys
     ADJ: str = "spatial_distances"
     ADJ_LOCAL: str = "spatial_distances_local"
-    ADJ_PAIR: str = "spatial_distances_pair"
+    ADJ_VIEW: str = "spatial_distances_view"
 
     # var keys
     VAR_MEAN: str = "mean"

@@ -259,3 +259,28 @@ def test_check_slide_name_key():
     del adata2.obs[Keys.SLIDE_ID]
     with pytest.raises(AssertionError):
         novae.utils.check_slide_name_key(adata2, None)
+
+
+def test_change_n_hops():
+    adata = novae.data.toy_dataset()[0]
+    novae.spatial_neighbors(adata)
+
+    model = novae.Novae(adata)
+    model._init_datamodule()
+
+    assert adata.uns[Keys.NOVAE_UNS]["n_hops_local"] == adata.uns[Keys.NOVAE_UNS]["n_hops_view"] == 2
+
+    mean_adj_view = adata.obsp[Keys.ADJ_VIEW].getnnz(axis=0).mean()
+    mean_adj_local = adata.obsp[Keys.ADJ_LOCAL].getnnz(axis=1).mean()
+
+    model = novae.Novae(adata, n_hops_local=3, n_hops_view=4)
+    model._init_datamodule()
+
+    assert adata.uns[Keys.NOVAE_UNS]["n_hops_local"] == 3
+    assert adata.uns[Keys.NOVAE_UNS]["n_hops_view"] == 4
+
+    mean_adj_view2 = adata.obsp[Keys.ADJ_VIEW].getnnz(axis=0).mean()
+    mean_adj_local2 = adata.obsp[Keys.ADJ_LOCAL].getnnz(axis=1).mean()
+
+    assert mean_adj_view2 / mean_adj_view > 1.5
+    assert mean_adj_local2 / mean_adj_local > 1.5

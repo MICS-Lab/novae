@@ -1,3 +1,4 @@
+import anndata
 import numpy as np
 import pytest
 
@@ -72,3 +73,25 @@ def _ensure_batch_same_slide(model: novae.Novae):
         assert len(unique_adata_indices) == 1
         slide_ids = adatas[unique_adata_indices[0]].obs[Keys.SLIDE_ID].iloc[sub_obs_ilocs[:, 1]]
         assert len(np.unique(slide_ids)) == 1
+
+
+def test_multi_slide_one_adata():
+    adatas = novae.data.toy_dataset(n_drop=0)
+
+    for i, adata in enumerate(adatas):
+        adata.obs["slide_id"] = f"slide_{i}"
+
+    adata = anndata.concat(adatas)
+
+    novae.spatial_neighbors(adata, slide_key="slide_id")
+
+    model = novae.Novae(adata)
+    datamodule = model._init_datamodule()
+
+    unique_ids = set()
+    for batch in datamodule.train_dataloader():
+        slide_ids = set(batch["main"]["slide_id"])
+        assert len(slide_ids) == 1
+        unique_ids.update(slide_ids)
+
+    assert len(unique_ids) == len(adatas)

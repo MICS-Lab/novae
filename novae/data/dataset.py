@@ -85,11 +85,11 @@ class NovaeDataset(Dataset):
                 adata.obsp[Keys.ADJ_LOCAL] = _to_adjacency_local(adjacency, self.n_hops_local)
                 adata.uns[Keys.NOVAE_UNS]["n_hops_local"] = self.n_hops_local
 
-            if Keys.ADJ_PAIR not in adata.obsp or adata.uns[Keys.NOVAE_UNS].get("n_hops_view") != self.n_hops_view:
-                adata.obsp[Keys.ADJ_PAIR] = _to_adjacency_view(adjacency, self.n_hops_view)
+            if Keys.ADJ_VIEW not in adata.obsp or adata.uns[Keys.NOVAE_UNS].get("n_hops_view") != self.n_hops_view:
+                adata.obsp[Keys.ADJ_VIEW] = _to_adjacency_view(adjacency, self.n_hops_view)
                 adata.uns[Keys.NOVAE_UNS]["n_hops_view"] = self.n_hops_view
 
-            adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_PAIR].sum(1).A1 > 0
+            adata.obs[Keys.IS_VALID_OBS] = adata.obsp[Keys.ADJ_VIEW].sum(1).A1 > 0
 
         ratio_valid_obs = pd.concat([adata.obs[Keys.IS_VALID_OBS] for adata in self.adatas]).mean()
         if ratio_valid_obs < Nums.RATIO_VALID_CELLS_TH:
@@ -145,7 +145,7 @@ class NovaeDataset(Dataset):
         if not self.training:
             return {"main": data}
 
-        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_PAIR]
+        adjacency_pair: csr_matrix = self.adatas[adata_index].obsp[Keys.ADJ_VIEW]
         cell_view_index = np.random.choice(list(adjacency_pair[obs_index].indices), size=1)[0]
 
         return {"main": data, "view": self.to_pyg_data(adata_index, cell_view_index)}

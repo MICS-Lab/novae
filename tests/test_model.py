@@ -260,3 +260,11 @@ def test_reset_clusters_zero_shot():
     model.compute_representations(adata, zero_shot=True)
 
     assert not (model.swav_head.clusters_levels == clusters_levels).all()
+
+
+def test_init_prototypes():
+    model = novae.Novae(adata, num_prototypes=20)
+
+    prototypes = model.swav_head.prototypes.data.clone()
+    model.init_prototypes(adata)
+    assert (model.swav_head.prototypes.data != prototypes).all()
