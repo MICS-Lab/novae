@@ -1,7 +1,11 @@
 ## [1.0.0] - xxxx-xx-xx
 
 First post-publication release.
-Starting from this version, it will be as backward compatible as possible.
+
+Some breaking changes are listed below. But, starting from this version, it will be as backward compatible as possible.
+
+## Added
+- Support multimodality (H&E + spatial omics). See the docs tutorials.
 
 ## Changed
 - Move `novae.utils.load_dataset` to `novae.load_dataset`
@@ -12,7 +16,6 @@ Starting from this version, it will be as backward compatible as possible.
 - Move representations to `numpy` when torch is not needed anymore
 
 ## Fixed
-- Removed scaling in the data loader
 - Slide-id passed correctly to dataloader for one-adata multi-slide mode
 - Auto-detect change in n_hops_{local,view} to re-build graph
 
