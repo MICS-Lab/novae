@@ -71,12 +71,20 @@ from novae import log
 log.setLevel(logging.ERROR) # or any other level, e.g. logging.DEBUG
 ```
 
-### How to disable auto-preprocessing
+### How to disable auto-preprocessing?
 
-By default, Novae automatically run data preprocessing for you. If you don't want that, you can run the line below.
+By default, Novae will preprocess your `adata` object if you provide raw counts. More specifically, it will consider you have raw counts if `adata.X.max() > 10`, and then it will run `sc.pp.normalize_total` and `sc.pp.log1p`. To avoid that, you can run:
 
 ```python
 novae.settings.auto_preprocessing = False
+```
+
+### How to disable the multimodal mode?
+By default, Novae will use multimodal mode **if and only if** you ran `novae.compute_histo_embeddings` and `novae.compute_histo_pca`.
+
+To force not using the multimodal mode although you already computed H&E embeddings per cell, you can run:
+```python
+novae.settings.disable_multimodal = True
 ```
 
 ### How long does it take to use Novae?
