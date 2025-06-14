@@ -46,7 +46,9 @@ def compute_histo_embeddings(
         from sopa._constants import SopaAttrs, SopaKeys
         from spatialdata.models import get_table_keys
     except ImportError:
-        raise ImportError("Please install the multimodal extra via `pip install novae[multimodal]`.")
+        raise ImportError(
+            "Please install the multimodal extra via `pip install novae[multimodal]`.\nIf you want to use CONCH, also install the corresponding extra via `pip install 'novae[multimodal,conch]'`."
+        )
 
     assert 0 <= patch_overlap_ratio < 1, "patch_overlap_ratio must be between 0 and 1"
     patch_overlap = int(patch_overlap_ratio * Nums.HE_PATCH_WIDTH)
