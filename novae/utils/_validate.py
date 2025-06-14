@@ -185,9 +185,9 @@ def _lookup_known_genes(adata: AnnData, var_names: set | list[str] | None) -> No
     adata.var[Keys.IS_KNOWN_GENE] = np.isin(lower_var_names(adata.var_names), list(var_names))
 
     n_known = sum(adata.var[Keys.IS_KNOWN_GENE])
-    assert n_known >= Nums.MIN_GENES, f"Too few genes ({n_known}) are known by the model."
-    if n_known / adata.n_vars < 0.50:
-        log.warning(f"Only {n_known / adata.n_vars:.1%} of genes are known by the model.")
+    assert n_known >= Nums.MIN_GENES, f"Too few genes ({n_known}) are known/used by the model."
+    if n_known / adata.n_vars < 0.50 and n_known < 100:
+        log.warning(f"Only {n_known} genes are known/used by the model.")
 
 
 def _genes_union(adatas: list[AnnData], among_used: bool = False) -> list[str]:
