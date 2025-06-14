@@ -6,7 +6,7 @@ import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 
-from ..utils import spatial_neighbors
+from ...utils import spatial_neighbors
 
 log = logging.getLogger(__name__)
 

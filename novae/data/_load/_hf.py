@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from typing import Callable
 
 import anndata
@@ -7,7 +6,7 @@ import pandas as pd
 import scanpy as sc
 from anndata import AnnData
 
-from ..utils import repository_root, wandb_log_dir
+from ...utils import repository_root
 
 log = logging.getLogger(__name__)
 
@@ -111,24 +110,3 @@ def load_local_dataset(relative_path: str, files_black_list: list[str] | None = 
 
     log.info(f"Loading {len(all_paths)} adata(s): {', '.join([str(path) for path in all_paths])}")
     return [anndata.read_h5ad(path) for path in all_paths]
-
-
-def _load_wandb_artifact(name: str) -> Path:
-    import wandb
-
-    api = wandb.Api()
-
-    if not name.startswith("novae/"):
-        name = f"novae/novae/{name}"
-
-    artifact = api.artifact(name)
-
-    artifact_path = wandb_log_dir() / "artifacts" / artifact.name
-
-    if artifact_path.exists():
-        log.info(f"Artifact {artifact_path} already downloaded")
-    else:
-        log.info(f"Downloading artifact at {artifact_path}")
-        artifact.download(root=artifact_path)
-
-    return artifact_path

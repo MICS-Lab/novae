@@ -9,8 +9,8 @@ Some breaking changes are listed below. But, starting from this version, it will
 
 ## Changed
 - Move `novae.utils.load_dataset` to `novae.load_dataset`
-- Move `novae.utils.quantile_scaling` to `novae.data.quantile_scaling`
-- Move `novae.utils.toy_dataset` to `novae.data.toy_dataset`
+- Move `novae.utils.quantile_scaling` to `novae.quantile_scaling`
+- Move `novae.utils.toy_dataset` to `novae.toy_dataset`
 - Use `resolution` instead of `level` by default in `assign_domains`
 - Migrate to `uv` + `ruff`
 - Move representations to `numpy` when torch is not needed anymore
