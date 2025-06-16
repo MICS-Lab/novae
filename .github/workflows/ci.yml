@@ -33,7 +33,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Tests
-        run: uv run pytest
+        run: uv run pytest --cov --junitxml=junit.xml -o junit_family=legacy
+
+      - name: Upload test results to Codecov
+        if: ${{ matrix.python-version == '3.10' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   deploy-docs:
     needs: [tests]
