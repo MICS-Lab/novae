@@ -79,7 +79,6 @@ python_files = "test_*.py"
 target-version = "py39"
 line-length = 120
 fix = true
-exclude = ["scripts/*"]
 
 [tool.ruff.lint]
 select = [
