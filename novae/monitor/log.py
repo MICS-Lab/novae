@@ -2,9 +2,8 @@ import io
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from PIL import Image
-
 import wandb
+from PIL import Image
 
 from ..utils import repository_root
 
