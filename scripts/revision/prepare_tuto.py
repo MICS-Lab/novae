@@ -8,12 +8,11 @@ def main():
     input_file = "/gpfs/workdir/shared/prime/spatial/spatialdata"
     output_file = "/gpfs/workdir/shared/prime/spatial/tuto.zarr"
 
-    sdata_ = sopa.io.xenium(input_file, cells_table=True, cells_boundaries=True)
-    print(sdata_)
+    sdata = sopa.io.xenium(input_file, cells_table=True, cells_boundaries=True)
+    print(sdata)
 
-    # sdata.write(output_file)
+    sdata.write(output_file)
     sdata = spatialdata.read_zarr(output_file)
-    sdata["cell_boundaries"] = sdata_["cells_boundaries"]
 
     novae.compute_histo_embeddings(sdata, device="cuda")
     novae.compute_histo_pca(sdata)
