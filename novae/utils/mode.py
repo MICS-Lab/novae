@@ -1,9 +1,3 @@
-from anndata import AnnData
-
-from .. import settings
-from .._constants import Keys
-
-
 class Mode:
     """Novae mode class, used to store states variables related to training and inference."""
 
@@ -34,14 +28,6 @@ class Mode:
     def fit(self):
         self.zero_shot = False
         self.trained = False
-
-    def update_multimodal_mode(self, adata: AnnData | list[AnnData] | None):
-        if adata is None or settings.disable_multimodal:
-            return
-
-        adata = adata if isinstance(adata, AnnData) else adata[0]
-
-        self.multimodal = Keys.HISTO_EMBEDDINGS in adata.obsm
 
     ### Mode-specific attributes
 

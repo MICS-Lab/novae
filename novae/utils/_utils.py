@@ -1,11 +1,15 @@
 import importlib
 import logging
 from pathlib import Path
+from typing import Literal
 
+import lightning as L
 import numpy as np
 import pandas as pd
 import torch
 from anndata import AnnData
+from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from lightning.pytorch.loggers.logger import Logger
 from lightning.pytorch.trainer.connectors.accelerator_connector import _AcceleratorConnector
 
 from .._constants import Keys
@@ -134,3 +138,67 @@ def iter_slides(adatas: AnnData | list[AnnData]):
 
         for slide_id in slide_ids:
             yield adata[adata.obs[Keys.SLIDE_ID] == slide_id]
+
+
+def train(
+    model: L.LightningModule,
+    datamodule: L.LightningDataModule,
+    accelerator: str,
+    max_epochs: int = 50,
+    patience: int = 3,
+    min_delta: float = 0,
+    callbacks: list[Callback] | None = None,
+    logger: Logger | list[Logger] | bool = False,
+    **trainer_kwargs: int,
+):
+    """Internal function to train a LightningModule with early stopping."""
+
+    early_stopping = EarlyStopping(
+        monitor="train/loss_epoch",
+        min_delta=min_delta,
+        patience=patience,
+        check_on_train_epoch_end=True,
+    )
+    callbacks = [early_stopping] + (callbacks or [])
+    enable_checkpointing = any(isinstance(c, ModelCheckpoint) for c in callbacks)
+
+    trainer = L.Trainer(
+        max_epochs=max_epochs,
+        accelerator=accelerator,
+        callbacks=callbacks,
+        logger=logger,
+        enable_checkpointing=enable_checkpointing,
+        **trainer_kwargs,
+    )
+    trainer.fit(model, datamodule=datamodule)
+
+
+def get_reference(
+    adata: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
+) -> AnnData | list[AnnData]:
+    if reference == "all":
+        return adata
+
+    if isinstance(reference, int):
+        assert isinstance(adata, list), "When providing an index, you must provide a list of AnnData objects."
+        return adata[reference]
+
+    if reference == "largest":
+
+        def _select_largest_slide(adata: AnnData):
+            counts = adata.obs[Keys.SLIDE_ID].value_counts()
+            return counts.max(), adata[adata.obs[Keys.SLIDE_ID] == counts.idxmax()]
+
+        if isinstance(adata, AnnData):
+            return _select_largest_slide(adata)[1]
+        else:
+            return max([_select_largest_slide(_adata) for _adata in adata])[1]
+
+    assert isinstance(reference, str), f"Invalid type for `reference`: {type(reference)}"
+
+    adatas = [adata] if isinstance(adata, AnnData) else adata
+    for adata in adatas:
+        if reference in adata.obs[Keys.SLIDE_ID].cat.categories:
+            return adata[adata.obs[Keys.SLIDE_ID] == reference]
+
+    raise ValueError(f"Did not found slide id `{reference}` in the provided AnnData object(s).")

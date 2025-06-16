@@ -74,6 +74,12 @@ def _check_he_embeddings(adatas: list[AnnData]) -> None:
         "Either disable multimodal support with `novae.settings.disable_multimodal = True`, or make sure all AnnData objects have H&E embeddings."
     )
 
+    if n_multimodal > 0:
+        n_components = [adata.obsm[Keys.HISTO_EMBEDDINGS].shape[1] for adata in adatas]
+        assert all(n == n_components[0] for n in n_components), (
+            f"The H&E embeddings must have been processed with the same number of PCA components. Found {n_components}."
+        )
+
 
 def _check_has_slide_id(adata: AnnData | list[AnnData]) -> None:
     if not isinstance(adata, AnnData):

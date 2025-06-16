@@ -7,12 +7,12 @@ import scanpy as sc
 import torch
 from anndata import AnnData
 from huggingface_hub import PyTorchModelHubMixin
-from lightning.pytorch.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers.logger import Logger
 from torch import Tensor, optim
 from torch_geometric.data import Batch
 
-from . import __version__, plot, utils
+from . import __version__, plot, settings, utils
 from ._constants import Keys, Nums
 from .data import NovaeDatamodule, NovaeDataset, _load_wandb_artifact
 from .module import CellEmbedder, GraphAugmentation, GraphEncoder, SwavHead
@@ -107,7 +107,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._model_name = None
         self._datamodule = None
         self.init_slide_queue(self.adatas, min_prototypes_ratio)
-        self.mode.update_multimodal_mode(self.adatas)
+        self._update_multimodal_mode()
 
     def init_slide_queue(self, adata: AnnData | list[AnnData] | None, min_prototypes_ratio: float) -> None:
         """
@@ -132,7 +132,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self, adata: AnnData | list[AnnData] | None = None, reference: str | int | Literal["all", "largest"] = "largest"
     ):
         datamodule = self._init_datamodule(
-            self._prepare_adatas(_get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
+            self._prepare_adatas(utils.get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
         )
         latent = self._compute_representations_datamodule(None, datamodule, return_representations=True)
         self.swav_head._prototypes = self.swav_head.compute_kmeans_prototypes(latent)
@@ -171,6 +171,23 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self._num_workers = value
         if self._datamodule is not None:
             self._datamodule.num_workers = value
+
+    def _update_multimodal_mode(self):
+        if settings.disable_multimodal:
+            self.mode.multimodal = False
+            return
+
+        if self.adatas is None:
+            return
+
+        adata = self.adatas[0]
+        self.mode.multimodal = Keys.HISTO_EMBEDDINGS in adata.obsm
+
+        if self.mode.multimodal:
+            n_components = adata.obsm[Keys.HISTO_EMBEDDINGS].shape[1]
+            assert self.hparams.histo_embedding_size == n_components, (
+                f"H&E embeddings computed with {n_components} components, but model initialized with histo_embedding_size={self.hparams.histo_embedding_size}."
+            )
 
     def _to_anndata_list(self, adata: AnnData | list[AnnData] | None) -> list[AnnData]:
         if adata is None:
@@ -368,7 +385,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """Compute prototypes based on the latent representations, and assign each cell to a leaf."""
         adatas = [adatas] if isinstance(adatas, AnnData) else adatas
 
-        adatas_refs = _get_reference(adatas, reference)
+        adatas_refs = utils.get_reference(adatas, reference)
         adatas_refs = [adatas_refs] if isinstance(adatas_refs, AnnData) else adatas_refs
 
         latent = np.concatenate([adata.obsm[Keys.REPR][utils.valid_indices(adata)] for adata in adatas_refs])
@@ -385,9 +402,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         valid_indices = datamodule.dataset.valid_indices[0]
         representations, projections = [], []
 
-        if adata is not None:
-            assert self.mode.multimodal is (Keys.HISTO_EMBEDDINGS in adata.obsm), (
-                "Mismatch between multimodal mode and histology embeddings in `adata.obsm`."
+        if (adata is not None) and self.mode.multimodal is not (Keys.HISTO_EMBEDDINGS in adata.obsm):
+            raise ValueError(
+                f"Multimodal mode is {'enabled' if self.mode.multimodal else 'disabled'} but `adata.obsm` {'does not' if self.mode.multimodal else 'does'} contain H&E embeddings."
             )
 
         for batch in utils.tqdm(datamodule.predict_dataloader(), desc="Computing representations"):
@@ -647,13 +664,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
 
         ### Misc
-        self.mode.update_multimodal_mode(self.adatas)
+        self._update_multimodal_mode()
         self._lr = lr
         self.swav_head.reset_clustering()  # ensure we don't re-use old clusters
         self._parse_hardware_args(accelerator, num_workers)
         self._datamodule = self._init_datamodule()
 
-        _train(
+        utils.train(
             self,
             self.datamodule,
             accelerator,
@@ -666,67 +683,3 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
         self.mode.trained = True
-
-
-def _train(
-    model: L.LightningModule,
-    datamodule: L.LightningDataModule,
-    accelerator: str,
-    max_epochs: int = 50,
-    patience: int = 3,
-    min_delta: float = 0,
-    callbacks: list[Callback] | None = None,
-    logger: Logger | list[Logger] | bool = False,
-    **trainer_kwargs: int,
-):
-    """Internal function to train a LightningModule with early stopping."""
-
-    early_stopping = EarlyStopping(
-        monitor="train/loss_epoch",
-        min_delta=min_delta,
-        patience=patience,
-        check_on_train_epoch_end=True,
-    )
-    callbacks = [early_stopping] + (callbacks or [])
-    enable_checkpointing = any(isinstance(c, ModelCheckpoint) for c in callbacks)
-
-    trainer = L.Trainer(
-        max_epochs=max_epochs,
-        accelerator=accelerator,
-        callbacks=callbacks,
-        logger=logger,
-        enable_checkpointing=enable_checkpointing,
-        **trainer_kwargs,
-    )
-    trainer.fit(model, datamodule=datamodule)
-
-
-def _get_reference(
-    adata: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
-) -> AnnData | list[AnnData]:
-    if reference == "all":
-        return adata
-
-    if isinstance(reference, int):
-        assert isinstance(adata, list), "When providing an index, you must provide a list of AnnData objects."
-        return adata[reference]
-
-    if reference == "largest":
-
-        def _select_largest_slide(adata: AnnData):
-            counts = adata.obs[Keys.SLIDE_ID].value_counts()
-            return counts.max(), adata[adata.obs[Keys.SLIDE_ID] == counts.idxmax()]
-
-        if isinstance(adata, AnnData):
-            return _select_largest_slide(adata)[1]
-        else:
-            return max([_select_largest_slide(_adata) for _adata in adata])[1]
-
-    assert isinstance(reference, str), f"Invalid type for `reference`: {type(reference)}"
-
-    adatas = [adata] if isinstance(adata, AnnData) else adata
-    for adata in adatas:
-        if reference in adata.obs[Keys.SLIDE_ID].cat.categories:
-            return adata[adata.obs[Keys.SLIDE_ID] == reference]
-
-    raise ValueError(f"Did not found slide id `{reference}` in the provided AnnData object(s).")
