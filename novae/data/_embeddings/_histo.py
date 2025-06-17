@@ -62,6 +62,11 @@ def compute_histo_embeddings(
 
     # align the cells boundaries to the image coordinate system
     shapes_key, _, instance_key = get_table_keys(adata)
+
+    if not sdata.shapes[shapes_key].geometry.is_valid.all():
+        log.warning(f"Found invalid geometries in `sdata['{shapes_key}']`. They will be fixed using `.make_valid()`.")
+        sdata.shapes[shapes_key].geometry = sdata.shapes[shapes_key].make_valid()
+
     cells = sopa.utils.to_intrinsic(sdata, shapes_key, image_key)
     cells = cells.loc[adata.obs[instance_key]]
 
