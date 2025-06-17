@@ -70,6 +70,8 @@ def compute_histo_embeddings(
     cells = sopa.utils.to_intrinsic(sdata, shapes_key, image_key)
     cells = cells.loc[adata.obs[instance_key]]
 
+    log.info("Starting to compute histology embeddings...")
+
     key_added = sopa.patches.compute_embeddings(
         sdata,
         model,
@@ -80,6 +82,7 @@ def compute_histo_embeddings(
         device=device,
         batch_size=batch_size,
         roi_key=shapes_key,
+        use_roi_centroids=True,
     )
 
     patches_centroids = sdata[SopaKeys.EMBEDDINGS_PATCHES].centroid

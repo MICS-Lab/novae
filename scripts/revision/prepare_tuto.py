@@ -16,19 +16,19 @@ def main():
     novae.compute_histo_embeddings(sdata, device="cuda")
     novae.compute_histo_pca(sdata)
 
-    adata = sdata["table"]
+    # adata = sdata["table"]
 
-    adata.write_h5ad("/gpfs/workdir/blampeyq/res_novae/tuto_pp.h5ad")
+    # adata.write_h5ad("/gpfs/workdir/blampeyq/res_novae/tuto_pp.h5ad")
 
-    novae.spatial_neighbors(adata, radius=80)
+    # novae.spatial_neighbors(adata, radius=80)
 
-    model = novae.Novae(adata)
-    model.fit(adata, accelerator="cuda", num_workers=4, lr=2e-4, max_epochs=40)
-    model.compute_representations(adata, accelerator="cuda", num_workers=4)
+    # model = novae.Novae(adata)
+    # model.fit(adata, accelerator="cuda", num_workers=4, lr=2e-4, max_epochs=40)
+    # model.compute_representations(adata, accelerator="cuda", num_workers=4)
 
-    model.assign_domains(adata, level=8)
+    # model.assign_domains(adata, level=8)
 
-    adata.write_h5ad("/gpfs/workdir/blampeyq/res_novae/tuto_res.h5ad")
+    # adata.write_h5ad("/gpfs/workdir/blampeyq/res_novae/tuto_res.h5ad")
 
 
 if __name__ == "__main__":
