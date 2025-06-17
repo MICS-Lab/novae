@@ -80,6 +80,7 @@ def compute_histo_embeddings(
         device=device,
         batch_size=batch_size,
         roi_key=shapes_key,
+        use_roi_centroids=True,
     )
 
     patches_centroids = sdata[SopaKeys.EMBEDDINGS_PATCHES].centroid
