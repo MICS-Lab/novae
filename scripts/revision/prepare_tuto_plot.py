@@ -23,6 +23,8 @@ def main():
     sc.pl.spatial(adata, color="pca_dim0_cells", spot_size=10, show=False)
     plt.savefig("/gpfs/workdir/blampeyq/res_novae/conch_emb_projected.png", bbox_inches="tight")
 
+    novae.spatial_neighbors(adata, radius=80)
+
     model = novae.Novae(adata)
     model.fit(adata, accelerator="cuda", num_workers=8)
     model.compute_representations(adata, accelerator="cuda", num_workers=8)
