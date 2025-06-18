@@ -37,7 +37,7 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 
 ### PyPI
 
-`novae` can be installed via `PyPI` on all OS, for `python>=3.10`.
+`novae` can be installed via `PyPI` on all OS, for any Python version from `3.10` to `3.12` (included).
 
 ```
 pip install novae
