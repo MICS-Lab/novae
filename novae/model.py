@@ -595,8 +595,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         accelerator: str = "cpu",
         num_workers: int | None = None,
         min_prototypes_ratio: float = 0.3,
-        lr: float = 1e-3,
-        max_epochs: int = 4,
+        lr: float = 5e-4,
+        max_epochs: int = 10,
         **fit_kwargs: int,
     ):
         """Fine tune a pretrained Novae model. This will update the prototypes with the new data, and `fit` for one or a few epochs.
