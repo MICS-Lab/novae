@@ -4,7 +4,7 @@ Novae can be installed on every OS via `pip` on any Python version from `3.10` t
 
 !!! note "Advice (optional)"
 
-    We advise creating a new environment via a package manager, except if you use Poetry, which will automatically create the environment.
+    We advise creating a new environment via a package manager.
 
     For instance, you can create a new `conda` environment:
 
