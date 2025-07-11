@@ -129,7 +129,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             self.swav_head.init_queue(slide_ids)
 
     def init_prototypes(
-        self, adata: AnnData | list[AnnData] | None = None, reference: str | int | Literal["all", "largest"] = "largest"
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "largest",
     ):
         datamodule = self._init_datamodule(
             self._prepare_adatas(utils.get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
@@ -591,7 +593,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData],
         *,
-        reference: str | int | Literal["all", "largest"] = "largest",
+        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "largest",
         accelerator: str = "cpu",
         num_workers: int | None = None,
         min_prototypes_ratio: float = 0.3,

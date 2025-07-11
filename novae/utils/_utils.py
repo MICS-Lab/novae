@@ -174,14 +174,10 @@ def train(
 
 
 def get_reference(
-    adata: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
+    adatas: AnnData | list[AnnData], reference: Literal["all", "largest"] | str | int | list[str] | list[int]
 ) -> AnnData | list[AnnData]:
     if reference == "all":
-        return adata
-
-    if isinstance(reference, int):
-        assert isinstance(adata, list), "When providing an index, you must provide a list of AnnData objects."
-        return adata[reference]
+        return adatas
 
     if reference == "largest":
 
@@ -189,14 +185,31 @@ def get_reference(
             counts = adata.obs[Keys.SLIDE_ID].value_counts()
             return counts.max(), adata[adata.obs[Keys.SLIDE_ID] == counts.idxmax()]
 
-        if isinstance(adata, AnnData):
-            return _select_largest_slide(adata)[1]
+        if isinstance(adatas, AnnData):
+            return _select_largest_slide(adatas)[1]
         else:
-            return max([_select_largest_slide(_adata) for _adata in adata])[1]
+            return max([_select_largest_slide(_adata) for _adata in adatas])[1]
 
-    assert isinstance(reference, str), f"Invalid type for `reference`: {type(reference)}"
+    if isinstance(reference, (str, int)):
+        reference = [reference]
 
-    adatas = [adata] if isinstance(adata, AnnData) else adata
+    assert all(isinstance(ref, str) for ref in reference) or all(isinstance(ref, int) for ref in reference), (
+        "Reference must be either a string (slide ID), an integer (slide index), a list of strings, or a list of integers."
+    )
+
+    if isinstance(adatas, AnnData):
+        assert all(isinstance(ref, str) for ref in reference), (
+            "When selecting references by indices, you must provide a list of AnnData objects."
+        )
+        adatas = [adatas]
+
+    return [_get_one_reference(adatas, ref) for ref in reference]
+
+
+def _get_one_reference(adatas: list[AnnData], reference: int | str) -> AnnData:
+    if isinstance(reference, int):
+        return adatas[reference]
+
     for adata in adatas:
         if reference in adata.obs[Keys.SLIDE_ID].cat.categories:
             return adata[adata.obs[Keys.SLIDE_ID] == reference]

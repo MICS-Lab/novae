@@ -6,6 +6,7 @@ Some breaking changes are listed below. But, starting from this version, it will
 
 ## Added
 - Support multimodality (H&E + spatial omics). See the docs tutorials.
+- Support multi-references in `fine_tune` and zero-shot modes.
 
 ## Changed
 - Move `novae.utils.load_dataset` to `novae.load_dataset`

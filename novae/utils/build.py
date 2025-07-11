@@ -326,7 +326,7 @@ def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None
 
     if slide_key is None:  # each adata has its own slide ID
         for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = pd.Series(id(adata), index=adata.obs_names, dtype="category")
+            adata.obs[Keys.SLIDE_ID] = pd.Series(str(id(adata)), index=adata.obs_names, dtype="category")
         return
 
     assert all(slide_key in adata.obs for adata in adatas), f"{slide_key=} must be in all `adata.obs`"
@@ -335,7 +335,7 @@ def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None
 
     if len(set.union(*slides_ids)) == sum(len(slide_ids) for slide_ids in slides_ids):
         for adata in adatas:
-            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype("category")
+            adata.obs[Keys.SLIDE_ID] = adata.obs[slide_key].astype(str).astype("category")
         return
 
     log.warning("Some slides may have the same `slide_key` values. We add `id(adata)` id to the slide IDs.")
