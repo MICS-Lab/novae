@@ -9,3 +9,5 @@
 ::: novae.plot.paga
 
 ::: novae.plot.spatially_variable_genes
+
+::: novae.plot.loss_curve

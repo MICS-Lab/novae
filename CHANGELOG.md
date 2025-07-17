@@ -5,8 +5,9 @@ First post-publication release.
 Some breaking changes are listed below. But, starting from this version, it will be as backward compatible as possible.
 
 ## Added
-- Support multimodality (H&E + spatial omics). See the docs tutorials.
-- Support multi-references in `fine_tune` and zero-shot modes.
+- Support multimodality (H&E + spatial omics). See the docs tutorials
+- Support multi-references in `fine_tune` and zero-shot modes
+- Added `novae.plot.loss_curve` for minimal monitoring when not using Weight & Biases
 
 ## Changed
 - Move `novae.utils.load_dataset` to `novae.load_dataset`
