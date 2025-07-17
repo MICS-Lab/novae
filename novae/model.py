@@ -594,11 +594,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata: AnnData | list[AnnData],
         *,
         reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "largest",
+        max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
+        min_delta: float = 0.03,
+        lr: float = 3e-4,
         min_prototypes_ratio: float = 0.3,
-        lr: float = 5e-4,
-        max_epochs: int = 10,
         **fit_kwargs: int,
     ):
         """Fine tune a pretrained Novae model. This will update the prototypes with the new data, and `fit` for one or a few epochs.
@@ -606,11 +607,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             reference: Reference slide to use for the new prototypes. Can be the AnnData index, a unique slide id, or one of `["all", "largest"]`.
+            max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
-            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
+            min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             lr: Model learning rate.
-            max_epochs: Maximum number of training epochs.
+            min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """
         self.mode.fine_tune()
@@ -627,6 +629,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             accelerator=accelerator,
             num_workers=num_workers,
             lr=lr,
+            min_delta=min_delta,
             **fit_kwargs,
         )
 
