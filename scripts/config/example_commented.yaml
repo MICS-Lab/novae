@@ -1,0 +1,23 @@
+data:
+  train_dataset: /path/to/dir # must contain `*.h5ad` files
+  val_dataset: /path/to/dir # must contain `*.h5ad` files
+
+model_kwargs: # some parameters for novae.Novae initialization
+  heads: 16
+  hidden_size: 128
+
+fit_kwargs: # some parameters for novae.Novae.fit
+  max_epochs: 30
+  lr: 0.0001
+  accelerator: "gpu"
+  num_workers: 8
+  patience: 6
+  min_delta: 0.025
+
+post_training:
+  n_domains: [15, 20, 25] # number of domains to be logged
+  log_metrics: true # whether to log metrics after training
+  save_h5ad: true # whether to save the final model as an h5ad file
+  delete_X: true # whether to delete the X matrix from the AnnData object after training
+  log_umap: true # whether to log UMAP embeddings
+  log_domains: true # whether to log domains
