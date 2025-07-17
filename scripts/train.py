@@ -9,6 +9,7 @@ from anndata import AnnData
 
 import novae
 from novae._constants import Keys
+from novae.data._load._hf import load_local_dataset
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 
@@ -16,10 +17,8 @@ from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
-    adatas = novae.data.load.load_local_dataset(
-        config.data.train_dataset, files_black_list=config.data.files_black_list
-    )
-    adatas_val = novae.data.load.load_local_dataset(config.data.val_dataset) if config.data.val_dataset else None
+    adatas = load_local_dataset(config.data.train_dataset, files_black_list=config.data.files_black_list)
+    adatas_val = load_local_dataset(config.data.val_dataset) if config.data.val_dataset else None
 
     _check_sid(adatas)
     if adatas_val is not None:
