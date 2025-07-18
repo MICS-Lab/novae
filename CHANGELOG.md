@@ -2,24 +2,21 @@
 
 First post-publication release.
 
-Some breaking changes are listed below. But, starting from this version, it will be as backward compatible as possible.
-
 ## Added
 - Support multimodality (H&E + spatial omics). See the docs tutorials
 - Support multi-references in `fine_tune` and zero-shot modes
 - Added `novae.plot.loss_curve` for minimal monitoring when not using Weight & Biases
 
 ## Changed
-- Move `novae.utils.load_dataset` to `novae.load_dataset`
-- Move `novae.utils.quantile_scaling` to `novae.quantile_scaling`
-- Move `novae.utils.toy_dataset` to `novae.toy_dataset`
-- Use `resolution` instead of `level` by default in `assign_domains`
-- Migrate to `uv` + `ruff`
-- Move representations to `numpy` when torch is not needed anymore
+- Move `novae.utils.load_dataset` to `novae.load_dataset` (the old import is deprecated, it will be removed in future versions)
+- Move `novae.utils.quantile_scaling` to `novae.quantile_scaling` (deprecated, as above)
+- Move `novae.utils.toy_dataset` to `novae.toy_dataset` (deprecated, as above)
+- Migrate to `uv` as a package manager, and `ruff` for formatting/linting
 
 ## Fixed
 - Slide-id passed correctly to dataloader for one-adata multi-slide mode
 - Auto-detect change in n_hops_{local,view} to re-build graph
+- Move representations to `numpy` when torch is not needed anymore (#19)
 
 ## [0.2.4] - 2025-03-26
 
