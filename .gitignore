@@ -51,6 +51,7 @@ wandb/
 .autoenv
 !**/.gitkeep
 exploration
+Xenium_Prime*
 
 # pyenv
 .python-version
