@@ -6,7 +6,7 @@ Here, we list some advice to help you get the best out of Novae.
 When you have many slides, it's recommended to train or fine-tune Novae only on the high-quality slides and run inference (i.e., spatial domain assignment) on all slides. This allows noise removal in the model training while still applying Novae to the whole dataset.
 
 ### Resolution or level
-When running [`assign_domains`](../api/Novae/#novae.Novae.assign_domains) in **zero-shot**, it is recommended to use the `resolution` argument. When fine-tuning or re-training a Novae model, both `resolution` and `level` are reasonable solutions since the `level` argument is more robust when the prototypes are trained.
+When running [`assign_domains`](../api/Novae/#novae.Novae.assign_domains) in **zero-shot**, it may be better to use the `resolution` argument. When fine-tuning or re-training a Novae model, using `level` is recommended.
 
 !!! info
     An advantage of using `level` is that the domains will be nested through the different levels — we don't have such a property using the `resolution` argument.

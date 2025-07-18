@@ -101,6 +101,21 @@ model = novae.Novae(adata) # one or a list of adata objects
 model.fit(adata, accelerator="cuda", num_workers=4)
 ```
 
+### How to monitor the model training?
+
+Since we use [Pytorch Lightning](https://lightning.ai/docs/pytorch/stable/) to train Novae, you can provide an existing [Lightning Logger](https://lightning.ai/docs/pytorch/stable/extensions/logging.html) to the [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune) methods. For instance, there is an existing logger for [Weight and Biases](https://wandb.ai/site/), which will allow you to aggregate plenty of training metrics, such as loss curves, hardware usage, time, and many others.
+
+If you don't want to use a monitoring library but just want to see the model loss curve, you can also use a CSVLogger and then use our [novae.plot.loss_curve](../api/plot/#novae.plot.loss_curve) function. For instance:
+
+```python
+from lightning.pytorch.loggers import CSVLogger
+
+# save the logs in a directory called "logs"
+model.fine_tune(logger=CSVLogger("logs"), log_every_n_steps=10)
+
+novae.plot.loss_curve("logs")
+```
+
 ### How to contribute?
 
 If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
