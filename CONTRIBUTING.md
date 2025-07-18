@@ -13,23 +13,22 @@ If you want to open a PR, follow the following instructions.
 To add some new code to **novae**, you should:
 
 1. Fork the repository
-2. Install `novae` in editable mode with the `dev` extra (see below)
+2. Install `novae` in editable mode with the `dev` dependencies (see next section)
 3. Create your personal branch from `main`
 4. Implement your changes according to the 'Coding guidelines' below
 5. Create a pull request on the `main` branch of the original repository. Add explanations about your developed features, and wait for discussion and validation of your pull request
 
 ## Installing `novae` in editable mode
 
-When contributing, installing `novae` in editable mode is recommended. We also recommend installing the `dev` extra.
+When contributing, installing `novae` in editable mode is recommended. We also recommend installing the `dev` dependencies.
 
-For that, choose between `pip` and `uv` as below:
+For that, you can use [`uv`](https://docs.astral.sh/uv/getting-started/installation/) as below:
 
 ```sh
 git clone https://github.com/MICS-Lab/novae.git
 cd novae
 
-pip install -e '.[dev]' # pip installation
-uv sync --all-extras --dev   # uv installation
+uv sync --all-extras --dev   # all extras and dev dependencies
 ```
 
 ## Coding guidelines
@@ -65,9 +64,10 @@ When create a pull request, tests are run automatically. But you can also run th
 To check the coverage of the tests:
 
 ```sh
-coverage run -m pytest
-coverage report # command line report
-coverage html # html report
+uv run coverage run -m pytest
+
+uv run coverage report # command line report
+uv run coverage html # or generate a html report
 ```
 
 ### Documentation
@@ -77,5 +77,5 @@ You can update the documentation in the `./docs` directory. Refer to the [mkdocs
 To serve the documentation locally:
 
 ```sh
-mkdocs serve
+uv run mkdocs serve
 ```

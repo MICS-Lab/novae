@@ -13,30 +13,50 @@ Novae can be installed on every OS via `pip` on any Python version from `3.10` t
     conda activate novae
     ```
 
-Choose one of the following, depending on your needs. It should take at most a few minutes.
+Choose one of the following, depending on your needs.
 
 === "From PyPI"
 
-    ``` bash
+    ```bash
     pip install novae
     ```
 
-=== "pip (editable mode)"
+    You can install the two following extras: `multimodal` and `conch`.
+    For instance, you can install both as below:
 
-    ``` bash
-    git clone https://github.com/MICS-Lab/novae.git
-    cd novae
-
-    pip install -e . # no extra
+    ```bash
+    pip install 'novae[multimodal,conch]'
     ```
 
 === "uv (editable mode)"
 
+    !!! info "Contributing"
+        If you want to contribute to Novae, using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) is recommended. You'll also need create a fork, see the [CONTRIBUTING guidelines](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
+
     ``` bash
+    git clone https://github.com/MICS-Lab/novae.git # or your own fork of Novae
+    cd novae
+
+    uv sync --all-extras --dev # all extras and the dev dependencies
+    ```
+
+=== "Using conda"
+
+    ```bash
+    conda install bioconda::novae
+    ```
+
+    !!! warning
+        You won't be able to install the extra dependencies of Novae with conda.
+
+=== "pip (editable mode)"
+
+    ```bash
     git clone https://github.com/MICS-Lab/novae.git
     cd novae
 
-    uv sync --all-extras --dev
+    pip install -e . # no extra
+    pip install -e '.[multimodal,conch]' # all extras
     ```
 
 ## Next steps
