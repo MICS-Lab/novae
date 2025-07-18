@@ -91,6 +91,16 @@ novae.settings.disable_multimodal = True
 
 The `pip` installation of Novae usually takes less than a minute on a standard laptop. The inference time depends on the number of cells, but typically takes 5-20 minutes on a CPUs, or 30sec to 2 minutes on a GPU (expect it to be roughly 10x times faster on a GPU).
 
+### How to train a new Novae model?
+
+You can decide to train your own Novae model. To do that, simply create a [new model](../api/Novae/#novae.Novae.__init__) as below and use the [`model.fit`](../api/Novae/#novae.Novae.fit) method.
+
+```python
+model = novae.Novae(adata) # one or a list of adata objects
+
+model.fit(adata, accelerator="cuda", num_workers=4)
+```
+
 ### How to contribute?
 
 If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
