@@ -500,9 +500,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def assign_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        resolution: float | None = 0.5,
-        level: int | None = None,
+        level: int = 7,
         n_domains: int | None = None,
+        resolution: float | None = None,
         key_added: str | None = None,
     ) -> str:
         """Assign a domain to each cell based on the "leaves" classes.
@@ -510,7 +510,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         (ii) enforces a precise number of `n_domains`,
         or (iii) uses the Leiden clustering on the prototypes with a specific `resolution`.
 
-        By default, uses Leiden clustering on the prototypes. To get spatial domains hierachies, use option (i) or (ii).
+        By default, uses `level`. On zero-shot only, option (iii) can be better.
 
         Note:
             You'll need to run [novae.Novae.compute_representations][] first.
@@ -519,9 +519,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            resolution: Resolution for the Leiden clustering.
             level: Level of the domains hierarchical tree (i.e., number of different domains to assigned).
             n_domains: If `level` is not providing the desired number of domains, use this argument to enforce a precise number of domains.
+            resolution: Resolution for the Leiden clustering.
             key_added: The spatial domains will be saved in `adata.obs[key_added]`. By default, it is `adata.obs["novae_domains_X]`, where `X` is the `level` argument.
 
         Returns:
@@ -533,9 +533,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             f"Did not found `adata.obs['{Keys.LEAVES}']`. Please run `model.compute_representations(...)` first"
         )
 
-        if level is None and n_domains is None:
-            assert resolution is not None, "Provide at least one of `level`, `resolution`, or `n_domains`."
-
+        if resolution is not None:
             _leiden_codes = self._leiden_prototypes(resolution=resolution)
 
             key_added = f"{Keys.DOMAINS_PREFIX}res{resolution}"
@@ -548,11 +546,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             return key_added
 
         if n_domains is not None:
-            assert level is None, "Provide either `level` or `n_domains`, not both."
-
             leaves_indices = utils.unique_leaves_indices(adatas)
             level = self.swav_head.find_level(leaves_indices, n_domains)
             return self.assign_domains(adatas, level=level, key_added=key_added)
+
+        assert level is not None, "The `level` argument can't be None."
 
         key_added = f"{Keys.DOMAINS_PREFIX}{level}" if key_added is None else key_added
 
