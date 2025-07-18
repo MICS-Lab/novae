@@ -30,7 +30,7 @@ def compute_histo_embeddings(
     add a column in the cells table with the index of the closest patch.
 
     !!! warning "Installation"
-        This function requires the `multimodal` extra. You can install it with `pip install novae[multimodal]`.
+        This function requires the `multimodal` extra. You can install it with `pip install novae[multimodal]`. If you use the CONCH model (default), you also need to install the `conch` extra with `pip install 'novae[multimodal,conch]'`.
 
     Args:
         sdata: A `SpatialData` object containing the data.
@@ -69,8 +69,6 @@ def compute_histo_embeddings(
 
     cells = sopa.utils.to_intrinsic(sdata, shapes_key, image_key)
     cells = cells.loc[adata.obs[instance_key]]
-
-    log.info("Starting to compute histology embeddings...")
 
     key_added = sopa.patches.compute_embeddings(
         sdata,
