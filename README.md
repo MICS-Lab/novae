@@ -43,14 +43,8 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 pip install novae
 ```
 
-### Editable mode
-
-To install `novae` in editable mode (e.g., to contribute), clone the repository and choose among the options below.
-
-```sh
-pip install -e .                 # pip, minimal dependencies
-uv sync --all-extras --dev       # uv, all extras
-```
+> [!NOTE]
+> See this [installation section](https://mics-lab.github.io/novae/getting_started/) for more details about extras and other installations modes.
 
 ## Usage
 

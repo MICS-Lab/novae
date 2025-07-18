@@ -179,6 +179,10 @@ def get_reference(
     if reference == "all":
         return adatas
 
+    from ._validate import _check_has_slide_id
+
+    _check_has_slide_id(adatas)
+
     if reference == "largest":
 
         def _select_largest_slide(adata: AnnData):

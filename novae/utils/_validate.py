@@ -116,9 +116,13 @@ def _standardize_adatas(adatas: list[AnnData]) -> None:
                 adata.layers[Keys.COUNTS_LAYER] = adata.X.copy()
                 sc.pp.normalize_total(adata)
                 sc.pp.log1p(adata)
+
+                assert adata.X.max() < 10, (
+                    "After preprocessing, adata.X should be in log scale with a max < 10. If this error is not expected, consider opening an issue."
+                )
             else:
                 log.warning(
-                    "adata.X has high values. We recommend processing the data before running the model (e.g., with sc.pp.log1p)."
+                    "adata.X has high values. We recommend processing the data before running the model (e.g., with sc.pp.normalize_total and sc.pp.log1p)."
                 )
     if count_raw:
         log.info(

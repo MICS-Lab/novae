@@ -3,7 +3,7 @@
 First post-publication release.
 
 ## Added
-- Support multimodality (H&E + spatial omics). See the docs tutorials
+- Support multimodality (H&E + spatial omics). See [this tutorial](https://mics-lab.github.io/novae/tutorials/he_usage/).
 - Support multi-references in `fine_tune` and zero-shot modes
 - Added `novae.plot.loss_curve` for minimal monitoring when not using Weight & Biases
 
