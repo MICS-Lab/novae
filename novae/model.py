@@ -131,7 +131,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def init_prototypes(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "largest",
+        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "all",
     ):
         datamodule = self._init_datamodule(
             self._prepare_adatas(utils.get_reference(adata, reference)), sample_cells=Nums.DEFAULT_SAMPLE_CELLS
@@ -347,7 +347,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata: AnnData | list[AnnData] | None = None,
         *,
         zero_shot: bool = False,
-        reference: str | int | Literal["all", "largest"] = "largest",
+        reference: str | int | Literal["all", "largest"] = "all",
         accelerator: str = "cpu",
         num_workers: int | None = None,
     ) -> None:
@@ -591,12 +591,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData],
         *,
-        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "largest",
+        reference: Literal["all", "largest"] | str | int | list[str] | list[int] = "all",
         max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
-        min_delta: float = 0.03,
-        lr: float = 3e-4,
+        lr: float = 5e-4,
+        min_delta: float = 0.1,
         min_prototypes_ratio: float = 0.3,
         **fit_kwargs: int,
     ):
@@ -608,8 +608,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
-            min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             lr: Model learning rate.
+            min_delta: Minimum change in the monitored quantity to qualify as an improvement (early stopping).
             min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             **fit_kwargs: Optional kwargs for the [novae.Novae.fit][] method.
         """

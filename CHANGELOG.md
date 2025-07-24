@@ -8,6 +8,8 @@ First post-publication release.
 - Added `novae.plot.loss_curve` for minimal monitoring when not using Weight & Biases
 
 ## Changed
+- `fine_tune` method: use `lr = 5e-4` and `max_epochs = 20` as new default values
+- Use `reference="all"` instead of `"largest"` by default
 - Move `novae.utils.load_dataset` to `novae.load_dataset` (the old import is deprecated, it will be removed in future versions)
 - Move `novae.utils.quantile_scaling` to `novae.quantile_scaling` (deprecated, as above)
 - Move `novae.utils.toy_dataset` to `novae.toy_dataset` (deprecated, as above)
