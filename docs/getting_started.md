@@ -13,7 +13,7 @@ Novae can be installed on every OS via `pip` on any Python version from `3.10` t
     conda activate novae
     ```
 
-Choose one of the following, depending on your needs.
+Choose one of the following installation mode, depending on your needs.
 
 === "From PyPI"
 
@@ -21,8 +21,8 @@ Choose one of the following, depending on your needs.
     pip install novae
     ```
 
-    You can install the two following extras: `multimodal` and `conch`.
-    For instance, you can install both as below:
+    If you want to use Novae in multimodal mode, you can also install the two following extras: `multimodal` and `conch`.
+    You can install both as follows:
 
     ```bash
     pip install 'novae[multimodal,conch]'

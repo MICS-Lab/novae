@@ -122,4 +122,4 @@ If you want to contribute, check our [contributing guide](https://github.com/MIC
 
 ### How to resolve any other issue?
 
-If you have any bugs/questions/suggestions, don't hesitate to [open a new issue](https://github.com/MICS-Lab/novae/issues).
+If you have any bugs/questions/suggestions, don't hesitate to [open a new issue](https://github.com/MICS-Lab/novae/issues). We'll be happy to help!
