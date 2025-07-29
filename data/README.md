@@ -70,7 +70,7 @@ python _scripts/2_prepare.py
 These datasets can be used during training (see the `scripts` directory at the root of the `novae` repository).
 
 ## Notes
-- Missing technologies: CosMX, Curio Seeker, Resolve
-- Public institute datasets with [STOmics DB](https://db.cngb.org/stomics/)
+- Some technologies are missing, e.g., Curio Seeker, Resolve
+- Many public institute datasets can also be found on [STOmics DB](https://db.cngb.org/stomics/)
 - Some Xenium datasets are available outside of the main "10X Datasets" page:
   - https://www.10xgenomics.com/products/visium-hd-spatial-gene-expression/dataset-human-crc
