@@ -78,7 +78,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
             dropout_rate: Dropout rate for the genes during augmentation.
             scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
-            var_names: Only used when loading a pretrained model. Do not use it yourself.
+            var_names: Used when loading a pretrained model. Can also be used to specify the names of the variables to train on, e.g. to not consider low quality proteins whose intensity highly depends on the FOV.
         """
         super().__init__()
         ### Initialize cell embedder and prepare adata(s) object(s)

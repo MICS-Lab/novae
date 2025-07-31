@@ -28,12 +28,13 @@ def prepare_adatas(
 
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-        var_names: Only used when loading a pretrained model. Do not use it yourself.
+        var_names: Only used when loading a pretrained model, or to select a subset of vars to use.
 
     Returns:
         A list of `AnnData` objects ready to be used by the model. If only one `adata` object is provided, it will be wrapped in a list.
     """
     assert adata is not None or var_names is not None, "One of `adata` and `var_names` must not be None"
+    var_names = lower_var_names(var_names) if var_names is not None else None
 
     if adata is None:
         return None, var_names

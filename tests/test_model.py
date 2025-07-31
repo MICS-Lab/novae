@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import torch
+from anndata import AnnData
 
 import novae
 from novae._constants import Keys
@@ -268,3 +269,16 @@ def test_init_prototypes():
     prototypes = model.swav_head.prototypes.data.clone()
     model.init_prototypes(adata)
     assert (model.swav_head.prototypes.data != prototypes).all()
+
+
+def test_var_name_subset():
+    adata = AnnData(np.random.rand(10, 30))
+    adata.var_names = [f"GENE{i}" for i in range(30)]
+    adata.obsm["spatial"] = np.random.randn(10, 2)
+
+    novae.spatial_neighbors(adata)
+
+    selected_genes = ["gene1"] + [f"GENE{i}" for i in range(5, 25)]  # check case insensitivity
+    model = novae.Novae(adata, var_names=selected_genes, embedding_size=10)
+
+    assert model.hparams.var_names == [x.lower() for x in selected_genes]
