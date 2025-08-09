@@ -1,6 +1,6 @@
-## [1.0.0] - xxxx-xx-xx
+## [1.0.0] - 2025-08-09
 
-First post-publication release.
+Pre-publication release (for Zenodo DOI creation).
 
 ## Added
 - Support multimodality (H&E + spatial omics). See [this tutorial](https://mics-lab.github.io/novae/tutorials/he_usage/).
