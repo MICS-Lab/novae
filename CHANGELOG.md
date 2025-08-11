@@ -1,13 +1,23 @@
+## [1.0.1] - xxxx-xx-xx
+
+🎉 Novae is now published in XXX
+
+### Added
+- Full dataset added to [our Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae)
+
+### Changed
+- Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
+
 ## [1.0.0] - 2025-08-09
 
 Pre-publication release (for Zenodo DOI creation).
 
-## Added
+### Added
 - Support multimodality (H&E + spatial omics). See [this tutorial](https://mics-lab.github.io/novae/tutorials/he_usage/).
 - Support multi-references in `fine_tune` and zero-shot modes
 - Added `novae.plot.loss_curve` for minimal monitoring when not using Weight & Biases
 
-## Changed
+### Changed
 - `fine_tune` method: use `lr = 5e-4` and `max_epochs = 20` as new default values
 - Use `reference="all"` instead of `"largest"` by default
 - Move `novae.utils.load_dataset` to `novae.load_dataset` (the old import is deprecated, it will be removed in future versions)
@@ -15,7 +25,7 @@ Pre-publication release (for Zenodo DOI creation).
 - Move `novae.utils.toy_dataset` to `novae.toy_dataset` (deprecated, as above)
 - Migrate to `uv` as a package manager, and `ruff` for formatting/linting
 
-## Fixed
+### Fixed
 - Slide-id passed correctly to dataloader for one-adata multi-slide mode
 - Auto-detect change in n_hops_{local,view} to re-build graph
 - Move representations to `numpy` when torch is not needed anymore (#19)

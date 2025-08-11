@@ -37,9 +37,9 @@ def load_dataset(
 
     Args:
         pattern: Optional pattern to match the slides names.
-        tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain", "colon"`.
-        species: Optional species (or species list) to filter the slides. E.g., `"human", "mouse"`.
-        technology: Optional technology (or technology list) to filter the slides. E.g., `"xenium", or "visium_hd"`.
+        tissue: Optional tissue (or tissue list) to filter the slides. E.g., `"brain"` or `"colon"`.
+        species: Optional species (or species list) to filter the slides. E.g., `"human"` or `"mouse"`.
+        technology: Optional technology (or technology list) to filter the slides. E.g., `"xenium"` or `"visium_hd"`.
         custom_filter: Custom filter function that takes the metadata DataFrame (see above link) and returns a boolean Series to decide which rows should be kept.
         top_k: Optional number of slides to keep. If `None`, keeps all slides.
         dry_run: If `True`, the function will only return the metadata of slides that match the filters.
