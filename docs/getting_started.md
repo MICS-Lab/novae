@@ -1,6 +1,6 @@
 ## Installation
 
-Novae can be installed on every OS via `pip` on any Python version from `3.10` to `3.12` (included). By default, we recommend using `python==3.10`.
+Novae can be installed on every OS and for any Python version from `3.10` to `3.12` (included).
 
 !!! note "Advice (optional)"
 

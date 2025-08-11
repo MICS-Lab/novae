@@ -101,6 +101,12 @@ model = novae.Novae(adata) # one or a list of adata objects
 model.fit(adata, accelerator="cuda", num_workers=4)
 ```
 
+### What's the slide_key?
+
+The tutorials often mention the `slide_key` name. This argument can be used to denote the name of the column in `adata.obs` which refers to each **sample** name. This argument is needed only when each `AnnData` object contains multiple samples, and is used to treat each sample separately during the analysis.
+
+Note that this is a slight abuse of language, since one slide may contain multiple samples, for instance, if you have Tissue Microarray data.
+
 ### How to monitor the model training?
 
 Since we use [Pytorch Lightning](https://lightning.ai/docs/pytorch/stable/) to train Novae, you can provide an existing [Lightning Logger](https://lightning.ai/docs/pytorch/stable/extensions/logging.html) to the [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune) methods. For instance, there is an existing logger for [Weight and Biases](https://wandb.ai/site/), which will allow you to aggregate plenty of training metrics, such as loss curves, hardware usage, time, and many others.
