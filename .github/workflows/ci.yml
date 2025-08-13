@@ -106,8 +106,8 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ vars.DOCKERHUB_USERNAME }}/novae${{ matrix.extra-name }}:${{ env.VERSION }}
-            ${{ vars.DOCKERHUB_USERNAME }}/novae${{ matrix.extra-name }}:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/novae:${{ env.VERSION }}${{ matrix.extra-name }}
+            ${{ vars.DOCKERHUB_USERNAME }}/novae:latest${{ matrix.extra-name }}
           context: ./docker/novae${{ matrix.extra-name }}
           build-args: |
             NOVAE_VERSION=${{ env.VERSION }}
