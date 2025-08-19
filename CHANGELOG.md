@@ -8,6 +8,7 @@
 
 ### Changed
 - Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
+- Update to `spatialdata>=0.5.0` to avoid installation issue related to `xarray-dataclasses`
 
 ## [1.0.0] - 2025-08-09
 
