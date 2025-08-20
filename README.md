@@ -54,8 +54,13 @@ Here is a minimal usage example. For more details, refer to the [documentation](
 ```python
 import novae
 
+# compute cell neighbors
+novae.spatial_neighbors(adata)
+
+# load a pre-trained model
 model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
+# compute spatial domains
 model.compute_representations(adata, zero_shot=True)
 model.assign_domains(adata)
 ```
