@@ -53,7 +53,7 @@ def prepare_adatas(
     )
 
     _check_has_slide_id(adatas)
-    _standardize_adatas(adatas)  # log1p + spatial_neighbors
+    _validate_preprocessing(adatas)  # log1p + spatial_neighbors
 
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
@@ -92,7 +92,7 @@ def _check_has_slide_id(adata: AnnData | list[AnnData]) -> None:
     )
 
 
-def _standardize_adatas(adatas: list[AnnData]) -> None:
+def _validate_preprocessing(adatas: list[AnnData]) -> None:
     """
     Make sure all AnnData objects are preprocessed correctly and have a Delaunay graph
     """
