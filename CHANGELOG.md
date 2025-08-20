@@ -10,6 +10,9 @@
 - Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
 - Update to `spatialdata>=0.5.0` to avoid installation issue related to `xarray-dataclasses`
 
+### Fixed
+- Retrieve `mode=multimodal` when saving the model and re-loading the model after H&E training (#24)
+
 ## [1.0.0] - 2025-08-09
 
 Pre-publication release (for Zenodo DOI creation).

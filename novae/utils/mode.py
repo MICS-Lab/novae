@@ -5,11 +5,17 @@ class Mode:
     normal_clustering_attrs: list[str] = ["_clustering", "_clusters_levels"]
     all_clustering_attrs: list[str] = normal_clustering_attrs + zero_shot_clustering_attrs
 
-    def __init__(self):
-        self.zero_shot = False
-        self.trained = False
-        self.pretrained = False
-        self.multimodal = False
+    def __init__(
+        self,
+        zero_shot: bool = False,
+        trained: bool = False,
+        pretrained: bool = False,
+        multimodal: bool = False,
+    ):
+        self.zero_shot = zero_shot
+        self.trained = trained
+        self.pretrained = pretrained
+        self.multimodal = multimodal
 
     def __repr__(self) -> str:
         return f"Mode({dict(self.__dict__.items())})"

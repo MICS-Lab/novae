@@ -32,6 +32,9 @@ def test_he_embeddings():
     model.fit(max_epochs=1)
     model.compute_representations()
 
+    model.save_pretrained("tests/test_he_model")
+    assert novae.Novae.from_pretrained("tests/test_he_model").mode.multimodal  # recover the multimodal mode
+
     w2 = model.encoder.mlp_fusion[0].weight.data.clone()
 
     assert not torch.allclose(w, w2)

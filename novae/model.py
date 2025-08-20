@@ -57,6 +57,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         histo_embedding_size: int = 50,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
+        mode_kwargs: dict | None = None,
     ) -> None:
         """
 
@@ -81,6 +82,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             var_names: Used when loading a pretrained model. Can also be used to specify the names of the variables to train on, e.g. to not consider low quality proteins whose intensity highly depends on the FOV.
         """
         super().__init__()
+
         ### Initialize cell embedder and prepare adata(s) object(s)
         if scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
@@ -92,8 +94,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             _scgpt_var_names = self.cell_embedder.gene_names
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=_scgpt_var_names)
 
+        mode_kwargs = mode_kwargs or {}
         self.save_hyperparameters(ignore=["adata", "scgpt_model_dir"])
-        self.mode = utils.Mode()
+        self.mode = utils.Mode(**mode_kwargs)
 
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads, histo_embedding_size)
@@ -177,6 +180,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def _update_multimodal_mode(self):
         if settings.disable_multimodal:
             self.mode.multimodal = False
+            self.hparams["mode_kwargs"]["multimodal"] = False
             return
 
         if self.adatas is None:
@@ -184,6 +188,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         adata = self.adatas[0]
         self.mode.multimodal = Keys.HISTO_EMBEDDINGS in adata.obsm
+        self.hparams["mode_kwargs"]["multimodal"] = self.mode.multimodal
 
         if self.mode.multimodal:
             n_components = adata.obsm[Keys.HISTO_EMBEDDINGS].shape[1]
