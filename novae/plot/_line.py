@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def loss_curve(log_dir: str, version: int = -1, on_epoch: bool = False, **kwargs: int) -> None:
+def loss_curve(log_dir: str, version: int = -1, on_epoch: bool = True, **kwargs: int) -> None:
     """Plot the training loss curve from the CSV logs. This is a basic alternative for monitoring training when Weights & Biases can't be used.
 
     !!! info
