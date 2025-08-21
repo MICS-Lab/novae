@@ -218,4 +218,4 @@ def _get_one_reference(adatas: list[AnnData], reference: int | str) -> AnnData:
         if reference in adata.obs[Keys.SLIDE_ID].cat.categories:
             return adata[adata.obs[Keys.SLIDE_ID] == reference]
 
-    raise ValueError(f"Did not found slide id `{reference}` in the provided AnnData object(s).")
+    raise ValueError(f"Did not found slide id `{reference}` inside adata.obs['{Keys.SLIDE_ID}'].")

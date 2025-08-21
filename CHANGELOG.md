@@ -5,6 +5,7 @@
 ### Added
 - Full dataset added to [our Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae)
 - Official Docker images released - [see here](https://hub.docker.com/r/quentinblampey/novae)
+- Support `reference=None` in `fine_tune` (random initialization)
 
 ### Changed
 - Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
