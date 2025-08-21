@@ -39,7 +39,7 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
 
-        self.initialize_prototypes()
+        self.kaiming_prototypes_initialization()
         self.normalize_prototypes()
         self.min_prototypes = 0
 
@@ -49,7 +49,7 @@ class SwavHead(L.LightningModule):
 
         self.reset_clustering()
 
-    def initialize_prototypes(self):
+    def kaiming_prototypes_initialization(self):
         self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
         self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
 

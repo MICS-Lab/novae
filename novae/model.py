@@ -624,7 +624,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
         if reference is None:
-            self.swav_head.initialize_prototypes()
+            self.swav_head.kaiming_prototypes_initialization()
         else:
             self.init_prototypes(adata, reference=reference)
 
