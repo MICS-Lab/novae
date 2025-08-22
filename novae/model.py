@@ -27,6 +27,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ```python
         import novae
 
+        novae.spatial_neighbors(adata)
+
         model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
         model.compute_representations(adata, zero_shot=True)
