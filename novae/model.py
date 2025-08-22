@@ -366,11 +366,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             zero_shot: If `True`, the model will be used in zero-shot mode, i.e. without training. In this case, the model will assign each cell to a leaf based on the latent representations.
-            reference: Use only if `zero_shot=True`. Reference slide to use for the new prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`.
+            reference: Use only if `zero_shot=True`. Reference slide to use to update the prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
         """
         assert self.mode.trained, "Novae must be trained first, so consider running `model.fit()`"
+        assert (not zero_shot) or (reference is not None), "`reference=None` is not supported in zero-shot mode."
 
         self.mode.zero_shot = zero_shot
         self.training = False
@@ -598,7 +599,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData],
         *,
-        reference: Literal["all", "largest"] | str | int | list[str] | list[int] | None = "all",
+        reference: Literal["all", "largest"] | str | int | list[str] | list[int] | None = None,
         max_epochs: int = 20,
         accelerator: str = "cpu",
         num_workers: int | None = None,
@@ -611,7 +612,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            reference: Reference slide to use for the new prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`. If `None`, initializes prototypes randomly.
+            reference: Reference slide to use to update the prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`. By default, keep the pretrained prototypes.
             max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
@@ -625,9 +626,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        if reference is None:
-            self.swav_head.kaiming_prototypes_initialization()
-        else:
+        if reference is not None:
             self.init_prototypes(adata, reference=reference)
 
         self.init_slide_queue(adata, min_prototypes_ratio)

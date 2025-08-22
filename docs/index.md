@@ -22,8 +22,8 @@ Novae is a deep learning model for spatial domain assignments of spatial transcr
 
 ## Why using Novae
 
-- It is already pretrained on a large dataset (pan human/mouse tissues, brain, ...). Therefore, you can compute spatial domains in a zero-shot manner (i.e., without fine-tuning).
+- It is already pretrained on a large dataset (pan human/mouse tissues, brain, ...). Therefore, you can compute spatial domains in a zero-shot manner or quickly fine-tune the model.
 - It has been developed to find consistent domains across many slides. This also works if you have different technologies (e.g., MERSCOPE/Xenium) and multiple gene panels.
-- You can natively correct batch-effect, without using external tools.
+- You can natively correct the spatial-domains batch-effect, without using external tools.
 - After inference, the spatial domain assignment is super fast, allowing you to try multiple resolutions easily.
 - It supports many downstream tasks, all included inside one framework.

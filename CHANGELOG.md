@@ -5,11 +5,12 @@
 ### Added
 - Full dataset added to [our Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae)
 - Official Docker images released - [see here](https://hub.docker.com/r/quentinblampey/novae)
-- Support `reference=None` in `fine_tune` (random initialization)
+- Support `reference=None` in `fine_tune` (keep pretrained prototypes)
 
 ### Changed
 - Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
 - Update to `spatialdata>=0.5.0` to avoid installation issue related to `xarray-dataclasses`
+- Use `reference=None` by default in `fine_tune`
 
 ### Fixed
 - Retrieve `mode=multimodal` when saving the model and re-loading the model after H&E training (#24)
