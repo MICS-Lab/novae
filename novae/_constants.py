@@ -60,6 +60,6 @@ class Nums:
 
     # misc nums
     MEAN_NGH_TH_WARNING: float = 3.5
-    N_OBS_THRESHOLD: int = 2_000_000  # above this number, lazy loading is used
+    N_OBS_THRESHOLD: int = 1_000_000  # above this number, lazy loading is used
     RATIO_VALID_CELLS_TH: float = 0.7
     HE_PATCH_WIDTH: int = 224
