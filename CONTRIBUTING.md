@@ -66,8 +66,12 @@ To check the coverage of the tests:
 ```sh
 uv run coverage run -m pytest
 
-uv run coverage report # command line report
-uv run coverage html # or generate a html report
+# option 1: show the report in the console
+uv run coverage report
+
+# option 2: generate and open a html report
+uv run coverage html
+open htmlcov/index.html
 ```
 
 ### Documentation

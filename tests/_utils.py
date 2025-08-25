@@ -45,3 +45,11 @@ spatial_coords2 = np.array(
 adata_line = AnnData(obs=pd.DataFrame(index=[str(i) for i in range(len(spatial_coords2))]))
 adata_line.obsm["spatial"] = spatial_coords2
 novae.utils.spatial_neighbors(adata_line, radius=1.5)
+
+adata_small = novae.data.toy_dataset(
+    n_panels=1,
+    n_slides_per_panel=1,
+    xmax=100,
+    n_domains=2,
+    compute_spatial_neighbors=True,
+)[0]

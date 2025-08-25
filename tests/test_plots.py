@@ -34,3 +34,7 @@ def test_plot_domains():
 def test_plot_connectivities():
     novae.plot.connectivities(adatas, ngh_threshold=2, show=False)
     novae.plot.connectivities(adatas, ngh_threshold=None, show=False)
+
+
+def test_plot_domains_proportions():
+    novae.plot.domains_proportions(adatas, show=False)
