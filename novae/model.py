@@ -612,7 +612,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            reference: Reference slide to use to update the prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`. By default, keep the pretrained prototypes.
+            reference: Reference slide to use to update the prototypes. Can be one or multiple AnnData indices, slide ids, or one of `["all", "largest"]`. By default, initialize the prototypes randomly.
             max_epochs: Maximum number of training epochs.
             accelerator: Accelerator to use. For instance, `'cuda'`, `'cpu'`, or `'auto'`. See Pytorch Lightning for more details.
             num_workers: Number of workers for the dataloader.
@@ -626,7 +626,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         assert adata is not None, "Please provide an AnnData object to fine-tune the model."
 
-        if reference is not None:
+        if reference is None:
+            self.swav_head.kaiming_prototypes_initialization()
+        else:
             self.init_prototypes(adata, reference=reference)
 
         self.init_slide_queue(adata, min_prototypes_ratio)

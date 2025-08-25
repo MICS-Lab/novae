@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 class SwavHead(L.LightningModule):
     queue: None | Tensor  # (n_slides, QUEUE_SIZE, num_prototypes)
+    _prototypes: nn.Parameter  # (num_prototypes, output_size)
 
     def __init__(
         self,
@@ -38,8 +39,7 @@ class SwavHead(L.LightningModule):
         self.num_prototypes = num_prototypes
         self.temperature = temperature
 
-        self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
-        self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
+        self.kaiming_prototypes_initialization()
         self.normalize_prototypes()
         self.min_prototypes = 0
 
@@ -48,6 +48,10 @@ class SwavHead(L.LightningModule):
         self.queue = None
 
         self.reset_clustering()
+
+    def kaiming_prototypes_initialization(self):
+        self._prototypes = nn.Parameter(torch.empty((self.num_prototypes, self.output_size)))
+        self._prototypes = nn.init.kaiming_uniform_(self._prototypes, a=math.sqrt(5), mode="fan_out")
 
     def set_min_prototypes(self, min_prototypes_ratio: float):
         self.min_prototypes = int(self.num_prototypes * min_prototypes_ratio)

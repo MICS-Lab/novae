@@ -18,7 +18,7 @@ If you have a rare tissue or a tissue that was not used in our large dataset, yo
 For the zero-shot and fine-tuning modes, you can provide a `reference` slide (or multiple slides). This allows to recompute the model prototypes (i.e., the centroids of the spatial domains) based on the chosen slides.
 
 - For [zero-shot](../api/Novae/#novae.Novae.compute_representations), we use `reference="all"` by default, meaning we use all slides to recompute the prototypes. Depending on your use case, you may consider specifying one or multiple **representative** slides.
-- For [fine-tuning](../api/Novae/#novae.Novae.fine_tune), we use `reference=None` by default, meaning we will keep the prototypes from the pretrained model, and re-train them. If you have only one slide, it may be worth trying `reference="all"`.
+- For [fine-tuning](../api/Novae/#novae.Novae.fine_tune), we use `reference=None` by default, meaning we will initialize the prototypes randomly, and re-train them. If you have only one slide, it may be worth trying `reference="all"`.
 
 ### Hyperparameters
 We recommend using the default Novae hyperparameters, which should work great in most cases. Yet, if you confortable with Novae you might consider updating them. In that case, here are some of the most important hyperparameters in [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune):
