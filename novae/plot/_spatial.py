@@ -6,16 +6,13 @@ import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from anndata import AnnData
+from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from scanpy._utils import sanitize_anndata
 
 from .. import utils
 from .._constants import Keys
-from ._utils import (
-    _get_default_cell_size,
-    _subplots_per_slide,
-    get_categorical_color_palette,
-)
+from ._utils import _get_default_cell_size, _subplots_per_slide, get_categorical_color_palette
 
 log = logging.getLogger(__name__)
 
@@ -28,8 +25,10 @@ def domains(
     ncols: int = 4,
     fig_size_per_slide: tuple[int, int] = (5, 5),
     na_color: str = "#ccc",
+    palette: str | None = None,
     show: bool = True,
     library_id: str | None = None,
+    fast: bool = False,
     **kwargs: int,
 ):
     """Show the Novae spatial domains for all slides in the `AnnData` object.
@@ -45,8 +44,10 @@ def domains(
         ncols: Number of columns to be shown.
         fig_size_per_slide: Size of the figure for each slide.
         na_color: Color for cells that does not belong to any domain (i.e. cells with a too small neighborhood).
+        palette: A valid seaborn color palette name. By default, use "tab10" or "tab20" depending on the number of domains.
         show: Whether to show the plot.
         library_id: `library_id` argument for `sc.pl.spatial`.
+        fast: If `True`, will use a faster but less accurate rendering method (based on rasterization on a grid).
         **kwargs: Additional arguments for `sc.pl.spatial`.
     """
     if obs_key is not None:
@@ -59,7 +60,7 @@ def domains(
     for adata in adatas:
         sanitize_anndata(adata)
 
-    all_domains, colors = get_categorical_color_palette(adatas, obs_key)
+    all_domains, colors = get_categorical_color_palette(adatas, obs_key, palette=palette)
     cell_size = cell_size or _get_default_cell_size(adata)
 
     fig, axes = _subplots_per_slide(adatas, ncols, fig_size_per_slide)
@@ -69,17 +70,23 @@ def domains(
         slide_name = adata.obs[slide_name_key].iloc[0]
         assert len(np.unique(adata.obs[slide_name_key])) == 1
 
-        sc.pl.spatial(
-            adata,
-            spot_size=cell_size,
-            color=obs_key,
-            ax=ax,
-            show=False,
-            library_id=library_id,
-            **kwargs,
-        )
+        if fast:
+            _spatial_raster(adata, obs_key, s=cell_size, ax=ax, na_color=na_color, **kwargs)
+        else:
+            sc.pl.spatial(
+                adata,
+                spot_size=cell_size,
+                color=obs_key,
+                ax=ax,
+                show=False,
+                library_id=library_id,
+                na_color=na_color,
+                **kwargs,
+            )
         sns.despine(ax=ax, offset=10, trim=True)
-        ax.get_legend().remove()
+
+        if not fast:
+            ax.get_legend().remove()
         ax.set_title(slide_name)
 
     [fig.delaxes(ax) for ax in axes.flatten() if not ax.has_data()]  # remove unused subplots
@@ -107,6 +114,41 @@ def domains(
 
     if show:
         plt.show()
+
+
+def _spatial_raster(
+    adata: AnnData, obs_key: str, s: float, ax: plt.Axes, na_color: str, interpolation: str = "nearest"
+):
+    x, y = adata.obsm["spatial"].T
+    domains = adata.obs[obs_key]
+
+    has_na = domains.isna().any()
+
+    xmin, ymax = x.min(), y.max()
+    ix: np.ndarray = np.floor((x - xmin) / s).astype(int)
+    iy: np.ndarray = np.floor((ymax - y) / s).astype(int)
+    nx, ny = ix.max() + 1, iy.max() + 1
+
+    grid = np.full((ny, nx), -1, dtype=np.int32)
+    grid[iy, ix] = domains.cat.codes + has_na
+
+    colors = adata.uns[f"{obs_key}_colors"]
+
+    if has_na:
+        colors = [na_color, *colors]
+
+    ax.imshow(
+        np.ma.masked_equal(grid, -1),
+        origin="lower",
+        interpolation=interpolation,
+        cmap=ListedColormap(colors),
+        aspect="equal",
+    )
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlabel("spatial1")
+    ax.set_ylabel("spatial2")
 
 
 def spatially_variable_genes(

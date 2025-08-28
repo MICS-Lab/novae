@@ -29,6 +29,7 @@ def test_plot_prototype_weights():
 
 def test_plot_domains():
     novae.plot.domains(adatas, show=False)
+    novae.plot.domains(adatas, show=False, fast=True)
 
 
 def test_plot_connectivities():
