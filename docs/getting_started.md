@@ -9,7 +9,7 @@ Novae can be installed on every OS and for any Python version from `3.10` to `3.
     For instance, you can create a new `conda` environment:
 
     ```bash
-    conda create --name novae python=3.10
+    conda create --name novae python=3.12
     conda activate novae
     ```
 
