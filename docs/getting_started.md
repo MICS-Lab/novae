@@ -1,6 +1,6 @@
 ## Installation
 
-Novae can be installed on every OS and for any Python version from `3.10` to `3.12` (included).
+Novae can be installed on every OS and for any Python version `>=3.11`.
 
 !!! note "Advice (optional)"
 
