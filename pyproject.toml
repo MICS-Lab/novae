@@ -3,7 +3,7 @@ name = "novae"
 version = "1.0.0"
 description = "Graph-based foundation model for spatial transcriptomics data"
 authors = [{ name = "Quentin Blampey", email = "quentin.blampey@gmail.com" }]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11"
 readme = "README.md"
 license = "BSD-3-Clause"
 classifiers = [

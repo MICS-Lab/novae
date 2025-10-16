@@ -14,6 +14,7 @@
 
 ### Fixed
 - Retrieve `mode=multimodal` when saving the model and re-loading the model after H&E training (#24)
+- Fix tests for recent AnnData versions only supporting CSR/CSC sparse matrices
 
 ## [1.0.0] - 2025-08-09
 

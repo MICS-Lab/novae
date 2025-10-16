@@ -118,10 +118,10 @@ def toy_dataset(
 
 def _drop_neighbors(adata: AnnData, index: int):
     for key in ["spatial_connectivities", "spatial_distances"]:
-        adata.obsp[key] = adata.obsp[key].tolil()
-        adata.obsp[key][index] = 0
-        adata.obsp[key][:, index] = 0
-        adata.obsp[key] = adata.obsp[key].tocsr()
+        connectivities = adata.obsp[key].tolil()
+        connectivities[index] = 0
+        connectivities[:, index] = 0
+        adata.obsp[key] = connectivities.tocsr()
         adata.obsp[key].eliminate_zeros()
 
 
