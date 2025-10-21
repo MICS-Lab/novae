@@ -52,6 +52,15 @@ def prepare_adatas(
         "You need to first run `novae.spatial_neighbors` to compute cell neighbors."
     )
 
+    mean_median_distance = np.mean([
+        np.median(adata.obsp[Keys.ADJ].data * settings.scale_to_microns) for adata in adatas
+    ])
+    if mean_median_distance > 60:
+        log.warning(
+            f"The average median distance between neighboring cells seems high ({mean_median_distance:.2f}). "
+            "If your coordinates are not in microns, set `novae.settings.scale_to_microns` to the conversion factor from your coordinate units to microns, e.g., `0.2125` if you use Xenium pixels."
+        )
+
     _check_has_slide_id(adatas)
     _validate_preprocessing(adatas)  # log1p + spatial_neighbors
 

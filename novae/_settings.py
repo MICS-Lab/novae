@@ -7,6 +7,7 @@ class Settings:
     # misc settings
     auto_preprocessing: bool = True
     disable_multimodal: bool = False
+    scale_to_microns: float = 1.0
 
     def disable_lazy_loading(self):
         """Disable lazy loading of subgraphs in the NovaeDataset."""

@@ -11,6 +11,15 @@ When running [`assign_domains`](../api/Novae/#novae.Novae.assign_domains) in **z
 !!! info
     An advantage of using `level` is that the domains will be nested through the different levels — we don't have such a property using the `resolution` argument.
 
+### Coordinate system
+After computing the Delaunay graph, Novae uses the distances between cells for training and during inference. This can be useful as it helps to better separate spatial domains with different densities of cells.
+By default, we expect `adata.obsm["spatial"]` coordinates to be in microns.
+
+If your coordinates are **not** in microns, set `novae.settings.scale_to_microns` to the conversion factor from your coordinate units to microns. For instance, if you have Xenium data and use a pixel coordinate system, you can set `novae.settings.scale_to_microns = 0.2125`.
+
+!!! info
+    Using `novae.settings.scale_to_microns` will not affect the Delaunay graph itself, it will only be used by Novae during training/inference.
+
 ### Rare tissues
 If you have a rare tissue or a tissue that was not used in our large dataset, you might consider re-training a model from scratch. The pre-trained models may work, so **try them first**, but if you have low-quality results, then it may be interesting to consider re-training a model. To do that, see [this tutorial](../tutorials/he_usage/) — you can skip the H&E-embedding section if you don't have an H&E slide aligned.
 

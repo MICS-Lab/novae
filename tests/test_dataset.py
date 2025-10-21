@@ -1,9 +1,12 @@
+from unittest.mock import MagicMock
+
 import anndata
 import numpy as np
 import pytest
 
 import novae
 from novae._constants import Keys
+from novae.utils._validate import log
 
 N_PANELS = 2
 N_SLIDES_PER_PANEL = 3
@@ -95,3 +98,29 @@ def test_multi_slide_one_adata():
         unique_ids.update(slide_ids)
 
     assert len(unique_ids) == len(adatas)
+
+
+def test_uses_scale_to_microns():
+    adatas = novae.toy_dataset(n_panels=1, compute_spatial_neighbors=True)
+
+    for adata in adatas:
+        adata.obsp[Keys.ADJ].data *= 10
+
+    log.warning = MagicMock()
+
+    model = novae.Novae(adatas, embedding_size=40)
+    datamodule = model._init_datamodule()
+    assert next(iter(datamodule.train_dataloader()))["main"].edge_attr.mean() > 10
+
+    log.warning.assert_called_once()
+
+    log.warning = MagicMock()
+
+    novae.settings.scale_to_microns = 0.1
+    model = novae.Novae(adatas, embedding_size=40)
+    datamodule = model._init_datamodule()
+    assert next(iter(datamodule.train_dataloader()))["main"].edge_attr.mean() < 2
+
+    novae.settings.scale_to_microns = 1
+
+    log.warning.assert_not_called()

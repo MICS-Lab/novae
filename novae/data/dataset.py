@@ -166,7 +166,9 @@ class NovaeDataset(Dataset):
 
         adjacency: csr_matrix = adata.obsp[Keys.ADJ]
         edge_index, edge_weight = from_scipy_sparse_matrix(adjacency[obs_indices][:, obs_indices])
-        edge_attr = edge_weight[:, None].to(torch.float32) / Nums.CELLS_CHARACTERISTIC_DISTANCE
+        edge_attr = (
+            edge_weight[:, None].to(torch.float32) * settings.scale_to_microns / Nums.CELLS_CHARACTERISTIC_DISTANCE
+        )
 
         histo_embeddings = None
         if Keys.HISTO_EMBEDDINGS in adata.obsm and not settings.disable_multimodal:
