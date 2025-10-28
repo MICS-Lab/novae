@@ -6,6 +6,8 @@ import pandas as pd
 import scanpy as sc
 import seaborn as sns
 from anndata import AnnData
+from fast_array_utils import stats
+from fast_array_utils.conv import to_dense
 from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from scanpy._utils import sanitize_anndata
@@ -192,8 +194,8 @@ def spatially_variable_genes(
         axis=1,
     )
 
-    where = (adata.X > 0).mean(0) > min_positive_ratio
-    valid_vars = adata.var_names[where.A1 if isinstance(where, np.matrix) else where]
+    positive_ratio = to_dense(stats.mean(adata.X > 0, axis=0), to_cpu_memory=True)
+    valid_vars = adata.var_names[positive_ratio > min_positive_ratio]
     assert len(valid_vars) >= top_k, (
         f"Only {len(valid_vars)} genes are available. Please decrease `top_k` or `min_positive_ratio`."
     )
