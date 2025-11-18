@@ -27,7 +27,16 @@ If you have a rare tissue or a tissue that was not used in our large dataset, yo
 For the zero-shot and fine-tuning modes, you can provide a `reference` slide (or multiple slides). This allows to recompute the model prototypes (i.e., the centroids of the spatial domains) based on the chosen slides.
 
 - For [zero-shot](../api/Novae/#novae.Novae.compute_representations), we use `reference="all"` by default, meaning we use all slides to recompute the prototypes. Depending on your use case, you may consider specifying one or multiple **representative** slides.
-- For [fine-tuning](../api/Novae/#novae.Novae.fine_tune), we use `reference=None` by default, meaning we will initialize the prototypes randomly, and re-train them. If you have only one slide, it may be worth trying `reference="all"`.
+- For [fine-tuning](../api/Novae/#novae.Novae.fine_tune), we use `reference=None` by default, meaning we will initialize the prototypes randomly, and re-train them. **If you have only one slide**, it may be worth trying `reference="all"`.
+
+### Handling large datasets
+
+Novae uses lazy-loading for the model training (i.e., you don't need a lot of GPU memory), but you still need to be able to load your dataset on CPUs. We recommend using sparse `csr_matrix` in `adata.X` by default, but, if your dataset becomes too large, sparse matrices may not be enough anymore.
+
+In that case, you can use other backends, such as Dask (see the [AnnData tutorials](https://anndata.readthedocs.io/en/stable/tutorials/index.html)). You don't need to change anything in your code, `novae` will handle the Dask backend!
+
+!!! info "Chunk sizes"
+ The chunk size will influence how fast the mini-batches are created. We will soon perform some benchmarks to see how best to choose the chunk size.
 
 ### Hyperparameters
 We recommend using the default Novae hyperparameters, which should work great in most cases. Yet, if you confortable with Novae you might consider updating them. In that case, here are some of the most important hyperparameters in [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune):

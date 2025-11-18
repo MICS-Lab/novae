@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 from anndata import AnnData
-from scipy.sparse import csr_matrix
+from fast_array_utils import stats
+from fast_array_utils.conv import to_dense
 from sklearn.preprocessing import LabelEncoder
 from torch import Tensor
 
@@ -47,14 +48,11 @@ class AnnDataTorch:
             for slide_id in slide_ids.cat.categories:
                 adata_slide = adata[adata.obs[Keys.SLIDE_ID] == slide_id, self._keep_var(adata)]
 
-                mean = adata_slide.X.mean(0)
-                mean = mean.A1 if isinstance(mean, np.matrix) else mean
-                means[slide_id] = mean.astype(np.float32)
+                mean, var = stats.mean_var(adata_slide.X, axis=0)
+                mean, var = to_dense(mean, to_cpu_memory=True), to_dense(var, to_cpu_memory=True)
 
-                std = (
-                    adata_slide.X.std(0) if isinstance(adata_slide.X, np.ndarray) else _sparse_std(adata_slide.X, 0).A1
-                )
-                stds[slide_id] = std.astype(np.float32)
+                means[slide_id] = mean.astype(np.float32)
+                stds[slide_id] = np.sqrt(var).astype(np.float32)
 
         label_encoder = LabelEncoder()
         label_encoder.fit(list(means.keys()))
@@ -84,8 +82,7 @@ class AnnDataTorch:
             mean = torch.stack([self.means[i] for i in slide_id_indices])  # TODO: avoid stack (only if not fast enough)
             std = torch.stack([self.stds[i] for i in slide_id_indices])
 
-        X = adata.X if isinstance(adata.X, np.ndarray) else adata.X.toarray()
-        X = torch.tensor(X, dtype=torch.float32)
+        X = torch.tensor(to_dense(adata.X, to_cpu_memory=True), dtype=torch.float32)
         X = (X - mean) / (std + Nums.EPS)
 
         return X
@@ -108,8 +105,3 @@ class AnnDataTorch:
         adata_view = adata[obs_indices]
 
         return self.to_tensor(adata_view), self.genes_indices_list[adata_index]
-
-
-def _sparse_std(a: csr_matrix, axis=None) -> np.matrix:
-    a_squared = a.multiply(a)
-    return np.sqrt(a_squared.mean(axis) - np.square(a.mean(axis)))
