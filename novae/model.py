@@ -318,6 +318,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     ):
         """Save a pretrained `Novae` model to a directory.
 
+        !!! info
+            Once saved, the model can be re-loaded using [novae.Novae.from_pretrained][] with the created directory as input.
+
         Args:
             save_directory: Path to the directory where the model will be saved.
             **kwargs: Do not use. These are used to push a new model on HuggingFace Hub.
