@@ -6,6 +6,8 @@ on:
       - v*
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 0 * * 1,3,5"
 
 jobs:
   pre-commit:
@@ -73,8 +75,40 @@ jobs:
       - name: Publish
         run: uv publish -t ${{ secrets.PYPI_TOKEN }}
 
-  docker-images-release:
+  wait-for-pypi:
     needs: [pypi-release]
+    if: contains(github.ref, 'tags')
+    name: "Wait until PyPI is ready"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Wait for novae to be available on PyPI
+        run: |
+          SPEC="novae==${GITHUB_REF#refs/tags/v}"
+          attempt=0
+          max_attempts=20
+
+          echo "Waiting for ${SPEC} to be downloadable from PyPI..."
+          while true; do
+            if pip download --no-cache-dir --no-deps "${SPEC}" >/dev/null 2>&1; then
+              break
+            fi
+            attempt=$((attempt+1))
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "Timed out waiting for ${SPEC} to be downloadable from PyPI."
+              exit 1
+            fi
+            echo "Attempt ${attempt}/${max_attempts} failed, retrying..."
+            sleep 30
+          done
+          echo "${SPEC} is available on PyPI."
+
+  docker-images-release:
+    needs: [wait-for-pypi]
     if: contains(github.ref, 'tags')
     name: "Docker images release"
     runs-on: ubuntu-latest
