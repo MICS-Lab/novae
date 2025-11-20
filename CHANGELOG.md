@@ -8,7 +8,7 @@
 - Support `reference=None` in `fine_tune` (random initialization) and used as default
 - Added `fast` argument in `novae.plot.domains` to have a quick (but less accurate) rendering of domains.
 - Added `novae.settings.scale_to_microns` if the coordinates are not in microns
-- Use [`fast-array-utils`](https://github.com/scverse/fast-array-utils) to support multiple backends in `adata.X`
+- Use [`fast-array-utils`](https://github.com/scverse/fast-array-utils) to support multiple backends in `adata.X` (e.g., dask or backed mode)
 
 ### Breaking changes
 - Remove support for `python==3.10`

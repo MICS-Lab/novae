@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from anndata import AnnData
-from scipy.sparse import issparse
+from fast_array_utils.conv import to_dense
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 from torch import nn
@@ -138,7 +138,7 @@ class CellEmbedder(L.LightningModule):
             )
             return
 
-        X = adata.X.toarray() if issparse(adata.X) else adata.X
+        X = to_dense(adata.X, to_cpu_memory=True)
 
         log.info("Running PCA embedding initialization")
 
@@ -157,8 +157,8 @@ class CellEmbedder(L.LightningModule):
             if where_in.all():
                 continue
 
-            X = other_adata[:, where_in].X.toarray().T
-            Y = other_adata[:, ~where_in].X.toarray().T
+            X = to_dense(other_adata[:, where_in].X, to_cpu_memory=True).T
+            Y = to_dense(other_adata[:, ~where_in].X, to_cpu_memory=True).T
 
             tree = KDTree(X)
             _, ind = tree.query(Y, k=1)

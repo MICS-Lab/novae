@@ -33,10 +33,23 @@ For the zero-shot and fine-tuning modes, you can provide a `reference` slide (or
 
 Novae uses lazy-loading for the model training (i.e., you don't need a lot of GPU memory), but you still need to be able to load your dataset on CPUs. We recommend using sparse `csr_matrix` in `adata.X` by default, but, if your dataset becomes too large, sparse matrices may not be enough anymore.
 
-In that case, you can use other backends, such as Dask (see the [AnnData tutorials](https://anndata.readthedocs.io/en/stable/tutorials/index.html)). You don't need to change anything in your code, `novae` will handle the Dask backend!
+In that case, you can use other backends (two options shown below).
 
-!!! info "Chunk sizes"
- The chunk size will influence how fast the mini-batches are created. We will soon perform some benchmarks to see how best to choose the chunk size.
+=== "Backed H5"
+
+    You can read your data in "backed mode" to keep `adata.X` on disk and load only the requested slices into memory when needed. It enables scalable operations on large datasets without fully materializing them in RAM.
+
+    For instance, you can read an `h5ad` file as below:
+    ```python
+    adata = anndata.read_h5ad("large_data.h5ad", backed='r')
+    ```
+
+=== "Dask"
+
+    You can use Dask array to lazy load `adata.X` (see the [AnnData tutorials](https://anndata.readthedocs.io/en/stable/tutorials/index.html) to use Dask). You don't need to change anything in your code, `novae` will handle the Dask backend for you!
+
+    !!! info "Chunk sizes"
+        The chunk size will influence how fast the mini-batches are created. We will soon perform some benchmarks to see how best to choose the chunk size.
 
 ### Hyperparameters
 We recommend using the default Novae hyperparameters, which should work great in most cases. Yet, if you confortable with Novae you might consider updating them. In that case, here are some of the most important hyperparameters in [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune):

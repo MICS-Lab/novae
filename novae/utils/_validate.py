@@ -4,6 +4,8 @@ import anndata
 import numpy as np
 import scanpy as sc
 from anndata import AnnData
+from fast_array_utils import stats
+from fast_array_utils.conv import to_dense
 
 from .. import settings
 from .._constants import Keys, Nums
@@ -113,12 +115,12 @@ def _validate_preprocessing(adatas: list[AnnData]) -> None:
     count_raw = 0
 
     for adata in adatas:
-        if adata.X.min() < 0:
+        if to_dense(stats.min(adata.X), to_cpu_memory=True) < 0:
             log.warning(
                 "Found some negative values in adata.X. We recommended having unscaled data (raw counts or log1p)"
             )
 
-        max_value = adata.X.max()
+        max_value = to_dense(stats.max(adata.X), to_cpu_memory=True)
         if settings.auto_preprocessing and max_value >= 10:
             if int(max_value) == max_value:  # counts
                 count_raw += 1
@@ -127,7 +129,7 @@ def _validate_preprocessing(adatas: list[AnnData]) -> None:
                 sc.pp.normalize_total(adata)
                 sc.pp.log1p(adata)
 
-                assert adata.X.max() < 10, (
+                assert to_dense(stats.max(adata.X), to_cpu_memory=True) < 10, (
                     "After preprocessing, adata.X should be in log scale with a max < 10. If this error is not expected, consider opening an issue."
                 )
             else:

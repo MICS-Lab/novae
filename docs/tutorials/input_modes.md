@@ -1,8 +1,8 @@
 Depending on your data and preferences, you can use 4 types of inputs.
 Specifically, it depends on whether (i) you have one or multiple slides and (ii) you prefer to concatenate your data.
 
-!!! info
-    In all cases, the data structure is [AnnData](https://anndata.readthedocs.io/en/latest/). We may support MuData in the future.
+!!! info "Data type"
+    In all cases below, we use the [AnnData](https://anndata.readthedocs.io/en/latest/) data structure, and we support any type for `adata.X` (including Dask or backed mode). See more details [here](../../advice/#handling-large-datasets).
 
 ## 1. One slide mode
 
