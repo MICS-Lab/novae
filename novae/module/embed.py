@@ -119,18 +119,19 @@ class CellEmbedder(L.LightningModule):
         data.x = data.x @ genes_embeddings
         return data
 
-    def pca_init(self, adatas: list[AnnData] | None):
+    def pca_init(self, adatas: list[AnnData] | None, reference_index: int | None = None) -> None:
         """Initialize the Noave embeddings with PCA components.
 
         Args:
             adatas: A list of `AnnData` objects to use for PCA initialization.
+            reference_index: Index of the `AnnData` object to use as reference for PCA components. If `None`, the `AnnData` with the highest number of genes is used.
         """
         if adatas is None:
             return
 
         adatas = [adata[:, adata.var[Keys.USE_GENE]] for adata in adatas]
 
-        adata = max(adatas, key=lambda adata: adata.n_vars)
+        adata = max(adatas, key=lambda adata: adata.n_vars) if reference_index is None else adatas[reference_index]
 
         if adata.X.shape[1] <= self.embedding_size:
             log.warning(

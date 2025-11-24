@@ -57,11 +57,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         sensitivity_noise_std: float = 0.05,
         dropout_rate: float = 0.0,
         histo_embedding_size: int = 50,
+        pca_init_reference_index: int | None = None,
         scgpt_model_dir: str | None = None,
         var_names: list[str] | None = None,
         mode_kwargs: dict | None = None,
     ) -> None:
         """
+        Initialize a Novae model.
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
@@ -80,6 +82,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
             dropout_rate: Dropout rate for the genes during augmentation.
+            histo_embedding_size: Size of the H&E embeddings. Only used in multimodal mode.
+            pca_init_reference_index: Index of the `AnnData` object to use as reference for PCA components. If `None`, the `AnnData` with the highest number of genes is used.
             scgpt_model_dir: Path to a directory containing a scGPT checkpoint, i.e. a `vocab.json` and a `best_model.pt` file.
             var_names: Used when loading a pretrained model. Can also be used to specify the names of the variables to train on, e.g. to not consider low quality proteins whose intensity highly depends on the FOV.
         """
@@ -89,7 +93,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
             self.cell_embedder = CellEmbedder(var_names, embedding_size)
-            self.cell_embedder.pca_init(self.adatas)
+            self.cell_embedder.pca_init(self.adatas, pca_init_reference_index)
         else:
             self.cell_embedder = CellEmbedder.from_scgpt_embedding(scgpt_model_dir)
             embedding_size = self.cell_embedder.embedding_size
