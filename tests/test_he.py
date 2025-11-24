@@ -1,12 +1,14 @@
 import numpy as np
 import pytest
-import sopa
-import torch
 
 import novae
 
 
+@pytest.mark.multimodal
 def test_he_embeddings():
+    import sopa
+    import torch
+
     sdata1 = sopa.io.toy_dataset(as_output=True, genes=50)
     sdata2 = sopa.io.toy_dataset(as_output=True, genes=50)
 

@@ -64,13 +64,8 @@ When create a pull request, tests are run automatically. But you can also run th
 To check the coverage of the tests:
 
 ```sh
-uv run coverage run -m pytest
+uv run poe test
 
-# option 1: show the report in the console
-uv run coverage report
-
-# option 2: generate and open a html report
-uv run coverage html
 open htmlcov/index.html
 ```
 
@@ -81,5 +76,5 @@ You can update the documentation in the `./docs` directory. Refer to the [mkdocs
 To serve the documentation locally:
 
 ```sh
-uv run mkdocs serve
+uv run poe docs
 ```

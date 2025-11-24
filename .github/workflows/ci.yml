@@ -19,7 +19,7 @@ jobs:
 
   tests:
     needs: [pre-commit]
-    name: "pytest"
+    name: "pytest with uv"
     runs-on: ubuntu-latest
 
     strategy:
@@ -43,8 +43,27 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  test_pip_install:
+    needs: [pre-commit]
+    name: "pytest with pip install"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install sopa with pip
+        run: pip install -e . && pip install pytest-cov poethepoet
+
+      - name: Run short tests
+        run: poe test_no_multimodal
+
   deploy-docs:
-    needs: [tests]
+    needs: [tests, test_pip_install]
     if: contains(github.ref, 'tags')
     name: "Deploy documentation"
     runs-on: ubuntu-latest
@@ -58,7 +77,7 @@ jobs:
         run: uv run mkdocs gh-deploy --force
 
   pypi-release:
-    needs: [tests]
+    needs: [tests, test_pip_install]
     if: contains(github.ref, 'tags')
     name: "PyPI release"
     runs-on: ubuntu-latest
