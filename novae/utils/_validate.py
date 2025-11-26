@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import anndata
 import numpy as np
@@ -7,7 +8,7 @@ from anndata import AnnData
 from fast_array_utils import stats
 from fast_array_utils.conv import to_dense
 
-from .. import settings
+from .. import __version__, settings
 from .._constants import Keys, Nums
 from . import lower_var_names
 
@@ -278,3 +279,18 @@ def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | 
         assert ((counts > 0).sum(1) == 1).all(), f"Column '{slide_name_key}' is not unique per slide"
 
     return slide_name_key
+
+
+def check_model_name(model_name: str) -> None:
+    if model_name == "MICS-Lab/novae-test":
+        return
+
+    if not model_name.startswith("MICS-Lab"):
+        if not Path(model_name).exists():
+            raise ValueError(
+                f"Model name or path '{model_name}' not found locally. Please provide a valid local path, or use a model from Hugging Face Hub (e.g., starting with 'MICS-Lab')."
+            )
+    elif model_name[-2:] != "-0":
+        raise ValueError(
+            f"Model name {model_name} either (i) not existing or (ii) not supported for `novae=={__version__}` (please upgrade)"
+        )

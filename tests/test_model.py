@@ -46,6 +46,16 @@ def test_load_huggingface_model():
     assert model.cell_embedder.embedding.weight.requires_grad is False
 
 
+def test_future_huggingface_model():
+    with pytest.raises(ValueError):
+        novae.Novae.from_pretrained("MICS-Lab/novae-human-3")
+
+
+def test_non_existing_local_model():
+    with pytest.raises(ValueError):
+        novae.Novae.from_pretrained("path/not/existing/model")
+
+
 def test_train():
     adatas = novae.data.toy_dataset(
         n_panels=2,
