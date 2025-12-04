@@ -16,6 +16,7 @@
 ### Changed
 - Update hf-hub to use `xet` for faster dataset download from Hugging Face Hub
 - Update to `spatialdata>=0.5.0` to avoid installation issue related to `xarray-dataclasses`
+- Threshold to decide when to enable lazy loading: based on `n_obs * n_vars` (i.e., the array size) instead of `n_obs`
 
 ### Fixed
 - Retrieve `mode=multimodal` when saving the model and re-loading the model after H&E training (#24)

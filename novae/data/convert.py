@@ -30,8 +30,7 @@ class AnnDataTorch:
 
         self.means, self.stds, self.label_encoder = self._compute_means_stds()
 
-        # Tensors are loaded in memory for low numbers of cells
-        if sum(adata.n_obs for adata in self.adatas) < Nums.N_OBS_THRESHOLD:
+        if not _use_lazy_loading(self.adatas):  # load tensors in memory for low numbers of elements (n_obs * n_vars)
             self.tensors = [self.to_tensor(adata) for adata in self.adatas]
 
     def _adata_to_genes_indices(self, adata: AnnData) -> Tensor:
@@ -105,3 +104,7 @@ class AnnDataTorch:
         adata_view = adata[obs_indices]
 
         return self.to_tensor(adata_view), self.genes_indices_list[adata_index]
+
+
+def _use_lazy_loading(adatas: list[AnnData]) -> bool:
+    return sum(np.prod(adata.shape) for adata in adatas) >= Nums.LAZY_LOADING_SIZE_THRESHOLD

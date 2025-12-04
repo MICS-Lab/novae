@@ -56,8 +56,8 @@ novae.settings.disable_lazy_loading()
 # always use lazy loading
 novae.settings.enable_lazy_loading()
 
-# use lazy loading only for AnnData objects with 1M+ cells
-novae.settings.enable_lazy_loading(n_obs_threshold=1_000_000)
+# use lazy loading only when the input has more than 100M elements (n_obs * n_vars)
+novae.settings.enable_lazy_loading(100_000_000)
 ```
 
 ### How to update the logging level?
