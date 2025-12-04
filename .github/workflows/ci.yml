@@ -56,7 +56,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install sopa with pip
+      - name: pip installation
         run: pip install -e . && pip install pytest-cov poethepoet
 
       - name: Run short tests
