@@ -11,15 +11,15 @@ class Settings:
 
     def disable_lazy_loading(self):
         """Disable lazy loading of subgraphs in the NovaeDataset."""
-        Nums.N_OBS_THRESHOLD = np.inf
+        Nums.LAZY_LOADING_SIZE_THRESHOLD = np.inf
 
-    def enable_lazy_loading(self, n_obs_threshold: int = 0):
+    def enable_lazy_loading(self, lazy_loading_size_threshold: int = 0):
         """Enable lazy loading of subgraphs in the NovaeDataset.
 
         Args:
-            n_obs_threshold: Lazy loading is used above this number of cells in an AnnData object.
+            lazy_loading_size_threshold: Lazy loading is used when the input has more elements (i.e., `n_obs * n_vars`) than this number.
         """
-        Nums.N_OBS_THRESHOLD = n_obs_threshold
+        Nums.LAZY_LOADING_SIZE_THRESHOLD = lazy_loading_size_threshold
 
     @property
     def warmup_epochs(self):
