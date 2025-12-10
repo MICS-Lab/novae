@@ -1,6 +1,8 @@
-## [1.0.1] - xxxx-xx-xx
+## [1.0.2] - xxxx-xx-xx
 
-🎉 Novae is now published in XXX
+## [1.0.1] - 2025-12-10
+
+🎉 Novae is now [published in Nature Methods](https://www.nature.com/articles/s41592-025-02899-6)!
 
 ### Added
 - Full dataset added to [our Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae)

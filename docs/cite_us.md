@@ -1,16 +1,10 @@
 ## LaTeX citation
 
-You can cite our [preprint](https://www.biorxiv.org/content/10.1101/2024.09.09.612009v1) as below:
+Our article is published in [Nature Methods](https://www.nature.com/articles/s41592-025-02899-6). You can cite Novae as below:
 
 ```txt
-@article{blampeyNovae2024,
-  title = {Novae: A Graph-Based Foundation Model for Spatial Transcriptomics Data},
-  author = {Blampey, Quentin and Benkirane, Hakim and Bercovici, Nadege and Andre, Fabrice and Cournede, Paul-Henry},
-  year = {2024},
-  pages = {2024.09.09.612009},
-  publisher = {bioRxiv},
-  doi = {10.1101/2024.09.09.612009},
-}
+Blampey, Q., Benkirane, H., Bercovici, N. et al. Novae: a graph-based foundation model for spatial transcriptomics data.
+Nat Methods (2025). https://doi.org/10.1038/s41592-025-02899-6
 ```
 
 This library has been developed by Quentin Blampey, PhD researcher in biomathematics and deep learning. The following institutions funded this work:

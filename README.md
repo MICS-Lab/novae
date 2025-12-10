@@ -22,7 +22,7 @@
 Novae is a deep learning model for spatial domain assignments of spatial transcriptomics data (at both single-cell or spot resolution). It works across multiple gene panels, tissues, and technologies. Novae offers several additional features, including: (i) native batch-effect correction, (ii) analysis of spatially variable genes and pathways, and (iii) architecture analysis of tissue slides.
 
 > [!NOTE]
-> Novae was developed by the authors of [`sopa`](https://github.com/gustaveroussy/sopa) and is part of the [`scverse`](https://scverse.org/) ecosystem.
+> Novae was developed by the authors of [`sopa`](https://github.com/gustaveroussy/sopa) and is part of the [`scverse`](https://scverse.org/) ecosystem. Read our article [here](https://www.nature.com/articles/s41592-025-02899-6).
 
 ## Documentation
 
@@ -67,15 +67,9 @@ model.assign_domains(adata)
 
 ## Cite us
 
-You can cite our [preprint](https://www.biorxiv.org/content/10.1101/2024.09.09.612009v1) as below:
+Our article is published in [Nature Methods](https://www.nature.com/articles/s41592-025-02899-6). You can cite Novae as below:
 
 ```txt
-@article{blampeyNovae2024,
-  title = {Novae: A Graph-Based Foundation Model for Spatial Transcriptomics Data},
-  author = {Blampey, Quentin and Benkirane, Hakim and Bercovici, Nadege and Andre, Fabrice and Cournede, Paul-Henry},
-  year = {2024},
-  pages = {2024.09.09.612009},
-  publisher = {bioRxiv},
-  doi = {10.1101/2024.09.09.612009},
-}
+Blampey, Q., Benkirane, H., Bercovici, N. et al. Novae: a graph-based foundation model for spatial transcriptomics data.
+Nat Methods (2025). https://doi.org/10.1038/s41592-025-02899-6
 ```
