@@ -38,7 +38,6 @@ def spatial_neighbors(
     adata: AnnData | list[AnnData],
     slide_key: str | None = None,
     radius: tuple[float, float] | float | None = None,
-    pixel_size: float | None = None,
     technology: str | SpatialTechnology | None = None,
     coord_type: str | CoordType | None = None,
     n_neighs: int | None = None,
@@ -77,7 +76,6 @@ def spatial_neighbors(
                 adata_,
                 slide_key=slide_key,
                 radius=radius,
-                pixel_size=pixel_size,
                 technology=technology,
                 coord_type=coord_type,
                 n_neighs=n_neighs,
@@ -93,8 +91,6 @@ def spatial_neighbors(
         radius = [0.0, float(radius)]
 
     assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"
-
-    assert pixel_size is None or technology is None, "You must choose argument between `pixel_size` and `technology`"
 
     if technology == "visium":
         n_neighs = 6 if n_neighs is None else n_neighs
