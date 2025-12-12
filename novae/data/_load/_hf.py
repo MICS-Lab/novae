@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, cast
 
 import anndata
 import pandas as pd
@@ -28,7 +28,7 @@ def load_dataset(
     custom_filter: Callable[[pd.DataFrame], pd.Series] | None = None,
     top_k: int | None = None,
     dry_run: bool = False,
-) -> list[AnnData]:
+) -> list[AnnData] | pd.DataFrame:
     """Automatically load slides from the Novae dataset repository.
 
     !!! info "Selecting slides"
@@ -45,7 +45,7 @@ def load_dataset(
         dry_run: If `True`, the function will only return the metadata of slides that match the filters.
 
     Returns:
-        A list of `AnnData` objects, each object corresponds to one slide.
+        A list of `AnnData` objects, each object corresponds to one slide, or the metadata DataFrame if `dry_run=True`.
     """
     metadata = pd.read_csv("hf://datasets/MICS-Lab/novae/metadata.csv", index_col=0)
 
@@ -79,7 +79,7 @@ def load_dataset(
         metadata = metadata.head(top_k)
 
     if dry_run:
-        return metadata
+        return cast(pd.DataFrame, metadata)
 
     log.info(f"Found {len(metadata)} h5ad file(s) matching the filters.")
     return [_read_h5ad_from_hub(name, row) for name, row in metadata.iterrows()]

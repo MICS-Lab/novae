@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def loss_curve(log_dir: str, version: int = -1, on_epoch: bool = True, **kwargs: int) -> None:
+def loss_curve(log_dir: str | Path, version: int = -1, on_epoch: bool = True, **kwargs: int) -> None:
     """Plot the training loss curve from the CSV logs. This is a basic alternative for monitoring training when Weights & Biases can't be used.
 
     !!! info
@@ -24,12 +24,12 @@ def loss_curve(log_dir: str, version: int = -1, on_epoch: bool = True, **kwargs:
         on_epoch: Whether to show the loss per epoch or per step.
         **kwargs: Additional keyword arguments passed to `seaborn.lineplot`.
     """
-    log_dir: Path = Path(log_dir) / "lightning_logs"
+    lightning_logs: Path = Path(log_dir) / "lightning_logs"
 
     if version == -1:
-        version = max(int(d.name.split("_")[-1]) for d in log_dir.iterdir() if d.is_dir())
+        version = max(int(d.name.split("_")[-1]) for d in lightning_logs.iterdir() if d.is_dir())
 
-    df = pd.read_csv(log_dir / f"version_{version}" / "metrics.csv")
+    df = pd.read_csv(lightning_logs / f"version_{version}" / "metrics.csv")
 
     x = "epoch" if on_epoch else "step"
     y = f"train/loss_{x}"

@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import cast
 
 import anndata
 import numpy as np
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     var_names: set | list[str] | None = None,
-) -> tuple[list[AnnData], list[str]]:
+) -> tuple[list[AnnData] | None, list[str]]:
     """Ensure the AnnData objects are ready to be used by the model.
 
     Note:
@@ -40,7 +41,7 @@ def prepare_adatas(
     var_names = lower_var_names(var_names) if var_names is not None else None
 
     if adata is None:
-        return None, var_names
+        return None, cast(list[str], var_names)
 
     if isinstance(adata, AnnData):
         adatas = [adata]
@@ -234,22 +235,22 @@ def _is_multi_panel(adatas: list[AnnData]) -> bool:
 ERROR_ADVICE_OBS_KEY = "Please run `model.assign_domains(...)` first"
 
 
-def _available_domains_key(adata: AnnData) -> set[int]:
+def _available_domains_key(adata: AnnData) -> set[str]:
     return set(adata.obs.columns[adata.obs.columns.str.startswith(Keys.DOMAINS_PREFIX)])
 
 
-def _shared_domains_keys(adatas: list[AnnData]) -> set[int]:
-    available_keys = [_available_domains_key(adata) for adata in adatas]
-    assert any(available_keys), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
+def _shared_domains_keys(adatas: list[AnnData]) -> set[str]:
+    available_keys_ = [_available_domains_key(adata) for adata in adatas]
+    assert any(available_keys_), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
-    available_keys = set.intersection(*available_keys)
+    available_keys = set.intersection(*available_keys_)
     assert available_keys, f"No common Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
     return available_keys
 
 
 def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> str:
-    available_obs_keys = _shared_domains_keys(adatas)
+    available_obs_keys = list(_shared_domains_keys(adatas))
 
     assert len(available_obs_keys), f"No Novae domains available. {ERROR_ADVICE_OBS_KEY}"
 
@@ -259,7 +260,7 @@ def check_available_domains_key(adatas: list[AnnData], obs_key: str | None) -> s
         )
         return obs_key
 
-    obs_key = list(available_obs_keys)[-1]
+    obs_key = available_obs_keys[-1]
     log.info(f"Using {obs_key=} by default.")
     return obs_key
 

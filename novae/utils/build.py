@@ -129,11 +129,11 @@ def spatial_neighbors(
 
     if len(slides) > 1:
         mats: list[tuple[spmatrix, spmatrix]] = []
-        ixs = []  # type: ignore[var-annotated]
+        ixs = []
         for slide in slides:
             ixs.extend(np.where(adata.obs[Keys.SLIDE_ID] == slide)[0])
             mats.append(_build_fun(adata[adata.obs[Keys.SLIDE_ID] == slide]))
-        ixs = np.argsort(ixs)  # type: ignore[assignment] # invert
+        ixs = np.argsort(ixs)
         Adj = block_diag([m[0] for m in mats], format="csr")[ixs, :][:, ixs]
         Dst = block_diag([m[1] for m in mats], format="csr")[ixs, :][:, ixs]
     else:

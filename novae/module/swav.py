@@ -73,7 +73,7 @@ class SwavHead(L.LightningModule):
     def normalize_prototypes(self):
         self.prototypes.data = F.normalize(self.prototypes.data, dim=1, p=2)
 
-    def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, dict[str, Tensor]]:
+    def forward(self, z1: Tensor, z2: Tensor, slide_id: str | None) -> tuple[Tensor, Tensor]:
         """Compute the SwAV loss for two batches of neighborhood graph views.
 
         Args:
@@ -152,6 +152,8 @@ class SwavHead(L.LightningModule):
         Returns:
             A tensor of shape `(n_slides, K)`, and a tensor of shape (K,).
         """
+        assert self.queue is not None
+
         max_projections = self.queue.max(dim=1).values
 
         thresholds = max_projections.max(0).values * Nums.QUEUE_WEIGHT_THRESHOLD_RATIO

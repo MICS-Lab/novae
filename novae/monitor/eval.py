@@ -23,10 +23,12 @@ def mean_fide_score(
     Returns:
         The FIDE score averaged for all slides.
     """
-    return np.mean([
-        fide_score(adata, obs_key, n_classes=n_classes)
-        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
-    ])
+    return float(
+        np.mean([
+            fide_score(adata, obs_key, n_classes=n_classes)
+            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+        ])
+    )
 
 
 def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> float:
@@ -53,11 +55,11 @@ def fide_score(adata: AnnData, obs_key: str, n_classes: int | None = None) -> fl
     f1_scores = metrics.f1_score(classes_left, classes_right, average=None)
 
     if n_classes is None:
-        return f1_scores.mean()
+        return float(f1_scores.mean())
 
     assert n_classes >= len(f1_scores), f"Expected {n_classes:=}, but found {len(f1_scores)}, which is greater"
 
-    return np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean()
+    return float(np.pad(f1_scores, (0, n_classes - len(f1_scores))).mean())
 
 
 def jensen_shannon_divergence(adatas: AnnData | list[AnnData], obs_key: str, slide_key: str | None = None) -> float:
@@ -104,7 +106,7 @@ def _jensen_shannon_divergence(distributions: np.ndarray) -> float:
     distributions = distributions / distributions.sum(1)[:, None]
     mean_distribution = np.mean(distributions, 0)
 
-    return entropy(mean_distribution) - np.mean([entropy(dist) for dist in distributions])
+    return float(entropy(mean_distribution) - np.mean([entropy(dist) for dist in distributions]))
 
 
 def entropy(distribution: np.ndarray) -> float:
@@ -116,16 +118,18 @@ def entropy(distribution: np.ndarray) -> float:
     Returns:
         The Shannon entropy
     """
-    return -(distribution * np.log2(distribution + Nums.EPS)).sum()
+    return float(-(distribution * np.log2(distribution + Nums.EPS)).sum())
 
 
 def mean_normalized_entropy(
     adatas: AnnData | list[AnnData], n_classes: int, obs_key: str, slide_key: str | None = None
 ) -> float:
-    return np.mean([
-        _mean_normalized_entropy(adata, obs_key, n_classes=n_classes)
-        for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
-    ])
+    return float(
+        np.mean([
+            _mean_normalized_entropy(adata, obs_key, n_classes=n_classes)
+            for adata in _iter_uid(adatas, slide_key=slide_key, obs_key=obs_key)
+        ])
+    )
 
 
 def _mean_normalized_entropy(adata: AnnData, obs_key: str, n_classes: int) -> float:
@@ -133,7 +137,7 @@ def _mean_normalized_entropy(adata: AnnData, obs_key: str, n_classes: int) -> fl
     distribution = np.pad(distribution, (0, n_classes - len(distribution)), mode="constant")
     entropy_ = entropy(distribution)
 
-    return entropy_ / np.log2(n_classes)
+    return float(entropy_ / np.log2(n_classes))
 
 
 def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slide_key: str | None = None) -> float:
@@ -148,9 +152,11 @@ def heuristic(adata: AnnData | list[AnnData], obs_key: str, n_classes: int, slid
     Returns:
         The heuristic score.
     """
-    return np.mean([
-        _heuristic(adata, obs_key, n_classes) for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
-    ])
+    return float(
+        np.mean([
+            _heuristic(adata, obs_key, n_classes) for adata in _iter_uid(adata, slide_key=slide_key, obs_key=obs_key)
+        ])
+    )
 
 
 def _heuristic(adata: AnnData, obs_key: str, n_classes: int) -> float:
@@ -160,7 +166,7 @@ def _heuristic(adata: AnnData, obs_key: str, n_classes: int) -> float:
     distribution = np.pad(distribution, (0, n_classes - len(distribution)), mode="constant")
     entropy_ = entropy(distribution)
 
-    return fide_ * entropy_ / np.log2(n_classes)
+    return float(fide_ * entropy_ / np.log2(n_classes))
 
 
 def _iter_uid(adatas: AnnData | list[AnnData], slide_key: str | None = None, obs_key: str | None = None):
