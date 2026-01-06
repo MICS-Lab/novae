@@ -132,7 +132,7 @@ def test_invalid_build():
         novae.utils.spatial_neighbors(adata_invalid, radius=2, technology="unknown")
 
     with pytest.raises(AssertionError):
-        novae.utils.spatial_neighbors(adata_invalid, radius=1, technology="cosmx", pixel_size=0.1)
+        novae.utils.spatial_neighbors(adata_invalid, radius=1, technology="cosmx")
 
 
 def test_to_adjacency_local():

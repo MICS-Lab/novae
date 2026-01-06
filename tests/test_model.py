@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import anndata
+import lightning as L
 import numpy as np
 import pandas as pd
 import pytest
@@ -239,6 +240,28 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
 
     for name, param in model.named_parameters():
         assert torch.equal(param, new_model.state_dict()[name])
+
+
+def test_fine_tuning_deterministic():
+    adata = novae.toy_dataset(n_panels=1, compute_spatial_neighbors=True, xmax=300)[0]
+
+    model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+    L.seed_everything(0)
+    model.fine_tune(adata, max_epochs=1)
+    model.compute_representations(adata)
+    model.assign_domains(adata)
+
+    domains = adata.obs[Keys.LEAVES].copy()
+    representations = adata.obsm[Keys.REPR].copy()
+
+    new_model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
+    L.seed_everything(0)
+    new_model.fine_tune(adata, max_epochs=1)
+    new_model.compute_representations(adata)
+    new_model.assign_domains(adata)
+
+    assert (adata.obsm[Keys.REPR] == representations).all()
+    assert domains.equals(adata.obs[Keys.LEAVES])
 
 
 def test_safetensors_parameters_names():

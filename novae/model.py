@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Literal
@@ -150,7 +152,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.swav_head._prototypes = self.swav_head.compute_kmeans_prototypes(latent)
 
     def __repr__(self) -> str:
-        info_dict = {
+        info_dict: dict[str, int | str | bool | None] = {
             "Known genes": self.cell_embedder.voc_size,
             "Parameters": utils.pretty_num_parameters(self),
             "Model name": self._model_name,
@@ -159,7 +161,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         }
         return utils.pretty_model_repr(info_dict)
 
-    def __new__(cls, *args, **kwargs) -> "Novae":
+    def __new__(cls, *args, **kwargs) -> Novae:
         # trick to enable auto-completion despite PyTorchModelHubMixin inheritance
         return super().__new__(cls, *args, **kwargs)
 
@@ -292,7 +294,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
     @classmethod
-    def from_pretrained(self, model_name_or_path: str | Path, **kwargs: int) -> "Novae":
+    def from_pretrained(self, model_name_or_path: str | Path, **kwargs: int) -> Novae:
         """Load a pretrained `Novae` model from HuggingFace Hub.
 
         !!! info "Available model names"
@@ -345,7 +347,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         checkpoint[Keys.NOVAE_VERSION] = __version__
 
     @classmethod
-    def _load_wandb_artifact(cls, model_name: str, map_location: str = "cpu", **kwargs: int) -> "Novae":
+    def _load_wandb_artifact(cls, model_name: str, map_location: str = "cpu", **kwargs: int) -> Novae:
         artifact_path = _load_wandb_artifact(model_name) / "model.ckpt"
 
         try:
@@ -382,6 +384,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         assert self.mode.trained, "Novae must be trained first, so consider running `model.fit()`"
         assert (not zero_shot) or (reference is not None), "`reference=None` is not supported in zero-shot mode."
+        assert adata is not None or self.adatas is not None, "No AnnData object found."
 
         self.mode.zero_shot = zero_shot
         self.training = False

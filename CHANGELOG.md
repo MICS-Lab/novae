@@ -3,6 +3,9 @@
 ### Added
 - Support saving/loading a model from a `Path` (before, only `str` was supported)
 
+### Changed
+- Cleanup: removed unused `pixel_size` argument from `novae.spatial_neighbors`
+
 ## [1.0.1] - 2025-12-10
 
 🎉 Novae is now [published in Nature Methods](https://www.nature.com/articles/s41592-025-02899-6)!

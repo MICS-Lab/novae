@@ -261,6 +261,6 @@ def _to_adjacency_view(adjacency: csr_matrix, n_hops_view: int) -> csr_matrix:
         adjacency_pair = adjacency_pair @ adjacency
     adjacency_pair = adjacency_pair.tolil()
     adjacency_pair[adjacency_previous.nonzero()] = 0
-    adjacency_pair: csr_matrix = adjacency_pair.tocsr()
+    adjacency_pair: csr_matrix = adjacency_pair.tocsr()  # type: ignore[no-redef]
     adjacency_pair.eliminate_zeros()
     return adjacency_pair

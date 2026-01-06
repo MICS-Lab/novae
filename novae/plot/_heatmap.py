@@ -21,7 +21,7 @@ def _weights_clustermap(
     slide_ids: list[str],
     show_yticklabels: bool = False,
     show_tissue_legend: bool = True,
-    figsize: tuple[int] = (6, 4),
+    figsize: tuple[int, int] = (6, 4),
     vmin: float = 0,
     vmax: float = 1,
     **kwargs: int,

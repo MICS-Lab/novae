@@ -23,7 +23,7 @@ def unique_obs(adata: AnnData | list[AnnData], obs_key: str) -> set:
     return set(adata.obs[obs_key].dropna().unique())
 
 
-def unique_leaves_indices(adata: AnnData | list[AnnData]) -> set:
+def unique_leaves_indices(adata: AnnData | list[AnnData]) -> np.ndarray:
     leaves = unique_obs(adata, Keys.LEAVES)
     return np.array([int(x[1:]) for x in leaves])
 
@@ -112,7 +112,7 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
     return f"{n_params / 1_000_000:.1f}M"
 
 
-def pretty_model_repr(info_dict: dict[str, str], model_name: str = "Novae") -> str:
+def pretty_model_repr(info_dict: dict[str, int | str | bool | None], model_name: str = "Novae") -> str:
     rows = [f"{model_name} model"] + [f"{k}: {v}" for k, v in info_dict.items()]
     return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
 

@@ -107,4 +107,4 @@ class AnnDataTorch:
 
 
 def _use_lazy_loading(adatas: list[AnnData]) -> bool:
-    return sum(np.prod(adata.shape) for adata in adatas) >= Nums.LAZY_LOADING_SIZE_THRESHOLD
+    return int(sum(np.prod(adata.shape) for adata in adatas)) >= Nums.LAZY_LOADING_SIZE_THRESHOLD
