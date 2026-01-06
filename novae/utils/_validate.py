@@ -281,16 +281,19 @@ def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | 
     return slide_name_key
 
 
-def check_model_name(model_name: str) -> None:
+def check_model_name(model_name: str | Path) -> None:
     if model_name == "MICS-Lab/novae-test":
         return
 
-    if not model_name.startswith("MICS-Lab"):
+    if not str(model_name).startswith("MICS-Lab"):  # local path
         if not Path(model_name).exists():
             raise ValueError(
                 f"Model name or path '{model_name}' not found locally. Please provide a valid local path, or use a model from Hugging Face Hub (e.g., starting with 'MICS-Lab')."
             )
-    elif model_name[-2:] != "-0":
-        raise ValueError(
-            f"Model name {model_name} either (i) not existing or (ii) not supported for `novae=={__version__}` (please upgrade)"
-        )
+    else:
+        assert isinstance(model_name, str), "Model name must be a string when loading from Hugging Face Hub"
+
+        if model_name[-2:] != "-0":  # only v0 pretrained models are supported by this version
+            raise ValueError(
+                f"Model name {model_name} either (i) not existing or (ii) not supported for `novae=={__version__}` (please upgrade)"
+            )

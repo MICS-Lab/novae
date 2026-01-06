@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import anndata
 import numpy as np
@@ -226,6 +227,8 @@ def test_saved_model_identical(slide_key: str | None, scgpt_model_dir: str | Non
     model.save_pretrained("tests/test_model")
 
     new_model = novae.Novae.from_pretrained("tests/test_model")
+
+    new_model = novae.Novae.from_pretrained(Path("tests/test_model"))  # test Path support
 
     novae.utils.spatial_neighbors(adata, slide_key=slide_key)
     new_model.compute_representations(adata)

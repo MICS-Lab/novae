@@ -1,5 +1,8 @@
 ## [1.0.2] - xxxx-xx-xx
 
+### Added
+- Support saving/loading a model from a `Path` (before, only `str` was supported)
+
 ## [1.0.1] - 2025-12-10
 
 🎉 Novae is now [published in Nature Methods](https://www.nature.com/articles/s41592-025-02899-6)!

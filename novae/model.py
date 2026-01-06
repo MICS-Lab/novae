@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Literal
 
 import lightning as L
@@ -291,7 +292,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         )
 
     @classmethod
-    def from_pretrained(self, model_name_or_path: str, **kwargs: int) -> "Novae":
+    def from_pretrained(self, model_name_or_path: str | Path, **kwargs: int) -> "Novae":
         """Load a pretrained `Novae` model from HuggingFace Hub.
 
         !!! info "Available model names"
@@ -316,7 +317,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def save_pretrained(
         self,
-        save_directory: str,
+        save_directory: str | Path,
         *,
         repo_id: str | None = None,
         push_to_hub: bool = False,
