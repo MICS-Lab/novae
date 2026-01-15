@@ -37,7 +37,7 @@ In that case, you can use other backends (two options shown below).
 
 === "Backed H5"
 
-    You can read your data in "backed mode" to keep `adata.X` on disk and load only the requested slices into memory when needed. It enables scalable operations on large datasets without fully materializing them in RAM.
+    You can read your data in "backed mode" to keep `adata.X` on disk and load only the requested slices into memory when needed. It enables scalable operations on large datasets without fully materializing them in RAM. **Important:** for now, the backed mode only supports dense matrices (see [this issue](https://github.com/MICS-Lab/novae/issues/37#issuecomment-3748420274)).
 
     For instance, you can read an `h5ad` file as below:
     ```python
