@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Callable, Union
+from typing import TYPE_CHECKING, Callable
 
 import numpy as np
 from anndata import AnnData
@@ -16,7 +18,7 @@ log = logging.getLogger(__name__)
 
 
 def compute_histo_embeddings(
-    sdata: "SpatialData",
+    sdata: SpatialData,
     model: str | Callable = "conch",
     table_key: str = "table",
     patch_overlap_ratio: float = 0.5,
@@ -43,7 +45,7 @@ def compute_histo_embeddings(
     """
     try:
         import sopa
-        from sopa._constants import SopaAttrs, SopaKeys
+        from sopa.constants import SopaAttrs, SopaKeys
         from spatialdata.models import get_table_keys
     except ImportError:
         raise ImportError(
@@ -105,7 +107,9 @@ def _quality_control_join(distances: np.ndarray):
 
 
 def compute_histo_pca(
-    sdatas: Union["SpatialData", list["SpatialData"]], n_components: int = 50, table_key: str = "table"
+    sdatas: SpatialData | list[SpatialData],
+    n_components: int = 50,
+    table_key: str = "table",
 ) -> None:
     """Run PCA on the histology embeddings associated to each cell (from the closest patch).
     The embedding is stored in `adata.obsm["histo_embeddings"]`, where `adata` is the table of cell expression.
@@ -123,7 +127,7 @@ def compute_histo_pca(
     if isinstance(sdatas, SpatialData):
         sdatas = [sdatas]
 
-    def _histo_emb(sdata: "SpatialData") -> np.ndarray:
+    def _histo_emb(sdata: SpatialData) -> np.ndarray:
         _table: AnnData = sdata.tables[table_key]
 
         assert "embedding_key" in _table.obs, (
