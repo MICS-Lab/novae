@@ -1,4 +1,4 @@
-## [1.0.2] - xxxx-xx-xx
+## [1.0.2] - 2026-01-15
 
 ### Added
 - Support saving/loading a model from a `Path` (before, only `str` was supported)
