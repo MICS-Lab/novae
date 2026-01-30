@@ -276,7 +276,7 @@ def test_safetensors_parameters_names():
 
     actual_names = [name for name, _ in model.named_parameters()]
 
-    # TODO: remove this after MICS-Lab/novae-human-1 release (and update where it is laoded)
+    # TODO: remove this after MICS-Lab/novae-human-1 release (and update where it is loaded)
     actual_names = [name for name in actual_names if not name.startswith("encoder.mlp_fusion")]
 
     assert set(pretrained_model_names) == set(actual_names)
