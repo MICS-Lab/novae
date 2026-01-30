@@ -19,6 +19,7 @@ log = logging.getLogger(__name__)
 def prepare_adatas(
     adata: AnnData | list[AnnData] | None,
     var_names: set | list[str] | None = None,
+    embedding_name: str | None = None,
 ) -> tuple[list[AnnData] | None, list[str]]:
     """Ensure the AnnData objects are ready to be used by the model.
 
@@ -37,11 +38,13 @@ def prepare_adatas(
     Returns:
         A list of `AnnData` objects ready to be used by the model. If only one `adata` object is provided, it will be wrapped in a list.
     """
-    assert adata is not None or var_names is not None, "One of `adata` and `var_names` must not be None"
+    assert any(x is not None for x in [adata, var_names, embedding_name]), (
+        "One of `adata`/`var_names`/`embedding_name` must not be None"
+    )
     var_names = lower_var_names(var_names) if var_names is not None else None
 
     if adata is None:
-        return None, cast(list[str], var_names)
+        return None, cast(list[str], var_names or [])
 
     if isinstance(adata, AnnData):
         adatas = [adata]
@@ -56,6 +59,11 @@ def prepare_adatas(
         "You need to first run `novae.spatial_neighbors` to compute cell neighbors."
     )
 
+    if embedding_name is not None:
+        assert all(embedding_name in adata.obsm for adata in adatas), (
+            f"Embedding `adata.obsm['{embedding_name}']` not found in all AnnData objects. You need to compute the embeddings first."
+        )
+
     mean_median_distance = np.mean([
         np.median(adata.obsp[Keys.ADJ].data * settings.scale_to_microns) for adata in adatas
     ])
@@ -66,12 +74,17 @@ def prepare_adatas(
         )
 
     _check_has_slide_id(adatas)
+
+    if not settings.disable_multimodal:
+        _check_he_embeddings(adatas)
+
+    if embedding_name is not None:
+        return adatas, []
+
     _validate_preprocessing(adatas)  # log1p + spatial_neighbors
 
     if settings.auto_preprocessing:
         _lookup_highly_variable_genes(adatas)
-    if not settings.disable_multimodal:
-        _check_he_embeddings(adatas)
 
     _select_novae_genes(adatas, var_names)
 

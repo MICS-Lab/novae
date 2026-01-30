@@ -45,6 +45,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self,
         adata: AnnData | list[AnnData] | None = None,
         embedding_size: int = 100,
+        embedding_name: str | None = None,
         min_prototypes_ratio: float = 0.3,
         n_hops_local: int = 2,
         n_hops_view: int = 2,
@@ -82,7 +83,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             batch_size: Mini-batch size.
             num_prototypes: Number of prototypes (`K` in the article).
             panel_subset_size: Ratio of genes kept from the panel during augmentation.
-            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
+            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation. If `embedding_name` is used, use a normal distribution with std = lambda instead.
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
             dropout_rate: Dropout rate for the genes during augmentation.
             histo_embedding_size: Size of the H&E embeddings. Only used in multimodal mode.
@@ -93,7 +94,10 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         super().__init__()
 
         ### Initialize cell embedder and prepare adata(s) object(s)
-        if scgpt_model_dir is None:
+        if embedding_name is not None:
+            self.adatas, var_names = utils.prepare_adatas(adata, embedding_name=embedding_name)
+            self.cell_embedder = None
+        elif scgpt_model_dir is None:
             self.adatas, var_names = utils.prepare_adatas(adata, var_names=var_names)
             self.cell_embedder = CellEmbedder(var_names, embedding_size)
             self.cell_embedder.pca_init(self.adatas, pca_init_reference_index)
@@ -110,7 +114,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         ### Initialize modules
         self.encoder = GraphEncoder(embedding_size, hidden_size, num_layers, output_size, heads, histo_embedding_size)
         self.augmentation = GraphAugmentation(
-            panel_subset_size, background_noise_lambda, sensitivity_noise_std, dropout_rate
+            panel_subset_size,
+            background_noise_lambda,
+            sensitivity_noise_std,
+            dropout_rate,
+            use_repr=embedding_name is not None,
         )
         self.swav_head = SwavHead(self.mode, output_size, num_prototypes, temperature)
 
@@ -153,7 +161,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
     def __repr__(self) -> str:
         info_dict: dict[str, int | str | bool | None] = {
-            "Known genes": self.cell_embedder.voc_size,
+            "Known genes": self.cell_embedder.voc_size if self.cell_embedder is not None else None,
+            "Embedding name": self.hparams.embedding_name,
             "Parameters": utils.pretty_num_parameters(self),
             "Model name": self._model_name,
             "Trained": self.mode.trained,
@@ -219,14 +228,15 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def _prepare_adatas(self, adata: AnnData | list[AnnData] | None):
         if adata is None:
             return self.adatas
-        return utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)[0]
+        var_names = self.cell_embedder.gene_names if self.cell_embedder is not None else None
+        return utils.prepare_adatas(adata, var_names=var_names, embedding_name=self.hparams.embedding_name)[0]
 
     def _init_datamodule(
         self, adata: AnnData | list[AnnData] | None = None, sample_cells: int | None = None, **kwargs: int
     ):
         return NovaeDatamodule(
             self._to_anndata_list(adata),
-            cell_embedder=self.cell_embedder,
+            cell_embedder=self.cell_embedder or self.hparams.embedding_name,
             batch_size=self.hparams.batch_size,
             n_hops_local=self.hparams.n_hops_local,
             n_hops_view=self.hparams.n_hops_view,
@@ -258,7 +268,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def _embed_pyg_data(self, data: Batch) -> Batch:
         if self.training:
             data = self.augmentation(data)
-        return self.cell_embedder(data)
+        return data if self.cell_embedder is None else self.cell_embedder(data)
 
     def forward(self, batch: dict[str, Batch]) -> dict[str, Tensor]:
         return {key: self.encoder(self._embed_pyg_data(data)) for key, data in batch.items()}
@@ -313,7 +323,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         model.mode.from_pretrained()
         model._model_name = model_name_or_path
-        model.cell_embedder.embedding.weight.requires_grad_(False)
+
+        if model.cell_embedder is not None:
+            model.cell_embedder.embedding.weight.requires_grad_(False)
 
         return model
 
@@ -689,7 +701,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.mode.fit()
 
         if adata is not None:
-            self.adatas, _ = utils.prepare_adatas(adata, var_names=self.cell_embedder.gene_names)
+            self.adatas, _ = self._prepare_adatas(adata)
 
         ### Misc
         self._update_multimodal_mode()

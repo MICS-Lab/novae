@@ -113,7 +113,7 @@ def pretty_num_parameters(model: torch.nn.Module) -> str:
 
 
 def pretty_model_repr(info_dict: dict[str, int | str | bool | None], model_name: str = "Novae") -> str:
-    rows = [f"{model_name} model"] + [f"{k}: {v}" for k, v in info_dict.items()]
+    rows = [f"{model_name} model"] + [f"{k}: {v}" for k, v in info_dict.items() if v is not None]
     return "\n   ├── ".join(rows[:-1]) + "\n   └── " + rows[-1]
 
 

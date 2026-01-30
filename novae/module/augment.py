@@ -1,7 +1,11 @@
+import logging
+
 import lightning as L
 import torch
-from torch.distributions import Exponential
+from torch.distributions import Exponential, Normal
 from torch_geometric.data import Batch
+
+log = logging.getLogger(__name__)
 
 
 class GraphAugmentation(L.LightningModule):
@@ -13,21 +17,30 @@ class GraphAugmentation(L.LightningModule):
         background_noise_lambda: float,
         sensitivity_noise_std: float,
         dropout_rate: float,
+        use_repr: bool,
     ):
         """
 
         Args:
             panel_subset_size: Ratio of genes kept from the panel during augmentation.
-            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation.
+            background_noise_lambda: Parameter of the exponential distribution for the noise augmentation. If `use_repr` use a normal distribution with std = lambda instead.
             sensitivity_noise_std: Standard deviation for the multiplicative for for the noise augmentation.
+            dropout_rate: Dropout rate for the genes during augmentation.
+            use_repr: Whether to use representations instead of raw data for augmentation.
         """
         super().__init__()
         self.panel_subset_size = panel_subset_size
         self.background_noise_lambda = background_noise_lambda
         self.sensitivity_noise_std = sensitivity_noise_std
         self.dropout_rate = dropout_rate
+        self.use_repr = use_repr
 
-        self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda)))
+        if self.use_repr:
+            self.background_noise_distribution = Normal(0, float(background_noise_lambda))
+        else:
+            self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda * 0.1)))
+            if self.panel_subset_size != 0:
+                log.warning("`panel_subset_size != 0` but it will not be used since `embedding_name` is used")
 
     def noise(self, data: Batch):
         """Add noise (inplace) to the data as detailed in the article.
@@ -46,7 +59,7 @@ class GraphAugmentation(L.LightningModule):
             data.x[start:stop] = data.x[start:stop] * factors[i] + additions[i]
 
     def dropout(self, data: Batch):
-        """Set to 0 the expression of some genes (inplace).
+        """**Deprecated**. Set to 0 the expression of some genes (inplace).
 
         Args:
             data: A Pytorch Geometric `Data` object representing a batch of `B` graphs.
@@ -82,6 +95,9 @@ class GraphAugmentation(L.LightningModule):
         Returns:
             The augmented `Data` object
         """
-        self.panel_subset(data)
+        if not self.use_repr:
+            self.panel_subset(data)
+
         self.noise(data)
+
         return data

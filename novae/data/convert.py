@@ -10,12 +10,12 @@ from .._constants import Keys, Nums
 from ..module import CellEmbedder
 
 
-class AnnDataTorch:
+class ZScoreTorch:
     tensors: list[Tensor] | None
     genes_indices_list: list[Tensor]
 
     def __init__(self, adatas: list[AnnData], cell_embedder: CellEmbedder):
-        """Converting AnnData objects to PyTorch tensors.
+        """Converting AnnData objects to PyTorch tensors with z-score of log1p expression data.
 
         Args:
             adatas: A list of `AnnData` objects.
@@ -104,6 +104,47 @@ class AnnDataTorch:
         adata_view = adata[obs_indices]
 
         return self.to_tensor(adata_view), self.genes_indices_list[adata_index]
+
+
+class EmbeddingTorch:
+    def __init__(self, adatas: list[AnnData], embedding_name: str):
+        """Converting pre-computed single-cell embeddings to PyTorch tensors.
+
+        Args:
+            adatas: A list of `AnnData` objects.
+            embedding_name: The name of the embedding in `adata.obsm`.
+        """
+        super().__init__()
+        self.adatas = adatas
+        self.embedding_name = embedding_name
+
+        # Dummy variable since gene indices are not used when using pre-computed embeddings
+        self.dummy_genes_indices = torch.zeros((1, 1), dtype=torch.long)
+
+    def __getitem__(self, item: tuple[int, slice]) -> tuple[Tensor, Tensor]:
+        """Get the single-cell embedding values for a subset of cells (corresponding to a subgraph).
+
+        Args:
+            item: A `tuple` containing the index of the `AnnData` object and the indices of the cells in the neighborhoods.
+
+        Returns:
+            A `Tensor` of single-cell embedding values and a dummy `Tensor` of gene indices to match the converter signature.
+        """
+        adata_index, obs_indices = item
+
+        adata = self.adatas[adata_index]
+        embeddings = adata[obs_indices].obsm[self.embedding_name]
+        embeddings = torch.tensor(to_dense(embeddings, to_cpu_memory=True), dtype=torch.float32)
+
+        return embeddings, self.dummy_genes_indices  # keep the same return type as ZScoreTorch
+
+
+def get_torch_converter(adatas: list[AnnData], cell_embedder: CellEmbedder | str) -> ZScoreTorch | EmbeddingTorch:
+    assert cell_embedder is not None, "Received None as a `cell_embedder`."
+
+    return (
+        EmbeddingTorch(adatas, cell_embedder) if isinstance(cell_embedder, str) else ZScoreTorch(adatas, cell_embedder)
+    )
 
 
 def _use_lazy_loading(adatas: list[AnnData]) -> bool:

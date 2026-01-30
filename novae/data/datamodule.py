@@ -14,7 +14,7 @@ class NovaeDatamodule(L.LightningDataModule):
     def __init__(
         self,
         adatas: list[AnnData],
-        cell_embedder: CellEmbedder,
+        cell_embedder: CellEmbedder | str,
         batch_size: int,
         n_hops_local: int,
         n_hops_view: int,

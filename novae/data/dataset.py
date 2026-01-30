@@ -12,7 +12,7 @@ from torch_geometric.utils.convert import from_scipy_sparse_matrix
 from .. import settings, utils
 from .._constants import Keys, Nums
 from ..module import CellEmbedder
-from . import AnnDataTorch
+from . import get_torch_converter
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class NovaeDataset(Dataset):
     def __init__(
         self,
         adatas: list[AnnData],
-        cell_embedder: CellEmbedder,
+        cell_embedder: CellEmbedder | str,
         batch_size: int,
         n_hops_local: int,
         n_hops_view: int,
@@ -46,7 +46,7 @@ class NovaeDataset(Dataset):
 
         Args:
             adatas: A list of `AnnData` objects.
-            cell_embedder: A [novae.module.CellEmbedder][] object.
+            cell_embedder: A [novae.module.CellEmbedder][] object or a string specifying the embedding name.
             batch_size: The model batch size.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
             n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
@@ -55,7 +55,7 @@ class NovaeDataset(Dataset):
         super().__init__()
         self.adatas = adatas
         self.cell_embedder = cell_embedder
-        self.anndata_torch = AnnDataTorch(self.adatas, self.cell_embedder)
+        self.torch_converter = get_torch_converter(self.adatas, self.cell_embedder)
 
         self.training = False
 
@@ -175,7 +175,7 @@ class NovaeDataset(Dataset):
             histo_embeddings = adata.obsm[Keys.HISTO_EMBEDDINGS][[obs_index]]
             histo_embeddings = torch.tensor(histo_embeddings, dtype=torch.float32)
 
-        x, genes_indices = self.anndata_torch[adata_index, obs_indices]
+        x, genes_indices = self.torch_converter[adata_index, obs_indices]
 
         return Data(
             x=x,
