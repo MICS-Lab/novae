@@ -11,13 +11,16 @@ from torch.nn import functional as F
 
 import novae
 
-PRIME_PATH = Path("/gpfs/workdir/shared/prime/data/spatial/spatial_transcriptomics")
-RES_PATH = Path("/gpfs/workdir/blampeyq/res_novae")
-GENE_INFO = Path("/gpfs/workdir/blampeyq/gene_info.csv")
+BLAMPEYQ = Path("/gpfs/workdir/blampeyq")
+PRIME = Path("/gpfs/workdir/shared/prime")
+
+DATASET_PATH = PRIME / "data" / "spatial" / "spatial_transcriptomics"
+RES_PATH = BLAMPEYQ / "res_novae"
+GENE_INFO = BLAMPEYQ / "gene_info.csv"
 
 novae_model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
-concept = scConcept(cache_dir="./cache/")
+concept = scConcept(cache_dir=BLAMPEYQ / "cache")
 concept.load_config_and_model(model_name="Corpus-30M")
 
 
@@ -76,7 +79,7 @@ def save_concept_embeddings(adata: AnnData, name: str) -> None:
 
 
 def main() -> None:
-    paths = list(PRIME_PATH.glob("*.h5ad"))
+    paths = list(DATASET_PATH.glob("*.h5ad"))
 
     for i, path in enumerate(paths):
         adata = sc.read_h5ad(path)
