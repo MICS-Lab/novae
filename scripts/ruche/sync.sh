@@ -8,6 +8,8 @@
 #SBATCH --gres=gpu:1
 
 module purge
+module load gcc/13.2.0/gcc-4.8.5
+module load hdf5/1.12.0/gcc-11.2.0-openmpi
 
 cd /gpfs/workdir/blampeyq/novae
 
