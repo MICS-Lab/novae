@@ -35,10 +35,10 @@ class GraphAugmentation(L.LightningModule):
         self.dropout_rate = dropout_rate
         self.use_repr = use_repr
 
-        if self.use_repr:
-            self.background_noise_distribution = Normal(0, float(background_noise_lambda))
-        else:
+        if not self.use_repr:  # default behavior
             self.background_noise_distribution = Exponential(torch.tensor(float(background_noise_lambda * 0.1)))
+        else:
+            self.background_noise_distribution = Normal(0, float(background_noise_lambda))
             if self.panel_subset_size != 0:
                 log.warning("`panel_subset_size != 0` but it will not be used since `embedding_name` is used")
 

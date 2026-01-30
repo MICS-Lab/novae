@@ -701,7 +701,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         self.mode.fit()
 
         if adata is not None:
-            self.adatas, _ = self._prepare_adatas(adata)
+            self.adatas = self._prepare_adatas(adata)
 
         ### Misc
         self._update_multimodal_mode()
