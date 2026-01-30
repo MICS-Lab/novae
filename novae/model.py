@@ -67,11 +67,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         mode_kwargs: dict | None = None,
     ) -> None:
         """
-        Initialize a Novae model.
+        Initialize a new Novae model.
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             embedding_size: Size of the embeddings of the genes (`E` in the article). Do not use it when loading embeddings from scGPT.
+            embedding_name: Optional name of the single-cell embedding in `.obsm` to use as a cell embedding. If not provided, use the Novae cell embedder projection.
             min_prototypes_ratio: Minimum ratio of prototypes to be used for each slide. Use a low value to get highly slide-specific or condition-specific prototypes.
             n_hops_local: Number of hops between a cell and its neighborhood cells.
             n_hops_view: Number of hops between a cell and the origin of a second graph (or 'view').
