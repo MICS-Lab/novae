@@ -8,7 +8,10 @@
 #SBATCH --gres=gpu:1
 
 module purge
+
 module load anaconda3/2024.06/gcc-13.2.0
+module load gcc/13.2.0/gcc-4.8.5
+module load binutils/2.43.1/gcc-13.2.0
 
 source activate concept
 
