@@ -20,7 +20,7 @@ GENE_INFO = BLAMPEYQ / "gene_info.csv"
 
 novae_model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
-concept = scConcept(cache_dir=BLAMPEYQ / "cache")
+concept = scConcept(cache_dir=BLAMPEYQ / ".cache")
 concept.load_config_and_model(model_name="Corpus-30M")
 
 
