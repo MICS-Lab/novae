@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=novae
 #SBATCH --output=/gpfs/workdir/blampeyq/.jobs_outputs/%j
-#SBATCH --time=2:00:00
+#SBATCH --time=4:00:00
 #SBATCH --partition=gpu
 #SBATCH --mem=10G
 #SBATCH --cpus-per-task=1
@@ -20,7 +20,7 @@ module load openblas/0.3.8/gcc-9.2.0
 #conda install conda-forge::pyarrow -y
 #conda install conda-forge::h5py -y
 
-pip install git+https://github.com/theislab/lamin_dataloader.git
+#pip install git+https://github.com/theislab/lamin_dataloader.git
 pip install git+https://github.com/theislab/scConcept.git@main
 pip install flash-attn==2.7.* --no-build-isolation
 
