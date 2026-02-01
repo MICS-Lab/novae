@@ -20,6 +20,8 @@ module load hdf5/1.10.7/gcc-13.2.0
 
 source activate concept
 
+conda install conda-forge::pyarrow -y
+
 pip install git+https://github.com/theislab/lamin_dataloader.git
 pip install git+https://github.com/theislab/scConcept.git@main
 pip install flash-attn==2.7.* --no-build-isolation
