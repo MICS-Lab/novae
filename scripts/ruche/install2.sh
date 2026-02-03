@@ -19,10 +19,8 @@ module load cuda/12.0.0/gcc-11.2.0
 
 source activate concept
 
-# conda install conda-forge::pyarrow -y
 #conda install -c conda-forge pyarrow -y
-conda install -c conda-forge h5py -y
-
-pip install git+https://github.com/theislab/lamin_dataloader.git
-pip install git+https://github.com/theislab/scConcept.git@main
-pip install flash-attn==2.7.* --no-build-isolation
+#conda install -c conda-forge h5py -y
+#pip install git+https://github.com/theislab/lamin_dataloader.git
+#pip install git+https://github.com/theislab/scConcept.git@main
+pip install flash-attn==2.7.* --no-build-isolation --no-cache-dir
