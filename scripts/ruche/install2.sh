@@ -16,11 +16,12 @@ module load binutils/2.43.1/gcc-13.2.0
 module load cmake/3.28.3/gcc-11.2.0
 module load openblas/0.3.8/gcc-9.2.0
 module load cuda/12.0.0/gcc-11.2.0
-module load hdf5/1.10.7/gcc-13.2.0
 
 source activate concept
 
 # conda install conda-forge::pyarrow -y
+#conda install -c conda-forge pyarrow -y
+conda install -c conda-forge h5py -y
 
 pip install git+https://github.com/theislab/lamin_dataloader.git
 pip install git+https://github.com/theislab/scConcept.git@main
