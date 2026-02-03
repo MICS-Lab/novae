@@ -20,6 +20,8 @@ novae_model = novae.Novae.from_pretrained("MICS-Lab/novae-human-0")
 
 
 def run_adata(adata: AnnData, name: str) -> None:
+    novae.spatial_neighbors(adata)
+
     adata.obsm["novae_projection"] = get_novae_projection(adata)
     save_umap(adata, name, "novae_projection")
 
