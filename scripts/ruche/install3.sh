@@ -21,7 +21,7 @@ conda create -n novae python=3.12 -y
 
 source activate novae
 
-conda install bioconda::novae -y
+conda install -c conda-forge pyarrow h5py -y
 
 cd /gpfs/workdir/blampeyq/novae
 

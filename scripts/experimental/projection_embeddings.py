@@ -9,6 +9,8 @@ from torch.nn import functional as F
 
 import novae
 
+novae.settings.disable_lazy_loading()
+
 BLAMPEYQ = Path("/gpfs/workdir/blampeyq")
 PRIME = Path("/gpfs/workdir/shared/prime")
 
