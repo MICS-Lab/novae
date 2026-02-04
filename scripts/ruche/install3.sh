@@ -17,11 +17,9 @@ module load cmake/3.28.3/gcc-11.2.0
 module load openblas/0.3.8/gcc-9.2.0
 module load cuda/12.0.0/gcc-11.2.0
 
-conda create -n novae python=3.12 -y
-
 source activate novae
 
-conda install -c conda-forge pyarrow h5py -y
+conda install -c conda-forge pyarrow h5py igraph -y
 
 cd /gpfs/workdir/blampeyq/novae
 
