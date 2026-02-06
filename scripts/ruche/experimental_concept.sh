@@ -20,4 +20,4 @@ source activate concept
 
 cd /gpfs/workdir/blampeyq/novae/scripts/experimental
 
-python -u $@
+python -u concept_embeddings.py

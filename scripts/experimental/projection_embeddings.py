@@ -53,6 +53,10 @@ def main() -> None:
     paths = list(DATASET_PATH.glob("*.h5ad"))
 
     for i, path in enumerate(paths):
+        if (RES_PATH / "umap" / f"{path.stem}_novae_projection.png").exists():
+            print(f"Skipping {path.name} ({i + 1}/{len(paths)})")
+            continue
+
         adata = sc.read_h5ad(path)
 
         print(f"Processing {path.name} ({i + 1}/{len(paths)})")
