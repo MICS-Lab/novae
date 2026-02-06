@@ -2,6 +2,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+# else segmentation fault when importing concept
+import pyarrow  # noqa: F401
 import scanpy as sc
 from anndata import AnnData
 from concept import scConcept
