@@ -62,10 +62,17 @@ def main() -> None:
     paths = list(DATASET_PATH.glob("*.h5ad"))
 
     for i, path in enumerate(paths):
+        if (RES_PATH / "X_scConcept" / f"{path.stem}.h5ad").exists():
+            print(f"Skipping {path.name} ({i + 1}/{len(paths)}) - already processed")
+            continue
+
         adata = sc.read_h5ad(path)
 
         print(f"Processing {path.name} ({i + 1}/{len(paths)})")
-        run_adata(adata, path.stem)
+        try:
+            run_adata(adata, path.stem)
+        except Exception as e:
+            print(f"Error processing {path.name}: {e}")
 
 
 if __name__ == "__main__":
