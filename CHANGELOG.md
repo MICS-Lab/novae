@@ -1,3 +1,8 @@
+## [1.0.3] - xxxx-xx-xx
+
+### Changed
+- Make `novae.spatial_neighbors` faster (#40)
+
 ## [1.0.2] - 2026-01-15
 
 ### Added

@@ -1,8 +1,13 @@
+from itertools import chain
+
 import anndata
 import numpy as np
 import pandas as pd
 import pytest
 from anndata import AnnData
+from scipy.sparse import csr_matrix
+from scipy.spatial import Delaunay
+from sklearn.metrics import euclidean_distances
 
 import novae
 from novae._constants import Keys
@@ -284,3 +289,34 @@ def test_change_n_hops():
 
     assert mean_adj_view2 / mean_adj_view > 1.5
     assert mean_adj_local2 / mean_adj_local > 1.5
+
+
+def test_new_distance_calculation() -> None:
+    coords = np.random.rand(40, 2)
+
+    N = coords.shape[0]
+
+    tri = Delaunay(coords)
+    indptr, indices = tri.vertex_neighbor_vertices
+
+    dists = np.array(
+        list(
+            chain(
+                *(
+                    euclidean_distances(coords[indices[indptr[i] : indptr[i + 1]], :], coords[np.newaxis, i, :])
+                    for i in range(N)
+                    if len(indices[indptr[i] : indptr[i + 1]])
+                )
+            )
+        )
+    ).squeeze()
+    Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
+
+    rows = np.repeat(np.arange(N), np.diff(indptr))
+    dists = np.linalg.norm(coords[rows] - coords[indices], axis=1)
+    Dst2 = csr_matrix((dists, indices, indptr), shape=(N, N))
+
+    assert (Dst.indices == Dst2.indices).all()
+    assert (Dst.indptr == Dst2.indptr).all()
+
+    assert np.allclose(Dst.data, Dst2.data)
