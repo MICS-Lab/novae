@@ -8,7 +8,6 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from functools import partial
-from itertools import chain
 from typing import Literal, get_args
 
 import numpy as np
@@ -17,7 +16,6 @@ from anndata import AnnData
 from anndata.utils import make_index_unique
 from scipy.sparse import SparseEfficiencyWarning, block_diag, csr_matrix, spmatrix
 from scipy.spatial import Delaunay
-from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.neighbors import NearestNeighbors
 
 from .._constants import Keys, Nums
@@ -247,14 +245,9 @@ def _build_connectivity(
         Adj = csr_matrix((np.ones_like(indices, dtype=np.float64), indices, indptr), shape=(N, N))
 
         if return_distance:
-            # fmt: off
-            dists = np.array(list(chain(*(
-                euclidean_distances(coords[indices[indptr[i] : indptr[i + 1]], :], coords[np.newaxis, i, :])
-                for i in range(N)
-                if len(indices[indptr[i] : indptr[i + 1]])
-            )))).squeeze()
-            Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
-            # fmt: on
+            rows, cols = Adj.nonzero()
+            p1, p2 = coords[rows], coords[cols]
+            Dst = csr_matrix((np.linalg.norm(p1 - p2, axis=1), (rows, cols)), shape=Adj.shape)
     else:
         r = 1 if radius is None else radius if isinstance(radius, (int, float)) else max(radius)
         tree = NearestNeighbors(n_neighbors=n_neighs, radius=r, metric="euclidean")
