@@ -245,9 +245,9 @@ def _build_connectivity(
         Adj = csr_matrix((np.ones_like(indices, dtype=np.float64), indices, indptr), shape=(N, N))
 
         if return_distance:
-            rows, cols = Adj.nonzero()
-            p1, p2 = coords[rows], coords[cols]
-            Dst = csr_matrix((np.linalg.norm(p1 - p2, axis=1), (rows, cols)), shape=Adj.shape)
+            rows = np.repeat(np.arange(N), np.diff(indptr))
+            dists = np.linalg.norm(coords[rows] - coords[indices], axis=1)
+            Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
     else:
         r = 1 if radius is None else radius if isinstance(radius, (int, float)) else max(radius)
         tree = NearestNeighbors(n_neighbors=n_neighs, radius=r, metric="euclidean")

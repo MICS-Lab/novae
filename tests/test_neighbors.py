@@ -298,7 +298,6 @@ def test_new_distance_calculation() -> None:
 
     tri = Delaunay(coords)
     indptr, indices = tri.vertex_neighbor_vertices
-    Adj = csr_matrix((np.ones_like(indices, dtype=np.float64), indices, indptr), shape=(N, N))
 
     dists = np.array(
         list(
@@ -313,11 +312,11 @@ def test_new_distance_calculation() -> None:
     ).squeeze()
     Dst = csr_matrix((dists, indices, indptr), shape=(N, N))
 
-    rows, cols = Adj.nonzero()
-    p1, p2 = coords[rows], coords[cols]
-    Dst2 = csr_matrix((np.linalg.norm(p1 - p2, axis=1), (rows, cols)), shape=Adj.shape)
+    rows = np.repeat(np.arange(N), np.diff(indptr))
+    dists = np.linalg.norm(coords[rows] - coords[indices], axis=1)
+    Dst2 = csr_matrix((dists, indices, indptr), shape=(N, N))
 
-    Dst.sort_indices()
-    Dst2.sort_indices()
+    assert (Dst.indices == Dst2.indices).all()
+    assert (Dst.indptr == Dst2.indptr).all()
 
     assert np.allclose(Dst.data, Dst2.data)
