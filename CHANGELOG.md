@@ -1,7 +1,11 @@
 ## [1.0.3] - xxxx-xx-xx
 
 ### Changed
-- Make `novae.spatial_neighbors` faster (#40)
+- Faster `novae.spatial_neighbors` distance computation (#40)
+- Make `novae.spatial_neighbors` keywords-only (except for the `AnnData` object) to avoid mixing the `slide_key` and `radius` arguments.
+
+### Added
+- Added `verbose` mode for `novae.spatial_neighbors`
 
 ## [1.0.2] - 2026-01-15
 

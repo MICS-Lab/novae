@@ -34,6 +34,7 @@ class CoordType(Enum):
 
 def spatial_neighbors(
     adata: AnnData | list[AnnData],
+    *,
     slide_key: str | None = None,
     radius: tuple[float, float] | float | None = None,
     technology: str | SpatialTechnology | None = None,
@@ -44,6 +45,7 @@ def spatial_neighbors(
     percentile: float | None = None,
     set_diag: bool = False,
     reset_slide_ids: bool = True,
+    verbose: bool = True,
 ):
     """Create a Delaunay graph from the spatial coordinates of the cells.
     The graph is stored in `adata.obsp['spatial_connectivities']` and `adata.obsp['spatial_distances']`. The long edges
@@ -64,6 +66,7 @@ def spatial_neighbors(
         percentile: See `squidpy.gr.spatial_neighbors` documentation.
         set_diag: See `squidpy.gr.spatial_neighbors` documentation.
         reset_slide_ids: Whether to reset the novae slide ids.
+        verbose: Whether to log computation details.
     """
     if reset_slide_ids:
         _set_unique_slide_ids(adata, slide_key=slide_key)
@@ -90,12 +93,8 @@ def spatial_neighbors(
 
     assert radius is None or len(radius) == 2, "Radius is expected to be a tuple (min_radius, max_radius)"
 
-    if technology == "visium":
-        n_neighs = 6 if n_neighs is None else n_neighs
-        coord_type, delaunay = CoordType.GRID, False
-    elif technology == "visium_hd":
-        n_neighs = 8 if n_neighs is None else n_neighs
-        coord_type, delaunay = CoordType.GRID, False
+    if technology in ["visium", "visium_hd"]:
+        coord_type, delaunay, n_neighs = _default_visium_arguments(technology, n_neighs)
     elif technology is not None:
         adata.obsm["spatial"] = _technology_coords(adata, technology)
 
@@ -107,9 +106,10 @@ def spatial_neighbors(
     delaunay = True if delaunay is None else delaunay
     n_neighs = 6 if (n_neighs is None and not delaunay) else n_neighs
 
-    log.info(
-        f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=}, {n_neighs=})"
-    )
+    if verbose:
+        log.info(
+            f"Computing graph on {adata.n_obs:,} cells (coord_type={coord_type.value}, {delaunay=}, {radius=}, {n_neighs=})"
+        )
 
     slides = adata.obs[Keys.SLIDE_ID].cat.categories
     make_index_unique(adata.obs_names)
@@ -147,6 +147,17 @@ def spatial_neighbors(
     }
 
     _sanity_check_spatial_neighbors(adata)
+
+
+def _default_visium_arguments(technology: str, n_neighs: int | None) -> tuple[CoordType, bool, int]:
+    if technology == "visium":
+        n_neighs = 6 if n_neighs is None else n_neighs
+    elif technology == "visium_hd":
+        n_neighs = 8 if n_neighs is None else n_neighs
+    else:
+        raise ValueError(f"Unknown technology `{technology}`")
+
+    return CoordType.GRID, False, n_neighs
 
 
 def _spatial_neighbor(
