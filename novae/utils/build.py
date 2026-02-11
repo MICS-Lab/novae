@@ -146,7 +146,7 @@ def spatial_neighbors(
         "params": {"radius": radius, "set_diag": set_diag, "n_neighbors": n_neighs, "coord_type": coord_type.value},
     }
 
-    _sanity_check_spatial_neighbors(adata)
+    _sanity_check_spatial_neighbors(adata, verbose=verbose)
 
 
 def _default_visium_arguments(technology: str, n_neighs: int | None) -> tuple[CoordType, bool, int]:
@@ -345,8 +345,11 @@ def _set_unique_slide_ids(adatas: AnnData | list[AnnData], slide_key: str | None
         adata.obs[Keys.SLIDE_ID] = values.astype("category")
 
 
-def _sanity_check_spatial_neighbors(adata: AnnData):
+def _sanity_check_spatial_neighbors(adata: AnnData, verbose: bool):
     assert adata.obsp[Keys.ADJ].getnnz() > 0, "No neighbors found. Please check your `radius` parameter."
+
+    if not verbose:
+        return
 
     mean_distance = adata.obsp[Keys.ADJ].data.mean()
     max_distance = adata.obsp[Keys.ADJ].data.max()
