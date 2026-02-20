@@ -48,7 +48,7 @@ In the `slurm` directory:
 
 E.g., on ruche:
 ```sh
-module load anaconda3/2024.06/gcc-13.2.0 && source activate novae
+module load anaconda3/2023.09-0/none-none && source activate novae
 wandb sweep --project novae sweep/gpu_ruche.yaml
 
 cd ruche

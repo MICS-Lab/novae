@@ -8,8 +8,13 @@
 #SBATCH --gres=gpu:1
 
 module purge
-module load anaconda3/2022.10/gcc-11.2.0
-source activate novae-gpu
+module load anaconda3/2023.09-0/none-none
+module load gcc/15.1.0/gcc-15.1.0
+module load cmake/3.31.9/gcc-15.1.0
+module load openblas/0.3.30/intel-oneapi-compilers-2025.3.1-openmp
+module load cuda/12.2.2/none-none
+
+source activate novae
 
 cd /gpfs/workdir/blampeyq/novae
 

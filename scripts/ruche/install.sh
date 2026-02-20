@@ -10,12 +10,12 @@
 
 module purge
 
-module load anaconda3/2024.06/gcc-13.2.0
-module load gcc/13.2.0/gcc-4.8.5
-module load binutils/2.43.1/gcc-13.2.0
+module load anaconda3/2023.09-0/none-none
+module load gcc/15.1.0/gcc-15.1.0
+
 module load cmake/3.21.4/gcc-13.2.0
-module load openblas/0.3.8/gcc-9.2.0
-module load cuda/12.0.0/gcc-11.2.0
+module load openblas/0.3.30/intel-oneapi-compilers-2025.3.1-openmp
+module load cuda/12.2.2/none-none
 
 source activate novae
 

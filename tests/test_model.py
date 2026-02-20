@@ -11,7 +11,7 @@ from anndata import AnnData
 
 import novae
 from novae._constants import Keys
-from novae.data._load._toy import GENE_NAMES_SUBSET
+from novae.data._load.toy import GENE_NAMES_SUBSET
 
 adatas = novae.data.toy_dataset(
     n_panels=2,

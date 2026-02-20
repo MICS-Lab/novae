@@ -9,7 +9,7 @@ from anndata import AnnData
 
 import novae
 from novae._constants import Keys
-from novae.data._load._hf import load_local_dataset
+from novae.data._load import load_local_dataset
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 

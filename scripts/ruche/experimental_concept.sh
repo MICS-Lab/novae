@@ -9,7 +9,7 @@
 
 module purge
 
-module load anaconda3/2024.06/gcc-13.2.0
+module load anaconda3/2023.09-0/none-none
 
 source activate concept
 

@@ -7,7 +7,7 @@
 #SBATCH --partition=cpu_med
 
 module purge
-module load anaconda3/2022.10/gcc-11.2.0
+module load anaconda3/2023.09-0/none-none
 source activate novae
 
 cd /gpfs/workdir/blampeyq/novae/data
