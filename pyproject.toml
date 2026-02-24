@@ -1,6 +1,6 @@
 [project]
 name = "novae"
-version = "1.0.2"
+version = "1.0.3"
 description = "Graph-based foundation model for spatial transcriptomics data"
 authors = [{ name = "Quentin Blampey", email = "quentin.blampey@gmail.com" }]
 requires-python = ">=3.11"

@@ -1,8 +1,9 @@
-## [1.0.3] - xxxx-xx-xx
+## [1.0.3] - 2026-02-24
 
 ### Changed
 - Faster `novae.spatial_neighbors` distance computation (#40)
 - Make `novae.spatial_neighbors` keywords-only (except for the `AnnData` object) to avoid mixing the `slide_key` and `radius` arguments.
+- Now depend on `sopa>=2.2.1` for the `multimodal` extra
 
 ### Added
 - Added `verbose` mode for `novae.spatial_neighbors`

@@ -2575,7 +2575,7 @@ wheels = [
 
 [[package]]
 name = "novae"
-version = "1.0.2"
+version = "1.0.3"
 source = { editable = "." }
 dependencies = [
     { name = "fast-array-utils" },
