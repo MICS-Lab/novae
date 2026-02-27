@@ -1,17 +1,16 @@
 data:
-  train_dataset: /gpfs/workdir/shared/prime/data/spatial/spatial_transcriptomics
-  val_dataset: /gpfs/workdir/shared/prime/data/spatial/spatial_transcriptomics/novae_validation
+  train_dataset: /gpfs/workdir/blampeyq/res_novae/X_scConcept
+  val_dataset: /gpfs/workdir/blampeyq/res_novae/X_scConcept_validation
 
 model_kwargs:
   embedding_name: "X_scConcept"
   n_hops_view: 2
   heads: 16
-  hidden_size: 128
+  hidden_size: 256
+  output_size: 128
   temperature: 0.1
-  num_prototypes: 1000
-  background_noise_lambda: 5
-  panel_subset_size: 0.8
-  min_prototypes_ratio: 0.7
+  num_prototypes: 512
+  panel_subset_size: 0
 
 fit_kwargs:
   max_epochs: 50

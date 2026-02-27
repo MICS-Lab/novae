@@ -3,6 +3,10 @@ Novae model training with Weight & Biases monitoring
 This is **not** the actual Novae source code. Instead, see the `novae` directory
 """
 
+# isort: skip_file
+# else segmentation fault on our-HPC-specific env
+import pyarrow  # noqa: F401
+
 import argparse
 
 from anndata import AnnData

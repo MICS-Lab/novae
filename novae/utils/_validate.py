@@ -311,3 +311,21 @@ def check_model_name(model_name: str | Path) -> None:
             raise ValueError(
                 f"Model name {model_name} either (i) not existing or (ii) not supported for `novae=={__version__}` (please upgrade)"
             )
+
+
+def check_embedding_size(adatas: list[AnnData] | AnnData, embedding_name: str, embedding_size: int) -> int:
+    assert adatas is not None, (
+        "Cannot initialize a new Novae model with pre-computed embeddings without an `adata` input for training."
+    )
+
+    adatas = [adatas] if isinstance(adatas, AnnData) else adatas
+
+    assert all(embedding_name in adata.obsm for adata in adatas), (
+        f"All `adata` must contain `adata.obsm['{embedding_name}']`"
+    )
+
+    if not all(adata.obsm[embedding_name].shape[1] == embedding_size for adata in adatas):
+        embedding_size = adatas[0].obsm[embedding_name].shape[1]
+        log.info(f"Providing wrong `embedding_size`. Automatically using {embedding_size=} instead.")
+
+    return embedding_size

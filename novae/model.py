@@ -96,6 +96,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         ### Initialize cell embedder and prepare adata(s) object(s)
         if embedding_name is not None:
+            embedding_size = utils.check_embedding_size(adata, embedding_name, embedding_size)
             self.adatas, var_names = utils.prepare_adatas(adata, embedding_name=embedding_name)
             self.cell_embedder = None
         elif scgpt_model_dir is None:
