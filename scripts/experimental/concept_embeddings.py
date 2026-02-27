@@ -10,12 +10,19 @@ import scanpy as sc
 from anndata import AnnData
 from concept import scConcept
 
+validation = True
+
 BLAMPEYQ = Path("/gpfs/workdir/blampeyq")
 PRIME = Path("/gpfs/workdir/shared/prime")
 
-DATASET_PATH = PRIME / "data" / "spatial" / "spatial_transcriptomics"
-RES_PATH = BLAMPEYQ / "res_novae"
+suffix = "_validation" if validation else ""
+UMAP_PATH = BLAMPEYQ / "res_novae" / "umap"
+RES_PATH = BLAMPEYQ / "res_novae" / f"X_scConcept{suffix}"
+
 GENE_INFO = BLAMPEYQ / "gene_info.csv"
+DATASET_PATH = PRIME / "data" / "spatial" / "spatial_transcriptomics"
+if validation:
+    DATASET_PATH = DATASET_PATH / "novae_validation"
 
 concept = scConcept(cache_dir=BLAMPEYQ / ".cache")
 concept.load_config_and_model(model_name="Corpus-30M")
@@ -33,7 +40,7 @@ def save_umap(adata: AnnData, name: str, key: str) -> None:
     sc.pp.neighbors(adata, use_rep=key)
     sc.tl.umap(adata)
     sc.pl.umap(adata, color=adata.var_names[0], vmax="p95", show=False)
-    plt.savefig(RES_PATH / "umap" / f"{name}_{key}.png", bbox_inches="tight")
+    plt.savefig(UMAP_PATH / f"{name}_{key}.png", bbox_inches="tight")
 
 
 def add_gene_id(adata: AnnData) -> AnnData:
@@ -55,14 +62,14 @@ def save_concept_embeddings(adata: AnnData, name: str) -> None:
         if key.startswith("spatial"):
             adata_.obsp[key] = adata.obsp[key]
 
-    adata_.write_h5ad(RES_PATH / "X_scConcept" / f"{name}.h5ad")
+    adata_.write_h5ad(RES_PATH / f"{name}.h5ad")
 
 
 def main() -> None:
     paths = list(DATASET_PATH.glob("*.h5ad"))
 
     for i, path in enumerate(paths):
-        if (RES_PATH / "X_scConcept" / f"{path.stem}.h5ad").exists():
+        if (RES_PATH / f"{path.stem}.h5ad").exists():
             print(f"Skipping {path.name} ({i + 1}/{len(paths)}) - already processed")
             continue
 
