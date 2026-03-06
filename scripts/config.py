@@ -5,8 +5,6 @@ class DataConfig(BaseModel):
     train_dataset: str = "all"
     val_dataset: str | None = None
 
-    files_black_list: list[str] = []
-
 
 class PostTrainingConfig(BaseModel):
     n_domains: list[int] = [7, 10]
