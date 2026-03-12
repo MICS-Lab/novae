@@ -9,13 +9,13 @@ model_kwargs:
   n_hops_view: 2
   heads: 16
   hidden_size: 256
-  output_size: 256
+  output_size: 128
   temperature: 0.08
   num_prototypes: 512
   panel_subset_size: 0
 
 fit_kwargs:
-  max_epochs: 50
+  max_epochs: 35
   lr: 0.0001
   accelerator: "gpu"
   num_workers: 8
