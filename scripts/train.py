@@ -21,6 +21,7 @@ from .utils import get_callbacks, init_wandb_logger, post_training, read_config
 def main(args: argparse.Namespace) -> None:
     config = read_config(args)
 
+    ### Load dataset(s)
     adatas = load_local_dataset(config.data.train_dataset)
     adatas_val = load_local_dataset(config.data.val_dataset) if config.data.val_dataset else None
 
@@ -28,16 +29,19 @@ def main(args: argparse.Namespace) -> None:
     if adatas_val is not None:
         _check_sid(adatas_val)
 
+    ### Initialize model, logger and callbacks
     logger = init_wandb_logger(config)
     callbacks = get_callbacks(config, adatas_val)
 
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
-
-        if not config.zero_shot:
-            model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     else:
         model = novae.Novae(adatas, **config.model_kwargs)
+
+    ### Training and post-training
+    if config.fine_tune:
+        model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
+    elif not config.zero_shot:
         model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)
 
     post_training(model, adatas, config)

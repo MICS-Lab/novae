@@ -19,6 +19,7 @@ class Config(BaseModel):
     project: str = "novae"
     wandb_artefact: str | None = None
     zero_shot: bool = False
+    fine_tune: bool = False
     sweep: bool = False
     seed: int = 0
 
