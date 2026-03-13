@@ -313,10 +313,9 @@ def check_model_name(model_name: str | Path) -> None:
             )
 
 
-def check_embedding_size(adatas: list[AnnData] | AnnData, embedding_name: str, embedding_size: int) -> int:
-    assert adatas is not None, (
-        "Cannot initialize a new Novae model with pre-computed embeddings without an `adata` input for training."
-    )
+def check_embedding_size(adatas: list[AnnData] | AnnData | None, embedding_name: str, embedding_size: int) -> int:
+    if adatas is None:  # no adata provided, we can't check the embedding size
+        return embedding_size
 
     adatas = [adatas] if isinstance(adatas, AnnData) else adatas
 
