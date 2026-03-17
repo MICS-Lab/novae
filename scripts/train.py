@@ -12,7 +12,7 @@ import argparse
 from anndata import AnnData
 
 import novae
-from novae._constants import Keys
+from novae._constants import Keys, Nums
 from novae.data._load import load_local_dataset
 
 from .utils import get_callbacks, init_wandb_logger, post_training, read_config
@@ -35,6 +35,10 @@ def main(args: argparse.Namespace) -> None:
 
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
+
+        if not config.fine_tune and not config.zero_shot:  # continue training
+            model.init_slide_queue(adatas, model.hparams.min_prototypes_ratio)
+            Nums.WARMUP_EPOCHS = 0
     else:
         model = novae.Novae(**config.model_kwargs)
 
