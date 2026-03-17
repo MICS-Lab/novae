@@ -36,13 +36,13 @@ def main(args: argparse.Namespace) -> None:
     if config.wandb_artefact is not None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
     else:
-        model = novae.Novae(adatas, **config.model_kwargs)
+        model = novae.Novae(**config.model_kwargs)
 
     ### Training and post-training
     if config.fine_tune:
         model.fine_tune(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
     elif not config.zero_shot:
-        model.fit(logger=logger, callbacks=callbacks, **config.fit_kwargs)
+        model.fit(adatas, logger=logger, callbacks=callbacks, **config.fit_kwargs)
 
     post_training(model, adatas, config)
 
