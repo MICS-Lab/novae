@@ -8,13 +8,11 @@ from ._utils import (
     parse_device_args,
     pretty_model_repr,
     pretty_num_parameters,
-    repository_root,
     tqdm,
     train,
     unique_leaves_indices,
     unique_obs,
     valid_indices,
-    wandb_log_dir,
 )
 from ._validate import (
     check_available_domains_key,

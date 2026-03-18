@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from ...utils import wandb_log_dir
+from ...monitor.log import wandb_log_dir
 
 log = logging.getLogger(__name__)
 

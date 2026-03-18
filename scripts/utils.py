@@ -4,13 +4,13 @@ import lightning as L
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import wandb
 import yaml
 from anndata import AnnData
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
 import novae
-import wandb
 from novae import log
 from novae._constants import Keys, Nums
 from novae.monitor import jensen_shannon_divergence, mean_fide_score, mean_normalized_entropy
@@ -20,7 +20,7 @@ from novae.monitor.callback import (
     PrototypeUMAPCallback,
     ValidationCallback,
 )
-from novae.monitor.log import log_plt_figure, wandb_results_dir
+from novae.monitor.log import log_plt_figure, repository_root, wandb_log_dir, wandb_results_dir
 
 from .config import Config
 
@@ -49,7 +49,7 @@ def init_wandb_logger(config: Config) -> WandbLogger:
     assert "slide_key" not in config.model_kwargs, "For now, please provide one adata per file."
 
     wandb_logger = WandbLogger(
-        save_dir=novae.utils.wandb_log_dir(),
+        save_dir=wandb_log_dir(),
         log_model="all",
         project=config.project,
     )
@@ -86,7 +86,7 @@ def get_callbacks(config: Config, adatas_val: list[AnnData] | None) -> list[L.Ca
 
 
 def read_config(args: argparse.Namespace) -> Config:
-    with open(novae.utils.repository_root() / "scripts" / "config" / args.config) as f:
+    with open(repository_root() / "scripts" / "config" / args.config) as f:
         config = yaml.safe_load(f)
         config = Config(**config, sweep=args.sweep)
 

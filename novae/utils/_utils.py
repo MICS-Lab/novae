@@ -1,6 +1,5 @@
 import importlib
 import logging
-from pathlib import Path
 from typing import Literal
 
 import lightning as L
@@ -72,24 +71,6 @@ def parse_device_args(accelerator: str = "cpu") -> torch.device:
         device_idx = _devices
 
     return torch.device(f"{_accelerator}:{device_idx}")
-
-
-def repository_root() -> Path:
-    """Get the path to the root of the repository (dev-mode users only)
-
-    Returns:
-        `novae` repository path
-    """
-    path = Path(__file__).parents[2]
-
-    if path.name != "novae":
-        log.warning(f"Trying to get the novae repository path, but it seems it was not installed in dev mode: {path}")
-
-    return path
-
-
-def wandb_log_dir() -> Path:
-    return repository_root() / "wandb"
 
 
 def tqdm(*args, desc="DataLoader", **kwargs):
