@@ -4,6 +4,7 @@ data:
 
 model_kwargs:
   embedding_name: "X_scConcept"
+  embedding_size: 512
   n_hops_view: 2
   heads: 16
   panel_subset_size: 0
