@@ -10,7 +10,7 @@ model_kwargs:
   panel_subset_size: 0
 
 fit_kwargs:
-  max_epochs: 30
+  max_epochs: 25
   accelerator: "gpu"
   num_workers: 8
   patience: 6

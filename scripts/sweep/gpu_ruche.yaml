@@ -6,22 +6,19 @@ parameters:
   output_size:
     values: [64, 128]
   num_layers:
-    values: [10, 14, 18]
+    values: [10, 14]
   hidden_size:
-    values: [128, 256, 512]
+    values: [128, 256]
   num_prototypes:
-    values: [128, 256, 512]
+    values: [256, 512]
   background_noise_lambda:
     min: 0.02
     max: 0.2
   sensitivity_noise_std:
     min: 0.001
     max: 0.03
-  temperature:
-    min: 0.05
-    max: 0.15
   lr:
-    values: [0.00005, 0.0001, 0.0002, 0.0004]
+    values: [0.00001, 0.00003, 0.0001]
 
 command:
   - python
