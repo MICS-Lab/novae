@@ -1,9 +1,6 @@
 import importlib.metadata
 import logging
 
-import anndata
-import pandas as pd
-
 __version__ = importlib.metadata.version("novae")
 
 from ._logging import configure_logger
@@ -18,6 +15,3 @@ from .data import load_dataset, toy_dataset, quantile_scaling, compute_histo_emb
 
 log = logging.getLogger("novae")
 configure_logger(log)
-
-anndata.settings.allow_write_nullable_strings = True
-pd.options.future.infer_string = False
