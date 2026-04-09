@@ -1,9 +1,11 @@
-from openai import OpenAI
 import json
-from os import getenv
 import warnings
+from os import getenv
+
+from openai import OpenAI
 
 from .._constants import Keys
+
 
 def markers_as_dict(adata, n_genes=15):
     """
@@ -22,10 +24,8 @@ def markers_as_dict(adata, n_genes=15):
 
     return marker_dict
 
-def create_prompt (
-    tissue: str = "unknown",
-    species: str | None = None,
-    spatial_context: str | None = None) -> str:
+
+def create_prompt(tissue: str = "unknown", species: str | None = None, spatial_context: str | None = None) -> str:
     """
     Prompt for domain annotation.
     Args:
@@ -37,62 +37,60 @@ def create_prompt (
         str: The generated prompt
     """
 
-    return ("You are an expert in spatial transcriptomics analysis specializing in {species} tissue domain annotation. "
-            "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes. "
-            "Consider spatial context, functional zones, and tissue organization when assigning domain names. "
-            "{spatial_context} "
-            "Be concise but specific. Some domain may represent mixed or transitional regions. "
-            "CRITICAL OUTPUT RULES: "
-            "- The 'domain_name' must contain ONLY a short domain label. "
-            "- Do NOT include parentheses. "
-            "- Do NOT include explanations, examples, or additional details. "
-            "- Do NOT use phrases like 'including', 'such as', or 'with'. "
-            "Return only valid JSON matching the provided schema. "
-            "Do not skip any domain. "
-            "Do not add explanations."
-                ).format(species = species if species else "",
-                         tissue = tissue,
-                         spatial_context = spatial_context if spatial_context else "")
+    return (
+        "You are an expert in spatial transcriptomics analysis specializing in {species} tissue domain annotation. "
+        "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes. "
+        "Consider spatial context, functional zones, and tissue organization when assigning domain names. "
+        "{spatial_context} "
+        "Be concise but specific. Some domain may represent mixed or transitional regions. "
+        "CRITICAL OUTPUT RULES: "
+        "- The 'domain_name' must contain ONLY a short domain label. "
+        "- Do NOT include parentheses. "
+        "- Do NOT include explanations, examples, or additional details. "
+        "- Do NOT use phrases like 'including', 'such as', or 'with'. "
+        "Return only valid JSON matching the provided schema. "
+        "Do not skip any domain. "
+        "Do not add explanations."
+    ).format(
+        species=species if species else "", tissue=tissue, spatial_context=spatial_context if spatial_context else ""
+    )
 
 
-def output_schema (
-    domain_ids:list,
+def output_schema(
+    domain_ids: list,
     additionalProperties: bool = False,
-    ) -> str:
+) -> str:
     schema = {
-                "type": "object",
-                "properties": {
-                    Keys.DOMAIN_ANNOTATION_KEY: {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                Keys.DOMAIN_ID: {
-                                    "type": "string",
-                                    "enum": domain_ids
-                                },
-                                Keys.DOMAIN_NAME: {
-                                    "type": "string",
-                                    "description": "Most likely domain name. May be a mixed label if needed."
-                                }
-                            },
-                            "required": [Keys.DOMAIN_ID, Keys.DOMAIN_NAME],
-                            "additionalProperties": additionalProperties
-                        }
-                    }
+        "type": "object",
+        "properties": {
+            Keys.DOMAIN_ANNOTATION_KEY: {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        Keys.DOMAIN_ID: {"type": "string", "enum": domain_ids},
+                        Keys.DOMAIN_NAME: {
+                            "type": "string",
+                            "description": "Most likely domain name. May be a mixed label if needed.",
+                        },
+                    },
+                    "required": [Keys.DOMAIN_ID, Keys.DOMAIN_NAME],
+                    "additionalProperties": additionalProperties,
                 },
-                "required": [Keys.DOMAIN_ANNOTATION_KEY],
-                "additionalProperties": additionalProperties
             }
+        },
+        "required": [Keys.DOMAIN_ANNOTATION_KEY],
+        "additionalProperties": additionalProperties,
+    }
     return schema
 
 
 def validate_api_key(api_key: str | None) -> str:
     if api_key is None:
         warnings.warn(
-                "`api_key` was not provided. Trying environment variable `{Keys.OPENAI_API_KEY}`.",
-                stacklevel=2,
-            )
+            "`api_key` was not provided. Trying environment variable `{Keys.OPENAI_API_KEY}`.",
+            stacklevel=2,
+        )
         api_key = getenv(Keys.OPENAI_API_KEY)
         if api_key is None or not isinstance(api_key, str) or not api_key.strip():
             raise ValueError("OpenAI API key is required. Provide `api_key` or set `OPENAI_API_KEY`.")
@@ -128,14 +126,15 @@ def api_request(
         raise RuntimeError(f"OpenAI API request failed: {e}") from e
 
 
-def annotate_domains(marker_dict: dict[str:list[str]],
-                        tissue: str = "unknown",
-                        species: str | None = None,
-                        spatial_context: str | None = None,
-                        model: str = "gpt-4.1",
-                        api_key: str | None = None,
-                        seed: int | None = None
-                        ) -> json:
+def annotate_domains(
+    marker_dict: dict[str : list[str]],
+    tissue: str = "unknown",
+    species: str | None = None,
+    spatial_context: str | None = None,
+    model: str = "gpt-4.1",
+    api_key: str | None = None,
+    seed: int | None = None,
+) -> json:
     """
     Ask the model for one annotation per domain and return parsed JSON.
     Args:
@@ -152,40 +151,24 @@ def annotate_domains(marker_dict: dict[str:list[str]],
     """
     domain_ids = list(marker_dict.keys())
 
-    input_markers = "\n".join(
-        f"Domain {did}: {', '.join(marker_dict[did])}"
-        for did in domain_ids
-    )
+    input_markers = "\n".join(f"Domain {did}: {', '.join(marker_dict[did])}" for did in domain_ids)
 
     api_key = validate_api_key(api_key)
 
-    response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": Keys.DOMAIN_ANNOTATION_KEY,
-                "schema": output_schema(domain_ids),
-                "strict": True
-            }
-        }
-    
-    messages=[
-            {
-                "role": "developer",
-                "content": create_prompt(species, tissue, spatial_context)
-            },
-            {
-                "role": "user",
-                "content": (
-                    "Annotate the following domains.\n\n"
-                    f"{input_markers}"
-                )
-            }
-        ]
+    response_format = {
+        "type": "json_schema",
+        "json_schema": {"name": Keys.DOMAIN_ANNOTATION_KEY, "schema": output_schema(domain_ids), "strict": True},
+    }
+
+    messages = [
+        {"role": "developer", "content": create_prompt(species, tissue, spatial_context)},
+        {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}")},
+    ]
 
     return api_request(
-            model=model,
-            api_key=api_key,
-            messages=messages,
-            response_format=response_format,
-            seed=seed,
+        model=model,
+        api_key=api_key,
+        messages=messages,
+        response_format=response_format,
+        seed=seed,
     )

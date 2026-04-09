@@ -580,19 +580,19 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata.obs[key_added] = adata.obs[key_added].astype("category")
 
         return key_added
-    
+
     def annotate_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        domain_key: str|None = None,
+        domain_key: str | None = None,
         model: str = "gpt-4.1",
-        api_key: str| None = None,
+        api_key: str | None = None,
         tissue: str = "unknown",
         species: str | None = None,
         n_genes: int = 15,
         spatial_context: str | None = None,
         key_added: str | None = None,
-        seed: int|None = None,
+        seed: int | None = None,
     ) -> str:
         """Annotate spatial domains with an LLM using domain marker genes.
 
@@ -625,21 +625,21 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
         )
 
-
-
         key_added = key_added if key_added else Keys.DOMAIN_ANNOTATION_KEY
 
         for adata in adatas:
             marker_dict = utils.markers_as_dict(adata, n_genes)
 
-            result = utils.annotate_domains(marker_dict,
-                                            model=model,
-                                            species=species,
-                                            tissue=tissue,
-                                            api_key=api_key,
-                                            spatial_context=spatial_context,
-                                            seed=seed)
-            
+            result = utils.annotate_domains(
+                marker_dict,
+                model=model,
+                species=species,
+                tissue=tissue,
+                api_key=api_key,
+                spatial_context=spatial_context,
+                seed=seed,
+            )
+
             d_annotation = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION_KEY]}
 
             adata.obs[key_added] = adata.obs[domain_key].map(d_annotation)

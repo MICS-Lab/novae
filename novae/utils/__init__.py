@@ -26,10 +26,7 @@ from ._validate import (
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
 from .mode import Mode
-from ._annotation import (
-    annotate_domains,
-    markers_as_dict
-)
+from ._annotation import annotate_domains, markers_as_dict
 
 
 def load_dataset(*args, **kwargs):

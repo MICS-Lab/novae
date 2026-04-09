@@ -40,6 +40,7 @@ class Keys:
     DOMAIN_ID: str = "domain_id"
     DOMAIN_NAME: str = "domain_name"
 
+
 class Nums:
     # training constants
     EPS: float = 1e-8
