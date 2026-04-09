@@ -219,3 +219,17 @@ def _get_one_reference(adatas: list[AnnData], reference: int | str) -> AnnData:
             return adata[adata.obs[Keys.SLIDE_ID] == reference]
 
     raise ValueError(f"Did not found slide id `{reference}` inside adata.obs['{Keys.SLIDE_ID}'].")
+
+
+def markers_as_dict(adata, n_genes=15):
+    """
+    Convert rank_genes_groups into dict
+    """
+    names = adata.uns["rank_genes_groups"]["names"]
+
+    marker_dict = {}
+    for domain_id in names.dtype.names:
+        genes = [g for g in names[domain_id][:n_genes] if g is not None and str(g) != "nan"]
+        marker_dict[str(domain_id)] = [str(g) for g in genes]
+
+    return marker_dict

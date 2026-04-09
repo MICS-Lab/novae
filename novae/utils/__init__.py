@@ -1,4 +1,5 @@
 import warnings
+from typing import TYPE_CHECKING, Any
 
 from ._utils import (
     fill_invalid_indices,
@@ -15,6 +16,7 @@ from ._utils import (
     unique_obs,
     valid_indices,
     wandb_log_dir,
+    markers_as_dict
 )
 from ._validate import (
     check_available_domains_key,
@@ -26,7 +28,23 @@ from ._validate import (
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
 from .mode import Mode
-from ._annotation import annotate_domains, markers_as_dict
+
+if TYPE_CHECKING:
+    from ._annotate_domains import annotate_domains
+
+
+def __getattr__(name: str) -> Any:
+    if name == "annotate_domains":
+        try:
+            from ._annotate_domains import annotate_domains
+        except ModuleNotFoundError as e:
+            if e.name == "openai":
+                raise ModuleNotFoundError(
+                    "Missing optional dependency `openai` required for `model.annotate_domains`. "
+                    "Install it with `pip install openai`."
+                ) from e
+            raise
+        return annotate_domains
 
 
 def load_dataset(*args, **kwargs):
@@ -60,3 +78,5 @@ def toy_dataset(*args, **kwargs):
     from .. import toy_dataset
 
     return toy_dataset(*args, **kwargs)
+
+

@@ -6,25 +6,6 @@ from openai import OpenAI
 
 from .._constants import Keys
 
-
-def markers_as_dict(adata, n_genes=15):
-    """
-    Convert rank_genes_groups into dict:
-    {
-        "D1014": ["GENE1", "GENE2", ...],
-        "D1001": [...],
-    }
-    """
-    names = adata.uns["rank_genes_groups"]["names"]
-
-    marker_dict = {}
-    for domain_id in names.dtype.names:
-        genes = [g for g in names[domain_id][:n_genes] if g is not None and str(g) != "nan"]
-        marker_dict[str(domain_id)] = [str(g) for g in genes]
-
-    return marker_dict
-
-
 def create_prompt(tissue: str = "unknown", species: str | None = None, spatial_context: str | None = None) -> str:
     """
     Prompt for domain annotation.

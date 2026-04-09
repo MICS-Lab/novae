@@ -640,9 +640,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 seed=seed,
             )
 
-            d_annotation = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION_KEY]}
+            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION_KEY]}
 
-            adata.obs[key_added] = adata.obs[domain_key].map(d_annotation)
+            adata.obs[key_added] = adata.obs[domain_key].map(domain_ann)
 
         return key_added
 
