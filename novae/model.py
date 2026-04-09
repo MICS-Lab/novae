@@ -621,6 +621,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         adatas = self._to_anndata_list(adata)
 
+        assert domain_key is not None, "The `domain_key` argument can't be None."
+
         assert all(domain_key in adata.obs for adata in adatas), (
             f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
         )
