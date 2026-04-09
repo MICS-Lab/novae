@@ -56,8 +56,8 @@ def create_prompt (
 
 
 def output_schema (
-    domain_ids,
-    additionalProperties = False
+    domain_ids:list,
+    additionalProperties: bool = False,
     ) -> str:
     schema = {
                 "type": "object",
