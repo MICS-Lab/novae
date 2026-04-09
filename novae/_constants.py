@@ -34,6 +34,10 @@ class Keys:
     N_BATCHES: str = "n_batches"
     NOVAE_VERSION: str = "novae_version"
 
+    # LLM domain annotation
+    DOMAIN_ANNOTATION_KEY: str = "domain_annotation"
+    DOMAIN_ID: str = "domain_id"
+    DOMAIN_NAME: str = "domain_name"
 
 class Nums:
     # training constants

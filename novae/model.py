@@ -580,6 +580,58 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata.obs[key_added] = adata.obs[key_added].astype("category")
 
         return key_added
+    
+    def annotate_domains(
+        self,
+        adata: AnnData | list[AnnData] | None = None,
+        domain_key: str|None = None,
+        model: str = "gpt-4.1",
+        api_key: str| None = None,
+        tissue: str = "unknown",
+        species: str | None = None,
+        n_genes: int = 15,
+        spatial_context: str | None = None,
+        key_added: str | None = None,
+        seed: int|None = None,
+    ) -> str:
+        """Ask a LLM model for one annotation per domain based on marker genes.
+
+        Note:
+            You'll need to get an API key from OpenAI.
+
+            The domain annotations are saved in `adata.obs["domain_annotation]`.
+
+        Args:
+            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            species: Species name (e.g., 'human', 'mouse')
+            tissue: Tissue name (e.g., 'liver')
+            spatial_context: context to include in the prompt
+            model: name of OpenAI model to use
+        Returns:
+            The name of the key added to `adata.obs`.
+        """
+        adatas = self._to_anndata_list(adata)
+
+        assert all(domain_key in adata.obs for adata in adatas), (
+            f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
+        )
+
+        key_added = key_added if key_added else Keys.DOMAIN_ANNOTATION_KEY
+
+        for adata in adatas:
+            marker_dict = utils.markers_as_dict(adata, n_genes)
+
+            result = utils.annotate_domains(marker_dict, 
+                                            species=species,
+                                            tissue=tissue,
+                                            spatial_context=spatial_context,
+                                            seed=seed)
+            
+            d_annotation = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION_KEY]}
+
+            adata.obs[key_added] = adata.obs[domain_key].map(d_annotation)
+
+        return key_added
 
     @torch.no_grad()
     def _leiden_prototypes(self, resolution: float = 1, return_codes: bool = True) -> AnnData | np.ndarray:
