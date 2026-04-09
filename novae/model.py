@@ -594,19 +594,28 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         key_added: str | None = None,
         seed: int|None = None,
     ) -> str:
-        """Ask a LLM model for one annotation per domain based on marker genes.
+        """Annotate spatial domains with an LLM using domain marker genes.
 
-        Note:
-            You'll need to get an API key from OpenAI.
+        !!! info
+            One annotation is generated per domain and stored in `adata.obs[key_added]`
+            (or `adata.obs["domain_annotation"]` when `key_added` is not provided).
 
-            The domain annotations are saved in `adata.obs["domain_annotation]`.
+        !!! note
+            `domain_key` must reference an existing domain column in `adata.obs`,
+            typically created with [novae.Novae.assign_domains].
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            species: Species name (e.g., 'human', 'mouse')
-            tissue: Tissue name (e.g., 'liver')
-            spatial_context: context to include in the prompt
-            model: name of OpenAI model to use
+            domain_key: Key in `adata.obs` containing domain IDs to annotate.
+            model: OpenAI model name used for annotation.
+            api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
+            tissue: Tissue name (for example, `"liver"`).
+            species: Species name (for example, `"human"` or `"mouse"`).
+            n_genes: Number of marker genes per domain passed to the LLM prompt.
+            spatial_context: Optional biological/spatial context to include in the prompt.
+            key_added: Output key used to store annotations in `adata.obs`.
+            seed: Optional random seed passed to the annotation utility.
+
         Returns:
             The name of the key added to `adata.obs`.
         """
@@ -616,14 +625,18 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
         )
 
+
+
         key_added = key_added if key_added else Keys.DOMAIN_ANNOTATION_KEY
 
         for adata in adatas:
             marker_dict = utils.markers_as_dict(adata, n_genes)
 
-            result = utils.annotate_domains(marker_dict, 
+            result = utils.annotate_domains(marker_dict,
+                                            model=model,
                                             species=species,
                                             tissue=tissue,
+                                            api_key=api_key,
                                             spatial_context=spatial_context,
                                             seed=seed)
             
