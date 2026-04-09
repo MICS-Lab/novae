@@ -1,0 +1,190 @@
+from openai import OpenAI
+import json
+from os import getenv
+import warnings
+
+from .._constants import Keys
+
+def markers_as_dict(adata, n_genes=15):
+    """
+    Convert rank_genes_groups into dict:
+    {
+        "D1014": ["GENE1", "GENE2", ...],
+        "D1001": [...],
+    }
+    """
+    names = adata.uns["rank_genes_groups"]["names"]
+
+    marker_dict = {}
+    for domain_id in names.dtype.names:
+        genes = [g for g in names[domain_id][:n_genes] if g is not None and str(g) != "nan"]
+        marker_dict[str(domain_id)] = [str(g) for g in genes]
+
+    return marker_dict
+
+def create_prompt (
+    tissue: str = "unknown",
+    species: str | None = None,
+    spatial_context: str | None = None) -> str:
+    """
+    Prompt for domain annotation.
+    Args:
+        species: Species name (e.g., 'human', 'mouse')
+        tissue: Tissue name (e.g., 'liver')
+        spatial_context: context to include in the prompt
+
+    Returns:
+        str: The generated prompt
+    """
+
+    return ("You are an expert in spatial transcriptomics analysis specializing in {species} tissue domain annotation. "
+            "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes. "
+            "Consider spatial context, functional zones, and tissue organization when assigning domain names. "
+            "{spatial_context} "
+            "Be concise but specific. Some domain may represent mixed or transitional regions. "
+            "CRITICAL OUTPUT RULES: "
+            "- The 'domain_name' must contain ONLY a short domain label. "
+            "- Do NOT include parentheses. "
+            "- Do NOT include explanations, examples, or additional details. "
+            "- Do NOT use phrases like 'including', 'such as', or 'with'. "
+            "Return only valid JSON matching the provided schema. "
+            "Do not skip any domain. "
+            "Do not add explanations."
+                ).format(species = species if species else "",
+                         tissue = tissue,
+                         spatial_context = spatial_context if spatial_context else "")
+
+
+def output_schema (
+    domain_ids,
+    additionalProperties = False
+    ) -> str:
+    schema = {
+                "type": "object",
+                "properties": {
+                    Keys.DOMAIN_ANNOTATION_KEY: {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                Keys.DOMAIN_ID: {
+                                    "type": "string",
+                                    "enum": domain_ids
+                                },
+                                Keys.DOMAIN_NAME: {
+                                    "type": "string",
+                                    "description": "Most likely domain name. May be a mixed label if needed."
+                                }
+                            },
+                            "required": [Keys.DOMAIN_ID, Keys.DOMAIN_NAME],
+                            "additionalProperties": additionalProperties
+                        }
+                    }
+                },
+                "required": [Keys.DOMAIN_ANNOTATION_KEY],
+                "additionalProperties": additionalProperties
+            }
+    return schema
+
+
+def api_request(
+    model: str,
+    api_key: str | None,
+    messages: list[dict[str, str]],
+    response_format: dict,
+    seed: int | None = None,
+) -> json:
+    client = OpenAI(api_key=api_key)
+
+    request_kwargs = {
+        "model": model,
+        "messages": messages,
+        "response_format": response_format,
+    }
+    if seed is not None:
+        request_kwargs["seed"] = seed
+
+    try:
+        response = client.chat.completions.create(**request_kwargs)
+        content = response.choices[0].message.content
+        return json.loads(content)
+    except Exception as e:
+        raise RuntimeError(f"OpenAI API request failed: {e}") from e
+
+
+def validate_api_key(api_key: str | None) -> str:
+    if api_key is None:
+        warnings.warn(
+                "`api_key` was not provided. Trying environment variable `{Keys.OPENAI_API_KEY}`.",
+                stacklevel=2,
+            )
+        api_key = getenv(Keys.OPENAI_API_KEY)
+        if api_key is None or not isinstance(api_key, str) or not api_key.strip():
+            raise ValueError("OpenAI API key is required. Provide `api_key` or set `OPENAI_API_KEY`.")
+        return api_key.strip()
+    else:
+        if not isinstance(api_key, str) or not api_key.strip():
+            raise ValueError("`api_key` must be a non-empty string when provided.")
+        return api_key.strip()
+
+
+def annotate_domains(marker_dict: dict[str:list[str]],
+                        tissue: str = "unknown",
+                        species: str | None = None,
+                        spatial_context: str | None = None,
+                        model: str = "gpt-4.1",
+                        api_key: str | None = None,
+                        seed: int | None = None
+                        ) -> json:
+    """
+    Ask the model for one annotation per domain and return parsed JSON.
+    Args:
+        marker_dict: Dictionary mapping domain_ids to lists of marker genes
+        species: Species name (e.g., 'human', 'mouse')
+        tissue: Tissue name (e.g., 'liver')
+        spatial_context: context to include in the prompt
+        model: name of OpenAI model to use
+        api_key: OpenAI API key. If `None`, the function tries `OPENAI_API_KEY` from the environment and raises an error if it is missing.
+
+    Returns:
+        json: domain annotations generated by the model in json format
+    """
+    domain_ids = list(marker_dict.keys())
+
+    input_markers = "\n".join(
+        f"Domain {did}: {', '.join(marker_dict[did])}"
+        for did in domain_ids
+    )
+
+    api_key = validate_api_key(api_key)
+
+    response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "domain_annotations",
+                "schema": output_schema(domain_ids),
+                "strict": True
+            }
+        }
+    
+    messages=[
+            {
+                "role": "developer",
+                "content": create_prompt(species, tissue, spatial_context)
+            },
+            {
+                "role": "user",
+                "content": (
+                    "Annotate the following domains.\n\n"
+                    f"{input_markers}"
+                )
+            }
+        ]
+
+    return api_request(
+            model=model,
+            api_key=api_key,
+            messages=messages,
+            response_format=response_format,
+            seed=seed,
+    )
