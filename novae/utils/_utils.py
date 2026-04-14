@@ -219,3 +219,12 @@ def _get_one_reference(adatas: list[AnnData], reference: int | str) -> AnnData:
             return adata[adata.obs[Keys.SLIDE_ID] == reference]
 
     raise ValueError(f"Did not found slide id `{reference}` inside adata.obs['{Keys.SLIDE_ID}'].")
+
+
+def store_inference_mode(adatas: AnnData | list[AnnData], zero_shot: bool):
+    if isinstance(adatas, AnnData):
+        adatas = [adatas]
+
+    for adata in adatas:
+        adata.uns[Keys.NOVAE_UNS] = adata.uns.get(Keys.NOVAE_UNS, {})
+        adata.uns[Keys.NOVAE_UNS]["zero_shot"] = zero_shot
