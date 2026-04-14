@@ -402,6 +402,8 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         if self.mode.zero_shot:
             self.assign_to_kmeans_prototypes(adatas, reference)
 
+        utils.store_inference_mode(adatas, zero_shot=zero_shot)
+
     def assign_to_kmeans_prototypes(
         self, adatas: AnnData | list[AnnData], reference: str | int | Literal["all", "largest"]
     ):
@@ -565,6 +567,9 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 )
 
             return key_added
+
+        if any(adata.uns.get(Keys.NOVAE_UNS, {}).get("zero_shot", False) for adata in adatas):
+            log.warning("We recommend using a `resolution` instead of the `level` for the zero-shot mode.")
 
         if n_domains is not None:
             leaves_indices = utils.unique_leaves_indices(adatas)
