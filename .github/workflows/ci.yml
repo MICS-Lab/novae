@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: "0 0 * * 1,3,5"
 
+permissions:
+  contents: write
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
