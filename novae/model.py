@@ -598,7 +598,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         !!! info
             One annotation is generated per domain and stored in `adata.obs[key_added]`
-            (or `adata.obs["domain_annotation"]` when `key_added` is not provided).
+            (or `adata.obs["novae_domains_annotation"]` when `key_added` is not provided).
 
         !!! note
             `domain_key` must reference an existing domain column in `adata.obs`,
@@ -627,7 +627,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
         )
 
-        key_added = key_added if key_added else Keys.DOMAIN_ANNOTATION_KEY
+        key_added = f"{Keys.DOMAINS_PREFIX}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
 
         for adata in adatas:
             marker_dict = utils.markers_as_dict(adata, n_genes)
@@ -642,7 +642,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 seed=seed,
             )
 
-            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION_KEY]}
+            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION]}
 
             adata.obs[key_added] = adata.obs[domain_key].map(domain_ann)
 

@@ -36,7 +36,7 @@ class Keys:
 
     # LLM domain annotation
     OPENAI_API_KEY: str = "OPENAI_API_KEY"
-    DOMAIN_ANNOTATION_KEY: str = "domain_annotation"
+    DOMAIN_ANNOTATION: str = "annotation"
     DOMAIN_ID: str = "domain_id"
     DOMAIN_NAME: str = "domain_name"
 

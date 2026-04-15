@@ -9,13 +9,6 @@ from .._constants import Keys
 def create_prompt(tissue: str = "unknown", species: str | None = None, spatial_context: str | None = None) -> str:
     """
     Prompt for domain annotation.
-    Args:
-        species: Species name (e.g., 'human', 'mouse')
-        tissue: Tissue name (e.g., 'liver')
-        spatial_context: context to include in the prompt
-
-    Returns:
-        str: The generated prompt
     """
 
     return (
@@ -44,7 +37,7 @@ def output_schema(
     schema = {
         "type": "object",
         "properties": {
-            Keys.DOMAIN_ANNOTATION_KEY: {
+            Keys.DOMAIN_ANNOTATION: {
                 "type": "array",
                 "items": {
                     "type": "object",
@@ -60,7 +53,7 @@ def output_schema(
                 },
             }
         },
-        "required": [Keys.DOMAIN_ANNOTATION_KEY],
+        "required": [Keys.DOMAIN_ANNOTATION],
         "additionalProperties": additionalProperties,
     }
     return schema
@@ -138,7 +131,7 @@ def annotate_domains(
 
     response_format = {
         "type": "json_schema",
-        "json_schema": {"name": Keys.DOMAIN_ANNOTATION_KEY, "schema": output_schema(domain_ids), "strict": True},
+        "json_schema": {"name": Keys.DOMAIN_ANNOTATION, "schema": output_schema(domain_ids), "strict": True},
     }
 
     messages = [
