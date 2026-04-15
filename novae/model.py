@@ -584,7 +584,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def annotate_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
-        domain_key: str | None = None,
+        obs_key: str | None = None,
         model: str = "gpt-4.1",
         api_key: str | None = None,
         tissue: str = "unknown",
@@ -601,12 +601,12 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             (or `adata.obs["novae_domains_annotation"]` when `key_added` is not provided).
 
         !!! note
-            `domain_key` must reference an existing domain column in `adata.obs`,
+            `obs_key` must reference an existing domain column in `adata.obs`,
             typically created with [novae.Novae.assign_domains].
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            domain_key: Key in `adata.obs` containing domain IDs to annotate.
+            obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
             model: OpenAI model name used for annotation.
             api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
             tissue: Tissue name (for example, `"liver"`).
@@ -621,11 +621,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         """
         adatas = self._to_anndata_list(adata)
 
-        assert domain_key is not None, "The `domain_key` argument can't be None."
-
-        assert all(domain_key in adata.obs for adata in adatas), (
-            f"Did not found `adata.obs['{domain_key}']`. Please provide a valid key, added by model.assign_domains(..)"
-        )
+        obs_key = utils.check_available_domains_key([adata], obs_key)
 
         key_added = f"{Keys.DOMAINS_PREFIX}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
 
@@ -644,7 +640,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
             domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION]}
 
-            adata.obs[key_added] = adata.obs[domain_key].map(domain_ann)
+            adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
 
         return key_added
 
