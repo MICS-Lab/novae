@@ -36,9 +36,9 @@ class Keys:
 
     # LLM domain annotation
     OPENAI_API_KEY: str = "OPENAI_API_KEY"
-    DOMAIN_ANNOTATION: str = "annotation"
-    DOMAIN_ID: str = "domain_id"
-    DOMAIN_NAME: str = "domain_name"
+    DOMAIN_ANNOTATION: str = "domain_annotation"
+    DOMAIN_ID: str = "novae_domain"
+    CONFIDENCE_SCORE: str = "annotation_conf_score"
 
 
 class Nums:

@@ -44,12 +44,18 @@ def output_schema(
                     "type": "object",
                     "properties": {
                         Keys.DOMAIN_ID: {"type": "string", "enum": domain_ids},
-                        Keys.DOMAIN_NAME: {
+                        Keys.DOMAIN_ANNOTATION: {
                             "type": "string",
                             "description": "Most likely domain name. May be a mixed label if needed.",
                         },
+                        Keys.CONFIDENCE_SCORE: {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                            "description": "A confidence score between 0 and 1 for the annotation."
+                        },
                     },
-                    "required": [Keys.DOMAIN_ID, Keys.DOMAIN_NAME],
+                    "required": [Keys.DOMAIN_ID, Keys.DOMAIN_ANNOTATION, Keys.CONFIDENCE_SCORE],
                     "additionalProperties": additionalProperties,
                 },
             }

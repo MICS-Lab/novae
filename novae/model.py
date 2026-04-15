@@ -648,11 +648,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
                 seed=seed,
             )
 
-            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_NAME] for d in result[Keys.DOMAIN_ANNOTATION]}
+            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in result[Keys.DOMAIN_ANNOTATION]}
 
             adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
 
-        return key_added
+        return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
 
     @torch.no_grad()
     def _leiden_prototypes(self, resolution: float = 1, return_codes: bool = True) -> AnnData | np.ndarray:
