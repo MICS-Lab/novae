@@ -6,6 +6,7 @@ from typing import Literal
 
 import lightning as L
 import numpy as np
+import pandas as pd
 import scanpy as sc
 import torch
 from anndata import AnnData
@@ -584,6 +585,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
     def annotate_domains(
         self,
         adata: AnnData | list[AnnData] | None = None,
+        pathways: dict[str, list[str]] | str | None = None,
         obs_key: str | None = None,
         model: str = "gpt-4.1",
         api_key: str | None = None,
@@ -606,6 +608,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
 
         Args:
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+            pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
             obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
             model: OpenAI model name used for annotation.
             api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
@@ -626,10 +629,17 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         key_added = f"{Keys.DOMAINS_PREFIX}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
 
         for adata in adatas:
-            marker_dict = utils.markers_as_dict(adata, n_genes)
+            gene_marker_dict = utils.markers_as_dict(adata, n_genes)
+
+            pathway_scores = None if pathways is None else plot.pathway_scores(adata,
+                                                                                obs_key=obs_key,
+                                                                                pathways=pathways, 
+                                                                                show=False,
+                                                                                return_df=True)
 
             result = utils.annotate_domains(
-                marker_dict,
+                marker_dict=gene_marker_dict,
+                pathway_scores=pathway_scores,
                 model=model,
                 species=species,
                 tissue=tissue,

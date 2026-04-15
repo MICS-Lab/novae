@@ -3,6 +3,7 @@ import warnings
 from os import getenv
 
 from openai import OpenAI
+import pandas as pd
 
 from .._constants import Keys
 
@@ -102,6 +103,7 @@ def api_request(
 
 def annotate_domains(
     marker_dict: dict[str : list[str]],
+    pathway_scores: pd.DataFrame | None = None,
     tissue: str = "unknown",
     species: str | None = None,
     spatial_context: str | None = None,
@@ -125,7 +127,15 @@ def annotate_domains(
     """
     domain_ids = list(marker_dict.keys())
 
-    input_markers = "\n".join(f"Domain {did}: {', '.join(marker_dict[did])}" for did in domain_ids)
+    input_markers = "Gene markers:\n"+"\n".join(f"Domain {id}: {', '.join(marker_dict[id])}" for id in domain_ids)
+
+    if pathway_scores is not None:
+        input_pathway = "Pathway scores:\n" + "\n".join(
+                                f"Domain {idx}: " + ", ".join(f"{col}={pathway_scores.loc[idx, col]:.4f}" for col in pathway_scores.columns)
+                                for idx in domain_ids
+                            )
+    else:
+        input_pathway = ""
 
     api_key = validate_api_key(api_key)
 
@@ -136,7 +146,7 @@ def annotate_domains(
 
     messages = [
         {"role": "developer", "content": create_prompt(species, tissue, spatial_context)},
-        {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}")},
+        {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_pathway}")},
     ]
 
     return api_request(
