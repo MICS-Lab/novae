@@ -139,10 +139,9 @@ def pathway_scores(
 
     df = df.fillna(0)
 
-    g = sns.clustermap(df, figsize=figsize, **kwargs)
-    plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-
     if show:
+        g = sns.clustermap(df, figsize=figsize, **kwargs)
+        plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
         plt.show()
 
     if return_df:
