@@ -16,7 +16,7 @@ from ._utils import (
     unique_obs,
     valid_indices,
     wandb_log_dir,
-    markers_as_dict
+    markers_as_dict,
 )
 from ._validate import (
     check_available_domains_key,
@@ -78,5 +78,3 @@ def toy_dataset(*args, **kwargs):
     from .. import toy_dataset
 
     return toy_dataset(*args, **kwargs)
-
-

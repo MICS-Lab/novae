@@ -631,11 +631,11 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         for adata in adatas:
             gene_marker_dict = utils.markers_as_dict(adata, n_genes)
 
-            pathway_scores = None if pathways is None else plot.pathway_scores(adata,
-                                                                                obs_key=obs_key,
-                                                                                pathways=pathways, 
-                                                                                show=False,
-                                                                                return_df=True)
+            pathway_scores = (
+                None
+                if pathways is None
+                else plot.pathway_scores(adata, obs_key=obs_key, pathways=pathways, show=False, return_df=True)
+            )
 
             result = utils.annotate_domains(
                 marker_dict=gene_marker_dict,
@@ -651,6 +651,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in result[Keys.DOMAIN_ANNOTATION]}
 
             adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
+            log.info(f"Added: {key_added}")
 
         return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
 

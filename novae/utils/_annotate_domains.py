@@ -2,19 +2,20 @@ import json
 import warnings
 from os import getenv
 
-from openai import OpenAI
 import pandas as pd
+from openai import OpenAI
 
 from .._constants import Keys
 
-def create_prompt(tissue: str = "unknown", species: str | None = None, spatial_context: str | None = None) -> str:
+
+def _create_prompt(tissue: str = "unknown", species: str | None = None, spatial_context: str | None = None) -> str:
     """
     Prompt for domain annotation.
     """
 
     return (
         "You are an expert in spatial transcriptomics analysis specializing in {species} tissue domain annotation. "
-        "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes. "
+        "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes and potentially enriched pathway scores. "
         "Consider spatial context, functional zones, and tissue organization when assigning domain names. "
         "{spatial_context} "
         "Be concise but specific. Some domain may represent mixed or transitional regions. "
@@ -23,15 +24,30 @@ def create_prompt(tissue: str = "unknown", species: str | None = None, spatial_c
         "- Do NOT include parentheses. "
         "- Do NOT include explanations, examples, or additional details. "
         "- Do NOT use phrases like 'including', 'such as', or 'with'. "
-        "Return only valid JSON matching the provided schema. "
-        "Do not skip any domain. "
-        "Do not add explanations."
+        "- Do NOT skip any domain. "
+        "- Do NOT add explanations."
+        "Return only valid JSON matching the provided schema."
     ).format(
         species=species if species else "", tissue=tissue, spatial_context=spatial_context if spatial_context else ""
     )
 
 
-def output_schema(
+def _format_pathway_scores(
+    pathway_scores: pd.DataFrame | None,
+    domain_ids: list[int] | list[str],
+) -> str:
+    if pathway_scores is None:
+        return ""
+
+    lines = []
+    for domain_id in domain_ids:
+        values = ", ".join(f"{name}={value:.4f}" for name, value in pathway_scores.loc[domain_id].items())
+        lines.append(f"Domain {domain_id}: {values}")
+
+    return "Pathway scores:\n" + "\n".join(lines)
+
+
+def _output_schema(
     domain_ids: list,
     additionalProperties: bool = False,
 ) -> str:
@@ -52,7 +68,7 @@ def output_schema(
                             "type": "number",
                             "minimum": 0,
                             "maximum": 1,
-                            "description": "A confidence score between 0 and 1 for the annotation."
+                            "description": "A confidence score between 0 and 1 for the annotation.",
                         },
                     },
                     "required": [Keys.DOMAIN_ID, Keys.DOMAIN_ANNOTATION, Keys.CONFIDENCE_SCORE],
@@ -66,7 +82,7 @@ def output_schema(
     return schema
 
 
-def validate_api_key(api_key: str | None) -> str:
+def _validate_api_key(api_key: str | None) -> str:
     if api_key is None:
         warnings.warn(
             "`api_key` was not provided. Trying environment variable `{Keys.OPENAI_API_KEY}`.",
@@ -82,7 +98,7 @@ def validate_api_key(api_key: str | None) -> str:
         return api_key.strip()
 
 
-def api_request(
+def _OpenAI_api_request(
     model: str,
     api_key: str | None,
     messages: list[dict[str, str]],
@@ -133,29 +149,25 @@ def annotate_domains(
     """
     domain_ids = list(marker_dict.keys())
 
-    input_markers = "Gene markers:\n"+"\n".join(f"Domain {id}: {', '.join(marker_dict[id])}" for id in domain_ids)
+    input_markers = "Gene markers:\n" + "\n".join(
+        f"Domain {domain_id}: {', '.join(marker_dict[domain_id])}" for domain_id in domain_ids
+    )
 
-    if pathway_scores is not None:
-        input_pathway = "Pathway scores:\n" + "\n".join(
-                                f"Domain {idx}: " + ", ".join(f"{col}={pathway_scores.loc[idx, col]:.4f}" for col in pathway_scores.columns)
-                                for idx in domain_ids
-                            )
-    else:
-        input_pathway = ""
+    input_pathway = _format_pathway_scores(pathway_scores, domain_ids)
 
-    api_key = validate_api_key(api_key)
+    api_key = _validate_api_key(api_key)
 
     response_format = {
         "type": "json_schema",
-        "json_schema": {"name": Keys.DOMAIN_ANNOTATION, "schema": output_schema(domain_ids), "strict": True},
+        "json_schema": {"name": Keys.DOMAIN_ANNOTATION, "schema": _output_schema(domain_ids), "strict": True},
     }
 
     messages = [
-        {"role": "developer", "content": create_prompt(species, tissue, spatial_context)},
+        {"role": "developer", "content": _create_prompt(species, tissue, spatial_context)},
         {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_pathway}")},
     ]
 
-    return api_request(
+    return _OpenAI_api_request(
         model=model,
         api_key=api_key,
         messages=messages,
