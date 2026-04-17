@@ -3,7 +3,6 @@ import warnings
 from os import getenv
 
 import pandas as pd
-from openai import OpenAI
 
 from .._constants import Keys
 
@@ -121,6 +120,8 @@ def _OpenAI_api_request(
     max_tokens: int,
     seed: int | None = None,
 ) -> json:
+    from openai import OpenAI
+
     client = OpenAI(api_key=api_key)
 
     response_format = {

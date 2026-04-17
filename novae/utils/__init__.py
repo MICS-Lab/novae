@@ -38,10 +38,10 @@ def __getattr__(name: str) -> Any:
         try:
             from ._annotate_domains import annotate_domains
         except ModuleNotFoundError as e:
-            if e.name == "openai":
+            if e.name in {"openai", "anthropic"}:
                 raise ModuleNotFoundError(
-                    "Missing optional dependency `openai` required for `model.annotate_domains`. "
-                    "Install it with `pip install openai`."
+                    "Missing optional dependency required for `model.annotate_domains`: install `openai` for OpenAI models or `anthropic` for Claude models. "
+                    "Install with `pip install openai` or `pip install anthropic`."
                 ) from e
             raise
         return annotate_domains
