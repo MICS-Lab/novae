@@ -587,12 +587,14 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         adata: AnnData | list[AnnData] | None = None,
         pathways: dict[str, list[str]] | str | None = None,
         obs_key: str | None = None,
+        provider: str = "openai",
         model: str = "gpt-4.1",
         api_key: str | None = None,
         tissue: str = "unknown",
         species: str | None = None,
         n_genes: int = 15,
         spatial_context: str | None = None,
+        max_tokens: int = 1000,
         key_added: str | None = None,
         seed: int | None = None,
     ) -> str:
@@ -610,6 +612,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
             pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
             obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
+            provider: LLM provider to use. Supported providers: 'openai', 'anthropic'.
             model: OpenAI model name used for annotation.
             api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
             tissue: Tissue name (for example, `"liver"`).
@@ -618,6 +621,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             spatial_context: Optional biological/spatial context to include in the prompt.
             key_added: Output key used to store annotations in `adata.obs`.
             seed: Optional random seed passed to the annotation utility.
+            max_tokens: Maximum number of tokens the model is allowed to generate for the annotation response.,
 
         Returns:
             The name of the key added to `adata.obs`.
@@ -640,11 +644,13 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             result = utils.annotate_domains(
                 marker_dict=gene_marker_dict,
                 pathway_scores=pathway_scores,
+                provider=provider,
+                api_key=api_key,
                 model=model,
                 species=species,
                 tissue=tissue,
-                api_key=api_key,
                 spatial_context=spatial_context,
+                max_tokens=max_tokens,
                 seed=seed,
             )
 
