@@ -29,7 +29,7 @@ def convert_to_h5ad(dataset_dir: Path):
     print(f"Created file at path {res_path}")
 
 
-def _get_tables_and_circles(path: Path, gex_only: bool) -> AnnData | tuple[AnnData, AnnData]:
+def _get_tables_and_circles(path: Path, gex_only: bool = True) -> AnnData | tuple[AnnData, AnnData]:
     adata = _read_10x_h5(path / "cell_feature_matrix.h5", gex_only=gex_only)
     metadata = pd.read_parquet(path / "cells.parquet")
 
@@ -37,7 +37,6 @@ def _get_tables_and_circles(path: Path, gex_only: bool) -> AnnData | tuple[AnnDa
     adata.obsm["spatial"] = circ
     metadata.drop(["x_centroid", "y_centroid"], axis=1, inplace=True)
     adata.obs = metadata
-    adata.obs["region"] = adata.obs["region"].astype("category")
 
     return adata
 
