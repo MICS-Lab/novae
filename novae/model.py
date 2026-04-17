@@ -597,7 +597,7 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
         max_tokens: int = 1000,
         key_added: str | None = None,
         seed: int | None = None,
-    ) -> str:
+    ) -> pd.DataFrame:
         """Annotate spatial domains with an LLM using domain marker genes.
 
         !!! info
