@@ -10,7 +10,7 @@ import scanpy as sc
 from anndata import AnnData
 from concept import scConcept
 
-validation = True
+validation = False
 
 BLAMPEYQ = Path("/gpfs/workdir/blampeyq")
 PRIME = Path("/gpfs/workdir/shared/prime")
@@ -20,9 +20,10 @@ UMAP_PATH = BLAMPEYQ / "res_novae" / "umap"
 RES_PATH = BLAMPEYQ / "res_novae" / f"X_scConcept{suffix}"
 
 GENE_INFO = BLAMPEYQ / "gene_info.csv"
-DATASET_PATH = PRIME / "data" / "spatial" / "spatial_transcriptomics"
-if validation:
-    DATASET_PATH = DATASET_PATH / "novae_validation"
+# DATASET_PATH = PRIME / "data" / "spatial" / "spatial_transcriptomics"
+# if validation:
+#     DATASET_PATH = DATASET_PATH / "novae_validation"
+DATASET_PATH = Path("/gpfs/workdir/blampeyq/novae/data")
 
 concept = scConcept(cache_dir=BLAMPEYQ / ".cache")
 concept.load_config_and_model(model_name="Corpus-30M")
@@ -66,7 +67,7 @@ def save_concept_embeddings(adata: AnnData, name: str) -> None:
 
 
 def main() -> None:
-    paths = list(DATASET_PATH.glob("*.h5ad"))
+    paths = list(DATASET_PATH.rglob("*.h5ad"))
 
     for i, path in enumerate(paths):
         if (RES_PATH / f"{path.stem}.h5ad").exists():
