@@ -153,7 +153,7 @@ def _Anthropic_api_request(
     max_tokens: int,
     output_schema: dict,
     seed: int | None = None,
-) -> json:
+) -> dict:
     import anthropic
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -203,7 +203,7 @@ def annotate_domains(
     api_key: str | None = None,
     seed: int | None = None,
     max_tokens: int | None = None,
-) -> json:
+) -> dict:
     """
     Ask the model for one annotation per domain and return parsed JSON.
     Args:
