@@ -30,6 +30,9 @@ concept.load_config_and_model(model_name="Corpus-30M")
 
 
 def run_adata(adata: AnnData, name: str) -> None:
+    if "spatial" not in adata.obsm:
+        adata.obsm["spatial"] = adata.obs[["center_x", "center_y"]].values
+
     adata = add_gene_id(adata)
     adata.obsm["X_scConcept"] = concept.extract_embeddings(adata=adata, gene_id_column="gene_id")["cls_cell_emb"]
 
