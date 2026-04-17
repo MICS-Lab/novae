@@ -31,10 +31,10 @@ Choose one of the following installation mode, depending on your needs.
 === "uv (editable mode)"
 
     !!! info "Contributing"
-        If you want to contribute to Novae, using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) is recommended. You'll also need create a fork, see the [CONTRIBUTING guidelines](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
+        If you want to contribute to Novae, using [`uv`](https://docs.astral.sh/uv/getting-started/installation/) is recommended. You'll also need create a fork, see the [CONTRIBUTING guidelines](https://github.com/prism-oncology/novae/blob/main/CONTRIBUTING.md).
 
     ``` bash
-    git clone https://github.com/MICS-Lab/novae.git # or your own fork of Novae
+    git clone https://github.com/prism-oncology/novae.git # or your own fork of Novae
     cd novae
 
     uv sync --all-extras --dev # all extras and the dev dependencies
@@ -52,7 +52,7 @@ Choose one of the following installation mode, depending on your needs.
 === "pip (editable mode)"
 
     ```bash
-    git clone https://github.com/MICS-Lab/novae.git
+    git clone https://github.com/prism-oncology/novae.git
     cd novae
 
     pip install -e . # no extra
@@ -63,5 +63,5 @@ Choose one of the following installation mode, depending on your needs.
 
 - We recommend to start with our [first tutorial](../tutorials/main_usage).
 - You can also read the [API](../api/Novae).
-- If you have questions, please check our [FAQ](../faq) or open an issue on the [GitHub repository](https://github.com/MICS-Lab/novae).
-- If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
+- If you have questions, please check our [FAQ](../faq) or open an issue on the [GitHub repository](https://github.com/prism-oncology/novae).
+- If you want to contribute, check our [contributing guide](https://github.com/prism-oncology/novae/blob/main/CONTRIBUTING.md).

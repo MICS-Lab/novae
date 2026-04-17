@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/banner.png" alt="novae_banner" width="100%"/>
+  <img src="https://raw.githubusercontent.com/prism-oncology/novae/main/docs/assets/banner.png" alt="novae_banner" width="100%"/>
 </p>
 
 <div align="center">
@@ -7,9 +7,9 @@
 [![PyPI](https://img.shields.io/pypi/v/novae.svg)](https://pypi.org/project/novae)
 [![Downloads](https://static.pepy.tech/badge/novae)](https://pepy.tech/project/novae)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://mics-lab.github.io/novae)
-![Build](https://github.com/MICS-Lab/novae/workflows/ci/badge.svg)
-[![License](https://img.shields.io/pypi/l/novae.svg)](https://github.com/MICS-Lab/novae/blob/main/LICENSE)
-[![codecov](https://codecov.io/gh/MICS-Lab/novae/graph/badge.svg?token=FFI44M52O9)](https://codecov.io/gh/MICS-Lab/novae)
+![Build](https://github.com/prism-oncology/novae/workflows/ci/badge.svg)
+[![License](https://img.shields.io/pypi/l/novae.svg)](https://github.com/prism-oncology/novae/blob/main/LICENSE)
+[![codecov](https://codecov.io/gh/prism-oncology/novae/graph/badge.svg?token=FFI44M52O9)](https://codecov.io/gh/prism-oncology/novae)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
@@ -31,7 +31,7 @@ Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started.
 ## Overview
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MICS-Lab/novae/main/docs/assets/Figure1.png" alt="novae_overview" width="100%"/>
+  <img src="https://raw.githubusercontent.com/prism-oncology/novae/main/docs/assets/Figure1.png" alt="novae_overview" width="100%"/>
 </p>
 
 > **(a)** Novae was trained on a large dataset, and is shared on [Hugging Face Hub](https://huggingface.co/collections/MICS-Lab/novae-669cdf1754729d168a69f6bd). **(b)** Illustration of the main tasks and properties of Novae. **(c)** Illustration of the method behind Novae (self-supervision on graphs, adapted from [SwAV](https://arxiv.org/abs/2006.09882)).

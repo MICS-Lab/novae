@@ -124,8 +124,8 @@ novae.plot.loss_curve("logs")
 
 ### How to contribute?
 
-If you want to contribute, check our [contributing guide](https://github.com/MICS-Lab/novae/blob/main/CONTRIBUTING.md).
+If you want to contribute, check our [contributing guide](https://github.com/prism-oncology/novae/blob/main/CONTRIBUTING.md).
 
 ### How to resolve any other issue?
 
-If you have any bugs/questions/suggestions, don't hesitate to [open a new issue](https://github.com/MICS-Lab/novae/issues). We'll be happy to help!
+If you have any bugs/questions/suggestions, don't hesitate to [open a new issue](https://github.com/prism-oncology/novae/issues). We'll be happy to help!
