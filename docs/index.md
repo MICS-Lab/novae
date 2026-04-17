@@ -9,7 +9,7 @@
 Novae is a deep learning model for spatial domain assignments of spatial transcriptomics data (at both single-cell or spot resolution). It works across multiple gene panels, tissues, and technologies. Novae offers several additional features, including: (i) native batch-effect correction, (ii) analysis of spatially variable genes and pathways, and (iii) architecture analysis of tissue slides.
 
 !!! info
-    Novae was developed by the authors of [`sopa`](https://github.com/gustaveroussy/sopa) and is part of the [`scverse`](https://scverse.org/) ecosystem.
+    Novae was developed by the authors of [`sopa`](https://github.com/prism-oncology/sopa) and is part of the [`scverse`](https://scverse.org/) ecosystem.
 
 ## Overview
 
