@@ -152,8 +152,8 @@ def main(args):
             print(f"In {dataset_dir}")
             try:
                 convert_to_h5ad(dataset_dir)
-            except:
-                print(f"Failed to convert {dataset_dir}")
+            except Exception as e:
+                print(f"Failed to convert {dataset_dir}. Error: {e}")
 
 
 if __name__ == "__main__":
