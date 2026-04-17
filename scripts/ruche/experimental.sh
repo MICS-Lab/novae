@@ -20,4 +20,4 @@ source /gpfs/workdir/blampeyq/novae/.venv/bin/activate
 
 cd /gpfs/workdir/blampeyq/novae/scripts/experimental
 
-python -u projection_embeddings.py
+python -u get_graphs.py
