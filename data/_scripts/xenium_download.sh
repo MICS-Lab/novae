@@ -6,10 +6,10 @@ mkdir -p $OUTPUT_DIR
 
 # Last dataset update: 2026-04-14
 ZIP_REMOTE_PATHS=(\
-    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Breast_Cancer_FFPE/Xenium_Prime_Breast_Cancer_FFPE_xe_outs.zip"\
-    "https://cf.10xgenomics.com/samples/xenium/4.0.0/Xenium_V1_Human_Kidney_FFPE_Protein_updated/Xenium_V1_Human_Kidney_FFPE_Protein_updated_xe_outs.zip"\
-    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Ovarian_Cancer_FFPE_XRrun/Xenium_Prime_Ovarian_Cancer_FFPE_XRrun_xe_outs.zip"\
-    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Cervical_Cancer_FFPE/Xenium_Prime_Cervical_Cancer_FFPE_xe_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Breast_Cancer_FFPE/Xenium_Prime_Breast_Cancer_FFPE_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/4.0.0/Xenium_V1_Human_Kidney_FFPE_Protein_updated/Xenium_V1_Human_Kidney_FFPE_Protein_updated_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Ovarian_Cancer_FFPE_XRrun/Xenium_Prime_Ovarian_Cancer_FFPE_XRrun_outs.zip"\
+    "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_Prime_Cervical_Cancer_FFPE/Xenium_Prime_Cervical_Cancer_FFPE_outs.zip"\
     "https://cf.10xgenomics.com/samples/xenium/1.5.0/Xenium_V1_hLung_cancer_section/Xenium_V1_hLung_cancer_section_outs.zip"
     # "https://cf.10xgenomics.com/samples/xenium/3.0.0/Xenium_V1_Human_Lung_Cancer_FFPE/Xenium_V1_Human_Lung_Cancer_FFPE_outs.zip"\
     # "https://s3-us-west-2.amazonaws.com/10x.files/samples/xenium/3.0.0/Xenium_Prime_Human_Lung_Cancer_FFPE/Xenium_Prime_Human_Lung_Cancer_FFPE_outs.zip"\
@@ -94,7 +94,7 @@ do
         fi
         echo "Unzipping in $OUTPUT_DATASET_DIR"
         mkdir -p $OUTPUT_DATASET_DIR
-        unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet -d $OUTPUT_DATASET_DIR
+        unzip -j $OUTPUT_DATASET_ZIP cell_feature_matrix.h5 cells.parquet cells.zarr.zip -d $OUTPUT_DATASET_DIR
         echo "Successfully unzipped files"
     fi
 done
