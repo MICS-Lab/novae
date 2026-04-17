@@ -73,17 +73,19 @@ def main() -> None:
     paths = list(DATASET_PATH.rglob("*.h5ad"))
 
     for i, path in enumerate(paths):
-        if (RES_PATH / f"{path.stem}.h5ad").exists():
-            print(f"Skipping {path.name} ({i + 1}/{len(paths)}) - already processed")
+        name = path.stem if path.stem != "adata" else path.parent.stem
+
+        if (RES_PATH / f"{name}.h5ad").exists():
+            print(f"Skipping {path} ({i + 1}/{len(paths)}) - already processed")
             continue
 
         adata = sc.read_h5ad(path)
 
-        print(f"Processing {path.name} ({i + 1}/{len(paths)})")
+        print(f"Processing {path} ({i + 1}/{len(paths)})")
         try:
-            run_adata(adata, path.stem)
+            run_adata(adata, name)
         except Exception as e:
-            print(f"Error processing {path.name}: {e}")
+            print(f"Error processing {path}: {e}")
 
 
 if __name__ == "__main__":
