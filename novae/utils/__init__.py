@@ -20,7 +20,6 @@ from ._validate import (
     check_slide_name_key,
     prepare_adatas,
     check_model_name,
-    check_embedding_size,
 )
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
