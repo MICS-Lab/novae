@@ -4,6 +4,7 @@ data:
 
 model_kwargs:
   embedding_name: "X_scConcept"
+  embedding_size: 512
   background_noise_lambda: 0.1
   sensitivity_noise_std: 0.01
   n_hops_view: 2
