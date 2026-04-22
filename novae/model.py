@@ -6,7 +6,6 @@ from typing import Literal
 
 import lightning as L
 import numpy as np
-import pandas as pd
 import scanpy as sc
 import torch
 from anndata import AnnData
@@ -581,85 +580,6 @@ class Novae(L.LightningModule, PyTorchModelHubMixin):
             adata.obs[key_added] = adata.obs[key_added].astype("category")
 
         return key_added
-
-    def annotate_domains(
-        self,
-        adata: AnnData | list[AnnData] | None = None,
-        pathways: dict[str, list[str]] | str | None = None,
-        obs_key: str | None = None,
-        provider: str = "openai",
-        model: str = "gpt-4.1",
-        api_key: str | None = None,
-        tissue: str = "unknown",
-        species: str | None = None,
-        n_genes: int = 15,
-        spatial_context: str | None = None,
-        max_tokens: int = 1000,
-        key_added: str | None = None,
-        seed: int | None = None,
-    ) -> pd.DataFrame:
-        """Annotate spatial domains with an LLM using domain marker genes.
-
-        !!! info
-            One annotation is generated per domain and stored in `adata.obs[key_added]`
-            (or `adata.obs["novae_domains_annotation"]` when `key_added` is not provided).
-
-        !!! note
-            `obs_key` must reference an existing domain column in `adata.obs`,
-            typically created with [novae.Novae.assign_domains].
-
-        Args:
-            adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-            pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
-            obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
-            provider: LLM provider to use. Supported providers: 'openai', 'anthropic'.
-            model: OpenAI model name used for annotation.
-            api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
-            tissue: Tissue name (for example, `"liver"`).
-            species: Species name (for example, `"human"` or `"mouse"`).
-            n_genes: Number of marker genes per domain passed to the LLM prompt.
-            spatial_context: Optional biological/spatial context to include in the prompt.
-            key_added: Output key used to store annotations in `adata.obs`.
-            seed: Optional random seed passed to the annotation utility.
-            max_tokens: Maximum number of tokens the model is allowed to generate for the annotation response.,
-
-        Returns:
-            The name of the key added to `adata.obs`.
-        """
-        adatas = self._to_anndata_list(adata)
-
-        obs_key = utils.check_available_domains_key([adata], obs_key)
-
-        key_added = f"{Keys.DOMAINS_PREFIX}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
-
-        for adata in adatas:
-            gene_marker_dict = utils.markers_as_dict(adata, n_genes)
-
-            pathway_scores = (
-                None
-                if pathways is None
-                else plot.pathway_scores(adata, obs_key=obs_key, pathways=pathways, show=False, return_df=True)
-            )
-
-            result = utils.annotate_domains(
-                marker_dict=gene_marker_dict,
-                pathway_scores=pathway_scores,
-                provider=provider,
-                api_key=api_key,
-                model=model,
-                species=species,
-                tissue=tissue,
-                spatial_context=spatial_context,
-                max_tokens=max_tokens,
-                seed=seed,
-            )
-
-            domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in result[Keys.DOMAIN_ANNOTATION]}
-
-            adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
-            log.info(f"Added: {key_added}")
-
-        return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
 
     @torch.no_grad()
     def _leiden_prototypes(self, resolution: float = 1, return_codes: bool = True) -> AnnData | np.ndarray:

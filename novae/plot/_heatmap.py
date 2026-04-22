@@ -148,6 +148,7 @@ def pathway_scores(
     if show:
         plt.show()
 
+
 def _get_pathway_score(adata: AnnData, gene_names: list[str], min_pathway_size: int) -> bool:
     lower_var_names = adata.var_names.str.lower()
 
