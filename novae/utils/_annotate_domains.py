@@ -197,55 +197,6 @@ def _Anthropic_api_request(
         raise RuntimeError(f"Anthropic API request failed: {e}") from e
 
 
-def _annotate_domains(
-    marker_dict: dict[str, list[str]],
-    pathway_scores: pd.DataFrame | None = None,
-    tissue: str = "unknown",
-    species: str | None = None,
-    spatial_context: str | None = None,
-    provider: str | None = None,
-    model: str | None = None,
-    api_key: str | None = None,
-    seed: int | None = None,
-    max_tokens: int | None = None,
-) -> dict:
-    api_request_func = _get_api_request_func(provider=provider, model=model)
-
-    domain_ids = list(marker_dict.keys())
-
-    input_markers = "Gene markers:\n" + "\n".join(
-        f"Domain {domain_id}: {', '.join(marker_dict[domain_id])}" for domain_id in domain_ids
-    )
-
-    input_pathway = _format_pathway_scores(pathway_scores, domain_ids)
-
-    is_openai = provider.lower().startswith("openai")
-    api_key = _validate_api_key(
-        api_key,
-        env_var=Keys.OPENAI_API_KEY if is_openai else Keys.ANTHROPIC_API_KEY,
-        provider=provider,
-    )
-
-    messages = [
-        {
-            "role": "developer",
-            "content": _create_prompt(species=species, tissue=tissue, spatial_context=spatial_context),
-        },
-        {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_pathway}")},
-    ]
-
-    output_schema = _output_schema(domain_ids)
-
-    return api_request_func(
-        model=model,
-        api_key=api_key,
-        messages=messages,
-        max_tokens=max_tokens,
-        output_schema=output_schema,
-        seed=seed,
-    )
-
-
 def annotate_domains(
     adata: AnnData | None = None,
     pathways: dict[str, list[str]] | str | None = None,
@@ -294,7 +245,7 @@ def annotate_domains(
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
 
-    key_added = f"{obs_key}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
+    key_added = f"{obs_key}_{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
 
     gene_marker_dict = utils.markers_as_dict(adata, n_genes)
 
@@ -352,3 +303,31 @@ def annotate_domains(
     log.info(f"Added: {key_added}")
 
     return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
+
+
+def add_domain_annotation(
+    adata: AnnData | None = None,
+    annotation: dict | None = None,
+    obs_key: str | None = None,
+    key_added: str | None = None,
+):
+    """Add domain annotation to andata.
+
+    Args:
+        adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
+        annotation: Annotation payload containing a `annotation` list of dictionaries with `domain_id` and `domain_name` entries.
+        obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
+        key_added: Output key used to store annotations in `adata.obs`.
+
+    Returns:
+        None. The mapped annotations are written to `adata.obs[key_added]`.
+    """
+
+    obs_key = utils.check_available_domains_key([adata], obs_key)
+
+    key_added = f"{obs_key}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
+
+    domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in annotation[Keys.DOMAIN_ANNOTATION]}
+
+    adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
+    log.info(f"Added: {key_added}")

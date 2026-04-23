@@ -30,13 +30,13 @@ from .correct import batch_effect_correction
 from .mode import Mode
 
 if TYPE_CHECKING:
-    from ._annotate_domains import annotate_domains
+    from ._annotate_domains import annotate_domains, add_domain_annotation
 
 
 def __getattr__(name: str) -> Any:
-    if name == "annotate_domains":
+    if name in {"annotate_domains", "add_domain_annotation"}:
         try:
-            from ._annotate_domains import annotate_domains
+            from ._annotate_domains import annotate_domains, add_domain_annotation
         except ModuleNotFoundError as e:
             if e.name in {"openai", "anthropic"}:
                 raise ModuleNotFoundError(
@@ -44,7 +44,7 @@ def __getattr__(name: str) -> Any:
                     "Install with `pip install openai` or `pip install anthropic`."
                 ) from e
             raise
-        return annotate_domains
+        return annotate_domains if name == "annotate_domains" else add_domain_annotation
 
 
 def load_dataset(*args, **kwargs):
