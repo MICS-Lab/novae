@@ -15,6 +15,7 @@ from ._utils import (
     unique_obs,
     valid_indices,
     wandb_log_dir,
+    store_inference_mode,
 )
 from ._validate import (
     check_available_domains_key,

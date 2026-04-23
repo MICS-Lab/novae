@@ -36,7 +36,7 @@ def compute_histo_embeddings(
 
     Args:
         sdata: A `SpatialData` object containing the data.
-        model: The model to use for computing embeddings. See the [sopa documentation](https://gustaveroussy.github.io/sopa/api/patches/#sopa.patches.compute_embeddings) for more details.
+        model: The model to use for computing embeddings. See the [sopa documentation](https://prism-oncology.github.io/sopa/api/patches/#sopa.patches.compute_embeddings) for more details.
         table_key: Name of the `AnnData` object containing the cells.
         patch_overlap_ratio: Ratio of overlap between patches.
         image_key: Name of the histology image. If None, the function will try to find the image key automatically.
