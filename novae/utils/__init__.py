@@ -28,23 +28,17 @@ from ._validate import (
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
 from .mode import Mode
+from ._annotate_domains import add_domain_annotation
 
 if TYPE_CHECKING:
-    from ._annotate_domains import annotate_domains, add_domain_annotation
+    from ._annotate_domains import annotate_domains
 
 
 def __getattr__(name: str) -> Any:
-    if name in {"annotate_domains", "add_domain_annotation"}:
-        try:
-            from ._annotate_domains import annotate_domains, add_domain_annotation
-        except ModuleNotFoundError as e:
-            if e.name in {"openai", "anthropic"}:
-                raise ModuleNotFoundError(
-                    "Missing optional dependency required for `model.annotate_domains`: install `openai` for OpenAI models or `anthropic` for Claude models. "
-                    "Install with `pip install openai` or `pip install anthropic`."
-                ) from e
-            raise
-        return annotate_domains if name == "annotate_domains" else add_domain_annotation
+    if name == "annotate_domains":
+        from ._annotate_domains import annotate_domains
+
+        return annotate_domains
 
 
 def load_dataset(*args, **kwargs):

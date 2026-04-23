@@ -125,7 +125,13 @@ def _OpenAI_api_request(
     max_tokens: int,
     seed: int | None = None,
 ) -> json:
-    from openai import OpenAI
+    try:
+        from openai import OpenAI
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "Missing optional dependency `openai` required for `novae.utils.annotate_domains`. "
+            "Please install it with `pip install openai`."
+        ) from e
 
     client = OpenAI(api_key=api_key)
 
@@ -159,7 +165,13 @@ def _Anthropic_api_request(
     output_schema: dict,
     seed: int | None = None,
 ) -> dict:
-    import anthropic
+    try:
+        import anthropic
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "Missing optional dependency `anthropic` required for `novae.utils.annotate_domains`. "
+            "Please install with `pip install anthropic`."
+        ) from e
 
     client = anthropic.Anthropic(api_key=api_key)
 
