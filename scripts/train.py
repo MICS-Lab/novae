@@ -37,10 +37,12 @@ def main(args: argparse.Namespace) -> None:
         model = novae.Novae._load_wandb_artifact(config.wandb_artefact)
 
         if not config.fine_tune and not config.zero_shot:  # continue training
-            model.init_slide_queue(adatas, model.hparams.min_prototypes_ratio)
             Nums.WARMUP_EPOCHS = 0
     else:
         model = novae.Novae(**config.model_kwargs)
+
+    if not config.fine_tune and not config.zero_shot:  # training / continue training
+        model.init_slide_queue(adatas, model.hparams.min_prototypes_ratio)
 
     ### Training and post-training
     if config.fine_tune:
