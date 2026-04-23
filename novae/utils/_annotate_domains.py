@@ -51,6 +51,19 @@ def _format_pathway_scores(
     return "Pathway scores:\n" + "\n".join(lines)
 
 
+def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: list[int] | list[str]) -> str:
+    obs_as_str = adata.obs[obs_key].astype(str)
+    proportions = obs_as_str.value_counts(normalize=True)
+
+    lines = []
+    for domain_id in domain_ids:
+        domain_id_str = str(domain_id)
+        pct = proportions.get(domain_id_str, 0.0) * 100
+        lines.append(f"Domain {domain_id}: {pct:.2f}%")
+
+    return "Cell percentages by domain:\n" + "\n".join(lines)
+
+
 def _output_schema(
     domain_ids: list,
     additionalProperties: bool = False,
@@ -266,6 +279,7 @@ def annotate_domains(
     input_markers = "Gene markers:\n" + "\n".join(
         f"Domain {domain_id}: {', '.join(gene_marker_dict[domain_id])}" for domain_id in domain_ids
     )
+    input_percentages = _format_domain_cell_percentages(adata, obs_key, domain_ids)
 
     pathway_scores = (
         None
@@ -282,7 +296,10 @@ def annotate_domains(
             "role": "developer",
             "content": prompt,
         },
-        {"role": "user", "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_pathway}")},
+        {
+            "role": "user",
+            "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_percentages}\n\n{input_pathway}"),
+        },
     ]
 
     output_schema = _output_schema(domain_ids)
