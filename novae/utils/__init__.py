@@ -17,6 +17,7 @@ from ._utils import (
     valid_indices,
     wandb_log_dir,
     markers_as_dict,
+    store_inference_mode,
 )
 from ._validate import (
     check_available_domains_key,

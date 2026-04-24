@@ -14,4 +14,4 @@ This library has been developed by Quentin Blampey, PhD researcher in biomathema
 
 ## Logo usage
 
-If you want to use the Novae logo for a research paper or presentation, you can use any logo from our [assets page](https://github.com/MICS-Lab/novae/tree/main/docs/assets).
+If you want to use the Novae logo for a research paper or presentation, you can use any logo from our [assets page](https://github.com/prism-oncology/novae/tree/main/docs/assets).

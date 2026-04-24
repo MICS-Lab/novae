@@ -37,6 +37,8 @@ That case is pretty easy, since most functions and methods of Novae also support
     model.compute_representations(adatas, zero_shot=True)
     ```
 
+Novae will create one unique ID per `AnnData` object. These IDs are used in certain functions such as [`novae.plot.domains`](../../api/plot/#novae.plot.domains). If you already have a slide name and want to preserve it for these plots, you can also do `novae.spatial_neighbors(adatas, slide_key="my-slide-id-column")` instead. It will not change anything in terms of computation, but it will display your slide names correctly during these plots.
+
 ## 4. Multiple slides, multiple slides per AnnData object
 
 If you have multiple slides and multiple panels, instead of the above option, you could have one `AnnData` object per panel, and multiple slides inside each `AnnData` object. In that case, make sure you keep a column in `adata.obs` that denotes which cell corresponds to which slide.

@@ -233,3 +233,11 @@ def markers_as_dict(adata, n_genes=15):
         marker_dict[str(domain_id)] = [str(g) for g in genes]
 
     return marker_dict
+
+def store_inference_mode(adatas: AnnData | list[AnnData], zero_shot: bool):
+    if isinstance(adatas, AnnData):
+        adatas = [adatas]
+
+    for adata in adatas:
+        adata.uns[Keys.NOVAE_UNS] = adata.uns.get(Keys.NOVAE_UNS, {})
+        adata.uns[Keys.NOVAE_UNS]["zero_shot"] = zero_shot

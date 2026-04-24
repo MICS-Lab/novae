@@ -1,6 +1,6 @@
 site_name: Novae
-repo_name: MICS-Lab/novae
-repo_url: https://github.com/MICS-Lab/novae
+repo_name: prism-oncology/novae
+repo_url: https://github.com/prism-oncology/novae
 copyright: Copyright &copy; 2024 Quentin Blampey
 theme:
   name: material

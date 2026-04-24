@@ -25,7 +25,7 @@ When contributing, installing `novae` in editable mode is recommended. We also r
 For that, you can use [`uv`](https://docs.astral.sh/uv/getting-started/installation/) as below:
 
 ```sh
-git clone https://github.com/MICS-Lab/novae.git
+git clone https://github.com/prism-oncology/novae.git
 cd novae
 
 uv sync --all-extras --dev   # all extras and dev dependencies
