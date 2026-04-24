@@ -298,7 +298,9 @@ def annotate_domains(
         },
         {
             "role": "user",
-            "content": (f"Annotate the following domains.\n\n{input_markers}\n\n{input_percentages}\n\n{input_pathway}"),
+            "content": (
+                f"Annotate the following domains.\n\n{input_markers}\n\n{input_percentages}\n\n{input_pathway}"
+            ),
         },
     ]
 

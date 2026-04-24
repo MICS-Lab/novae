@@ -234,6 +234,7 @@ def markers_as_dict(adata, n_genes=15):
 
     return marker_dict
 
+
 def store_inference_mode(adatas: AnnData | list[AnnData], zero_shot: bool):
     if isinstance(adatas, AnnData):
         adatas = [adatas]
