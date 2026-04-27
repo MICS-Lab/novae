@@ -282,11 +282,15 @@ def check_slide_name_key(adatas: AnnData | list[AnnData], slide_name_key: str | 
     return slide_name_key
 
 
+OLD_ORGANIZATION = "MICS-Lab"
+ORGANIZATION = "prism-oncology"
+
+
 def check_model_name(model_name: str | Path) -> None:
-    if model_name == "MICS-Lab/novae-test":
+    if model_name in [f"{OLD_ORGANIZATION}/novae-test", f"{ORGANIZATION}/novae-test"]:
         return
 
-    if not str(model_name).startswith("MICS-Lab"):  # local path
+    if not str(model_name).startswith(OLD_ORGANIZATION) and not str(model_name).startswith(ORGANIZATION):  # local path
         if not Path(model_name).exists():
             raise ValueError(
                 f"Model name or path '{model_name}' not found locally. Please provide a valid local path, or use a model from Hugging Face Hub (e.g., starting with 'MICS-Lab')."
