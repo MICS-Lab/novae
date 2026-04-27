@@ -34,6 +34,13 @@ class Keys:
     N_BATCHES: str = "n_batches"
     NOVAE_VERSION: str = "novae_version"
 
+    # LLM domain annotation
+    OPENAI_API_KEY: str = "OPENAI_API_KEY"
+    ANTHROPIC_API_KEY: str = "ANTHROPIC_API_KEY"
+    DOMAIN_ANNOTATION: str = "annotation"
+    DOMAIN_ID: str = "novae_domains"
+    CONFIDENCE_SCORE: str = "annotation_conf_score"
+
 
 class Nums:
     # training constants

@@ -221,6 +221,20 @@ def _get_one_reference(adatas: list[AnnData], reference: int | str) -> AnnData:
     raise ValueError(f"Did not found slide id `{reference}` inside adata.obs['{Keys.SLIDE_ID}'].")
 
 
+def markers_as_dict(adata, n_genes=15):
+    """
+    Convert rank_genes_groups into dict
+    """
+    names = adata.uns["rank_genes_groups"]["names"]
+
+    marker_dict = {}
+    for domain_id in names.dtype.names:
+        genes = [g for g in names[domain_id][:n_genes] if g is not None and str(g) != "nan"]
+        marker_dict[str(domain_id)] = [str(g) for g in genes]
+
+    return marker_dict
+
+
 def store_inference_mode(adatas: AnnData | list[AnnData], zero_shot: bool):
     if isinstance(adatas, AnnData):
         adatas = [adatas]

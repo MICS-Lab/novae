@@ -139,14 +139,14 @@ def pathway_scores(
 
     df = df.fillna(0)
 
+    if return_df:
+        return df
+
     g = sns.clustermap(df, figsize=figsize, **kwargs)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
 
     if show:
         plt.show()
-
-    if return_df:
-        return df
 
 
 def _get_pathway_score(adata: AnnData, gene_names: list[str], min_pathway_size: int) -> bool:
