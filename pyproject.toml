@@ -50,9 +50,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://mics-lab.github.io/novae/"
+Homepage = "https://prism-oncology.github.io/novae/"
 Repository = "https://github.com/prism-oncology/novae"
-Documentation = "https://mics-lab.github.io/novae/"
+Documentation = "https://prism-oncology.github.io/novae/"
 
 [tool.hatch.build.targets.sdist]
 include = ["novae"]

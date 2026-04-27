@@ -6,7 +6,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/novae.svg)](https://pypi.org/project/novae)
 [![Downloads](https://static.pepy.tech/badge/novae)](https://pepy.tech/project/novae)
-[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://mics-lab.github.io/novae)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://prism-oncology.github.io/novae)
 ![Build](https://github.com/prism-oncology/novae/workflows/ci/badge.svg)
 [![License](https://img.shields.io/pypi/l/novae.svg)](https://github.com/prism-oncology/novae/blob/main/LICENSE)
 [![codecov](https://codecov.io/gh/prism-oncology/novae/graph/badge.svg?token=FFI44M52O9)](https://codecov.io/gh/prism-oncology/novae)
@@ -26,7 +26,7 @@ Novae is a deep learning model for spatial domain assignments of spatial transcr
 
 ## Documentation
 
-Check [Novae's documentation](https://mics-lab.github.io/novae/) to get started. It contains installation explanations, API details, and tutorials.
+Check [Novae's documentation](https://prism-oncology.github.io/novae/) to get started. It contains installation explanations, API details, and tutorials.
 
 ## Overview
 
@@ -45,11 +45,11 @@ pip install novae
 ```
 
 > [!NOTE]
-> See this [installation section](https://mics-lab.github.io/novae/getting_started/) for more details about extras and other installations modes.
+> See this [installation section](https://prism-oncology.github.io/novae/getting_started/) for more details about extras and other installations modes.
 
 ## Usage
 
-Here is a minimal usage example. For more details, refer to the [documentation](https://mics-lab.github.io/novae/).
+Here is a minimal usage example. For more details, refer to the [documentation](https://prism-oncology.github.io/novae/).
 
 ```python
 import novae

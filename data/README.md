@@ -6,7 +6,7 @@ We detail below how to download the datasets used in our article.
 
 We store our dataset on [Hugging Face Hub](https://huggingface.co/datasets/MICS-Lab/novae).
 
-To automatically download these slides, you can use the [`novae.load_dataset`](https://mics-lab.github.io/novae/api/data/#novae.load_dataset) function.
+To automatically download these slides, you can use the [`novae.load_dataset`](https://prism-oncology.github.io/novae/api/data/#novae.load_dataset) function.
 
 ## Option 2: Download scripts
 
