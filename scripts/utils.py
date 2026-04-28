@@ -146,7 +146,7 @@ def post_training(model: novae.Novae, adatas: list[AnnData], config: Config):  #
                 del adata.X
                 if "counts" in adata.layers:
                     del adata.layers["counts"]
-            _save_h5ad(adata)
+            # _save_h5ad(adata)
 
 
 def _log_umap(model: novae.Novae, adatas: list[AnnData], config: Config, n_obs_th: int = 500_000):
