@@ -11,7 +11,7 @@ module purge
 
 module load anaconda3/2023.09-0/none-none
 
-source activate concept
+source activate sc_concept
 
 cd /gpfs/workdir/blampeyq/novae/scripts/experimental
 
