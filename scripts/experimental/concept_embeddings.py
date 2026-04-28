@@ -27,7 +27,7 @@ TRAINING_FILES = (
 VALIDATION_FILES = list((PRIME_DATASET_PATH / "novae_validation").glob("*.h5ad"))
 
 concept = scConcept(cache_dir=BLAMPEYQ / ".cache")
-concept.load_config_and_model(model_name="corpus230M[human]-model170M")
+concept.load_config_and_model(model_name="corpus40M-model30M")
 
 
 def run_adata(adata: AnnData, name: str, res_path: Path) -> None:
