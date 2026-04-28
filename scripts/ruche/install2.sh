@@ -11,6 +11,7 @@
 module purge
 
 module load anaconda3/2023.09-0/none-none
+module load cuda/12.2.2/none-none
 
 source activate sc_concept
 
