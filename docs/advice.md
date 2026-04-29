@@ -6,7 +6,7 @@ Here, we list some advice to help you get the best out of Novae.
 When you have many slides, it's recommended to train or fine-tune Novae only on the good quality slides and run inference (i.e., spatial domain assignment) on all slides. This allows noise removal in the model training while still applying Novae to the low quality slides.
 
 ### Resolution or level
-When running [`assign_domains`](../api/Novae/#novae.Novae.assign_domains) in **zero-shot**, it may be better to use the `resolution` argument. When fine-tuning or re-training a Novae model, using `level` is recommended.
+When running [`assign_domains`](../api/Novae/#novae.Novae.assign_domains) in **zero-shot**, it's generally better to use the `resolution` argument. When fine-tuning or re-training a Novae model, using `level` is recommended.
 
 !!! info
     An advantage of using `level` is that the domains will be nested through the different levels — we don't have such a property using the `resolution` argument.
@@ -54,12 +54,19 @@ In that case, you can use other backends (two options shown below).
 ### Hyperparameters
 We recommend using the default Novae hyperparameters, which should work great in most cases. Yet, if you confortable with Novae you might consider updating them. In that case, here are some of the most important hyperparameters in [`fit`](../api/Novae/#novae.Novae.fit) or [`fine_tune`](../api/Novae/#novae.Novae.fine_tune):
 
-- `lr`, the learning rate: you can decrease it, but we recommend values in `[0.0001, 0.001]`.
+- `lr`, the learning rate: you can decrease it, but we recommend values in `[0.0001, 0.001]`. If you fine-tune Novae on a large dataset (> 10 slides), try low learning rates, e.g. `0.0001`.
 - `max_epochs`: you can increase it to push the model learning longer. If the model stops because of early stopping, you can also decrease `min_delta` or increase the `patience`.
 
 If you train a new model, you can also change `n_hops_local` and `n_hops_view` (for instance, use 1 for Visium data), a different temperature (around `0.1`), or even make the model bigger - see [here](../api/Novae/#novae.Novae.__init__) the initialization parameters.
 
 If you want to search for the best hyperparameters, we recommend using a monitoring library, see [this FAQ section](../faq/#how-to-monitor-the-model-training).
+
+### Evaluating Novae
+Evaluating the quality of spatial domains is not easy, as there is no ground truth. Still, here is some advice that may help:
+
+1. **Entropy score monitoring**: during fine-tuning, the progress bar shows an "entropy" score. It is a mean (normalized) entropy of the corrected probability of assignments to the prototypes. Although it may appear complex to interpret, it is a strong indicator of fine-tuning quality, with **lower values being better**. Aim for a score below **0.75**. If you can get it under **0.7** or near **0.6**, you’re in a great spot.
+2. The **FIDE and JSD scores** defined in the [Novae metrics](../../api/metrics) and in the paper could help. Just keep in mind that these aren't "pass/fail" numbers. Because they depend heavily on your specific tissue type and dataset, they are best used to compare different runs rather than as absolute indicators of success.
+3. Nothing will be better than a **manual validation by an expert/biologist**. For this, take a representative slide, and extract the DEGs per domain, as well as the composition of each domain in terms of cell-type (if you have cell-type annotation). Combined with biological knowledge, this will help you determine whether the domains are biologically meaningful.
 
 ### Saving a model
 If you are satisfied with an existing Novae model that you trained or fine-tuned, you can save it for later usage; see [this FAQ section](../faq/#how-do-i-save-my-own-model).
