@@ -17,22 +17,24 @@ def _create_prompt(tissue: str = "unknown", species: str | None = None, spatial_
     Prompt for domain annotation.
     """
 
+    species_text = species if species else ""
+    spatial_context_text = spatial_context if spatial_context else ""
+
     return (
-        "You are an expert in spatial transcriptomics analysis specializing in {species} tissue domain annotation. "
-        "Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes and potentially enriched pathway scores. "
+        f"You are an expert in spatial transcriptomics analysis specializing in {species_text} tissue domain annotation. "
+        f"Identify the most likely spatial domain name or tissue region (niche) for each domain of a {tissue} tissue based on marker genes and potentially enriched pathway scores. "
         "Consider spatial context, functional zones, and tissue organization when assigning domain names. "
-        "{spatial_context} "
+        f"{spatial_context_text} "
         "Be concise but specific. Some domain may represent mixed or transitional regions. "
         "CRITICAL OUTPUT RULES: "
         "- The 'domain_name' must contain ONLY a short domain label. "
-        "- Do NOT include parentheses. "
+        "- Do NOT label domain using cell-type names, but using niche names. For instance, don’t label a 'B and T cells' domain, but use 'Tertiary Lymphoid Structure' instead. "
         "- Do NOT include explanations, examples, or additional details. "
         "- Do NOT use phrases like 'including', 'such as', or 'with'. "
         "- Do NOT skip any domain. "
         "- Do NOT add explanations."
+        "- Do NOT add explanations. "
         "Return only valid JSON matching the provided schema."
-    ).format(
-        species=species if species else "", tissue=tissue, spatial_context=spatial_context if spatial_context else ""
     )
 
 
