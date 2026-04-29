@@ -60,8 +60,8 @@ def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: li
     lines = []
     for domain_id in domain_ids:
         domain_id_str = str(domain_id)
-        pct = proportions.get(domain_id_str, 0.0) * 100
-        lines.append(f"Domain {domain_id}: {pct:.2f}%")
+        pct = proportions.get(domain_id_str, 0.0)
+        lines.append(f"Domain {domain_id}: {pct:.2%}")
 
     return "Cell percentages by domain:\n" + "\n".join(lines)
 
