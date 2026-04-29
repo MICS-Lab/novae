@@ -29,17 +29,7 @@ from ._validate import (
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
 from .mode import Mode
-from ._annotate_domains import add_domain_annotation
-
-if TYPE_CHECKING:
-    from ._annotate_domains import annotate_domains
-
-
-def __getattr__(name: str) -> Any:
-    if name == "annotate_domains":
-        from ._annotate_domains import annotate_domains
-
-        return annotate_domains
+from ._annotate_domains import annotate_domains
 
 
 def load_dataset(*args, **kwargs):

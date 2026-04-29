@@ -336,4 +336,3 @@ def annotate_domains(
     log.info(f"Added: {key_added}")
 
     return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
-
