@@ -335,30 +335,3 @@ def annotate_domains(
 
     return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
 
-
-def add_domain_annotation(
-    adata: AnnData | None = None,
-    annotation: dict | None = None,
-    obs_key: str | None = None,
-    key_added: str | None = None,
-):
-    """Add domain annotation to andata.
-
-    Args:
-        adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
-        annotation: Annotation payload containing a `annotation` list of dictionaries with `domain_id` and `domain_name` entries.
-        obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
-        key_added: Output key used to store annotations in `adata.obs`.
-
-    Returns:
-        None. The mapped annotations are written to `adata.obs[key_added]`.
-    """
-
-    obs_key = utils.check_available_domains_key([adata], obs_key)
-
-    key_added = f"{obs_key}{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
-
-    domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in annotation[Keys.DOMAIN_ANNOTATION]}
-
-    adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
-    log.info(f"Added: {key_added}")
