@@ -10,7 +10,7 @@ from . import utils
 from . import data
 from . import monitor
 from . import plot
-from .utils import spatial_neighbors, batch_effect_correction
+from .utils import spatial_neighbors, batch_effect_correction, label_domains
 from .data import load_dataset, toy_dataset, quantile_scaling, compute_histo_embeddings, compute_histo_pca
 
 log = logging.getLogger("novae")

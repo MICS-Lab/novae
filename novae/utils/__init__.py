@@ -29,7 +29,7 @@ from ._validate import (
 from .build import spatial_neighbors
 from .correct import batch_effect_correction
 from .mode import Mode
-from ._annotate_domains import annotate_domains
+from ._annotate_domains import label_domains
 
 
 def load_dataset(*args, **kwargs):

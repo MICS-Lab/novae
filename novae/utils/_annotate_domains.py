@@ -68,32 +68,35 @@ def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: li
 
 def _output_schema(
     domain_ids: list,
+    domain_key: str,
+    label_key: str,
+    confidence_score_key:str,
     additionalProperties: bool = False,
 ) -> dict:
     schema = {
         "type": "object",
         "properties": {
-            Keys.DOMAIN_ANNOTATION: {
+            label_key: {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        Keys.DOMAIN_ID: {"type": "string", "enum": domain_ids},
-                        Keys.DOMAIN_ANNOTATION: {
+                        domain_key: {"type": "string", "enum": domain_ids},
+                        label_key: {
                             "type": "string",
                             "description": "Most likely domain name. May be a mixed label if needed.",
                         },
-                        Keys.CONFIDENCE_SCORE: {
+                        confidence_score_key: {
                             "type": "number",
                             "description": "A confidence score between 0 and 1 for the annotation.",
                         },
                     },
-                    "required": [Keys.DOMAIN_ID, Keys.DOMAIN_ANNOTATION, Keys.CONFIDENCE_SCORE],
+                    "required": [domain_key, label_key, confidence_score_key],
                     "additionalProperties": additionalProperties,
                 },
             }
         },
-        "required": [Keys.DOMAIN_ANNOTATION],
+        "required": [label_key],
         "additionalProperties": additionalProperties,
     }
     return schema
@@ -152,7 +155,7 @@ def _OpenAI_api_request(
 
     response_format = {
         "type": "json_schema",
-        "json_schema": {"name": Keys.DOMAIN_ANNOTATION, "schema": output_schema, "strict": True},
+        "json_schema": {"name": Keys.LABEL_SUFFIX, "schema": output_schema, "strict": True},
     }
 
     request_kwargs = {
@@ -224,7 +227,7 @@ def _Anthropic_api_request(
         raise RuntimeError(f"Anthropic API request failed: {e}") from e
 
 
-def annotate_domains(
+def label_domains(
     adata: AnnData | None = None,
     pathways: dict[str, list[str]] | str | None = None,
     obs_key: str | None = None,
@@ -272,7 +275,7 @@ def annotate_domains(
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
 
-    key_added = f"{obs_key}_{Keys.DOMAIN_ANNOTATION}" if key_added is None else key_added
+    key_added = f"{obs_key}_{Keys.LABEL_SUFFIX}" if key_added is None else key_added
 
     gene_marker_dict = utils.markers_as_dict(adata, n_genes)
 
@@ -306,7 +309,11 @@ def annotate_domains(
         },
     ]
 
-    output_schema = _output_schema(domain_ids)
+    output_schema = _output_schema(
+                    domain_ids=domain_ids,
+                    domain_key=obs_key,
+                    label_key=Keys.LABEL_SUFFIX,
+                    confidence_score_key=Keys.CONFIDENCE_SCORE)
 
     if return_prompt:
         return {"messages": messages, "output_schema": output_schema}
@@ -330,9 +337,9 @@ def annotate_domains(
         seed=seed,
     )
 
-    domain_ann = {d[Keys.DOMAIN_ID]: d[Keys.DOMAIN_ANNOTATION] for d in result[Keys.DOMAIN_ANNOTATION]}
+    domain_ann = {d[obs_key]: d[Keys.LABEL_SUFFIX] for d in result[Keys.LABEL_SUFFIX]}
 
-    adata.obs[key_added] = adata.obs[obs_key].map(domain_ann)
+    adata.obs[key_added] = adata.obs[Keys.LABEL_SUFFIX].map(domain_ann)
     log.info(f"Added: {key_added}")
 
-    return pd.DataFrame(result[Keys.DOMAIN_ANNOTATION])
+    return domain_ann #pd.DataFrame(result[Keys.LABEL_SUFFIX])
