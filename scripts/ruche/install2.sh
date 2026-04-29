@@ -19,4 +19,4 @@ module load cuda/12.2.2/none-none
 source activate sc_concept
 
 pip install sc-concept
-pip install "flash-attn>=2.7" --no-build-isolation --no-cache-dir
+pip install "flash-attn==2.7.4.post1" --no-build-isolation --no-cache-dir
