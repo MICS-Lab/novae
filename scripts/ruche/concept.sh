@@ -10,6 +10,10 @@
 module purge
 
 module load anaconda3/2023.09-0/none-none
+module load gcc/15.1.0/gcc-15.1.0
+module load cmake/3.31.9/gcc-15.1.0
+module load openblas/0.3.30/intel-oneapi-compilers-2025.3.1-openmp
+module load cuda/12.2.2/none-none
 
 source activate sc_concept
 
