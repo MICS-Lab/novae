@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 def mean_fide_score(
     adatas: AnnData | list[AnnData], obs_key: str, slide_key: str | None = None, n_classes: int | None = None
 ) -> float:
-    """Mean FIDE score over all slides. A low score indicates a great domain continuity.
+    """Mean FIDE score over all slides. A high score indicates a great domain continuity.
 
     Args:
         adatas: An `AnnData` object, or a list of `AnnData` objects.
