@@ -240,42 +240,30 @@ def label_domains(
     spatial_context: str | None = None,
     return_prompt: bool = False,
     max_tokens: int = 1024,
-    key_added: str | None = None,
     seed: int | None = None,
 ) -> pd.DataFrame | dict[str, object]:
-    """Annotate spatial domains with an LLM using domain marker genes.
-
-    !!! info
-        One annotation is generated per domain and stored in `adata.obs[key_added]`
-        (or `adata.obs["novae_domains_X_annotation"]` when `key_added` is not provided).
-
-    !!! note
-        `obs_key` must reference an existing domain column in `adata.obs`,
-        typically created with [novae.Novae.assign_domains].
+    """Label spatial domains with an LLM using domain marker genes.
 
     Args:
         adata: An `AnnData` object, or a list of `AnnData` objects. Optional if the model was initialized with `adata`.
         pathways: Either a dictionary of pathways (keys are pathway names, values are lists of gene names), or a path to a [GSEA](https://www.gsea-msigdb.org/gsea/msigdb/index.jsp) JSON file.
-        obs_key: Key in `adata.obs` containing domain IDs to annotate. By default, it will use the last available Novae domain key.
+        obs_key: Key in `adata.obs` containing domain IDs to label. By default, it uses the last available Novae domain key.
         provider: LLM provider to use. Supported providers: 'openai', 'anthropic'.
-        model: OpenAI model name used for annotation.
+        model: OpenAI model name used for labeling.
         api_key: OpenAI API key. If `None`, uses `OPENAI_API_KEY` from the environment.
         tissue: Tissue name (for example, `"liver"`).
         species: Species name (for example, `"human"` or `"mouse"`).
         n_genes: Number of marker genes per domain passed to the LLM prompt.
         spatial_context: Optional biological/spatial context to include in the prompt.
         return_prompt: If `True`, returns only the generated request payload (`messages` and `output_schema`) so you can copy/paste it into an LLM manually; no LLM request is made.
-        key_added: Output key used to store annotations in `adata.obs`.
-        seed: Optional random seed passed to the annotation utility.
-        max_tokens: Maximum number of tokens the model is allowed to generate for the annotation response.,
+        seed: Optional random seed passed to the labeling utility.
+        max_tokens: Maximum number of tokens the model is allowed to generate for the labeling response.
 
     Returns:
-        A DataFrame with domain annotations. If `return_prompt=True`, returns a dictionary containing `messages` and `output_schema`.
+        A DataFrame with domain labels. If `return_prompt=True`, returns a dictionary containing `messages` and `output_schema`.
     """
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
-
-    key_added = f"{obs_key}_{Keys.LABEL_SUFFIX}" if key_added is None else key_added
 
     gene_marker_dict = utils.markers_as_dict(adata, n_genes)
 
@@ -337,9 +325,4 @@ def label_domains(
         seed=seed,
     )
 
-    domain_ann = {d[obs_key]: d[Keys.LABEL_SUFFIX] for d in result[Keys.LABEL_SUFFIX]}
-
-    adata.obs[key_added] = adata.obs[Keys.LABEL_SUFFIX].map(domain_ann)
-    log.info(f"Added: {key_added}")
-
-    return domain_ann #pd.DataFrame(result[Keys.LABEL_SUFFIX])
+    return pd.DataFrame(result[Keys.LABEL_SUFFIX])
