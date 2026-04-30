@@ -4,8 +4,8 @@ import warnings
 from os import getenv
 
 import pandas as pd
-from anndata import AnnData
 import scanpy as sc
+from anndata import AnnData
 
 from .. import plot, utils
 from .._constants import Keys
@@ -55,37 +55,27 @@ def _format_pathway_scores(
 
 
 def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: list[int] | list[str]) -> str:
-    obs_as_str = adata.obs[obs_key].astype(str)
-    proportions = obs_as_str.value_counts(normalize=True)
-
-    lines = []
-    for domain_id in domain_ids:
-        domain_id_str = str(domain_id)
-        pct = proportions.get(domain_id_str, 0.0)
-        lines.append(f"Domain {domain_id}: {pct:.2%}")
-
+    lines = [
+        f"Domain {domain_id}: {pct:.2%}" for domain_id, pct in adata.obs[obs_key].value_counts(normalize=True).items()
+    ]
     return "Cell percentages by domain:\n" + "\n".join(lines)
 
 
 def _markers_as_dict(adata: AnnData, obs_key: str, domain_ids: list, n_genes: int = 15):
     if "rank_genes_groups" in adata.uns:
         names = adata.uns["rank_genes_groups"]["names"][:n_genes]
-        return {domain: list(names[domain]) 
-                for domain in domain_ids}
-    
+        return {domain: list(names[domain]) for domain in domain_ids}
+
     sc.tl.rank_genes_groups(adata, groupby=obs_key)
 
-    return {
-        domain:sc.get.rank_genes_groups_df(adata, domain)["names"][:n_genes].tolist()
-        for domain in domain_ids
-    }
+    return {domain: sc.get.rank_genes_groups_df(adata, domain)["names"][:n_genes].tolist() for domain in domain_ids}
 
 
 def _output_schema(
     domain_ids: list,
     domain_key: str,
     label_key: str,
-    confidence_score_key:str,
+    confidence_score_key: str,
     additionalProperties: bool = False,
 ) -> dict:
     schema = {
@@ -315,10 +305,11 @@ def label_domains(
     ]
 
     output_schema = _output_schema(
-                    domain_ids=domain_ids,
-                    domain_key=obs_key,
-                    label_key=Keys.LABEL_SUFFIX,
-                    confidence_score_key=Keys.CONFIDENCE_SCORE)
+        domain_ids=domain_ids,
+        domain_key=obs_key,
+        label_key=Keys.LABEL_SUFFIX,
+        confidence_score_key=Keys.CONFIDENCE_SCORE,
+    )
 
     if return_prompt:
         return {"messages": messages, "output_schema": output_schema}
