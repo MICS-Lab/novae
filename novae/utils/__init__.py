@@ -16,7 +16,6 @@ from ._utils import (
     unique_obs,
     valid_indices,
     wandb_log_dir,
-    markers_as_dict,
     store_inference_mode,
 )
 from ._validate import (

@@ -5,6 +5,7 @@ from os import getenv
 
 import pandas as pd
 from anndata import AnnData
+import scanpy as sc
 
 from .. import plot, utils
 from .._constants import Keys
@@ -64,6 +65,20 @@ def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: li
         lines.append(f"Domain {domain_id}: {pct:.2%}")
 
     return "Cell percentages by domain:\n" + "\n".join(lines)
+
+
+def _markers_as_dict(adata: AnnData, obs_key: str, domain_ids: list, n_genes: int = 15):
+    if "rank_genes_groups" in adata.uns:
+        names = adata.uns["rank_genes_groups"]["names"][:n_genes]
+        return {domain: list(names[domain]) 
+                for domain in domain_ids}
+    
+    sc.tl.rank_genes_groups(adata, groupby=obs_key)
+
+    return {
+        domain:sc.get.rank_genes_groups_df(adata, domain)["names"][:n_genes].tolist()
+        for domain in domain_ids
+    }
 
 
 def _output_schema(
@@ -265,7 +280,9 @@ def label_domains(
 
     obs_key = utils.check_available_domains_key([adata], obs_key)
 
-    gene_marker_dict = utils.markers_as_dict(adata, n_genes)
+    domain_ids = adata.obs[obs_key].cat.categories
+
+    gene_marker_dict = _markers_as_dict(adata, obs_key, domain_ids, n_genes)
 
     domain_ids = list(gene_marker_dict.keys())
 
