@@ -1,6 +1,5 @@
 import json
 import logging
-import warnings
 from os import getenv
 
 import pandas as pd
@@ -68,7 +67,10 @@ def _markers_as_dict(adata: AnnData, obs_key: str, domain_ids: list, n_genes: in
 
     sc.tl.rank_genes_groups(adata, groupby=obs_key)
 
-    return {domain: sc.get.rank_genes_groups_df(adata, domain)["names"][:n_genes].tolist() for domain in domain_ids}
+    return {
+        domain: sc.get.rank_genes_groups_df(adata, domain, log2fc_min=0)["names"][:n_genes].tolist()
+        for domain in domain_ids
+    }
 
 
 def _output_schema(
