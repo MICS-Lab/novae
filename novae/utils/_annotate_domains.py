@@ -136,11 +136,11 @@ def _get_api_request_func(provider: str, model: str) -> callable:
     if provider_name not in {"openai", "anthropic"}:
         raise ValueError("`provider` must be one of: 'openai', 'anthropic'.")
 
-    api_request_func = _Anthropic_api_request if provider_name == "anthropic" else _OpenAI_api_request
+    api_request_func = _anthropic_api_request if provider_name == "anthropic" else _openai_api_request
     return api_request_func
 
 
-def _OpenAI_api_request(
+def _openai_api_request(
     model: str,
     api_key: str | None,
     messages: list[dict[str, str]],
@@ -180,7 +180,7 @@ def _OpenAI_api_request(
         raise RuntimeError(f"OpenAI API request failed: {e}") from e
 
 
-def _Anthropic_api_request(
+def _anthropic_api_request(
     model: str,
     api_key: str | None,
     messages: list[dict[str, str]],
