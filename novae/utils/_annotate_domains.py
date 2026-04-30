@@ -61,16 +61,11 @@ def _format_domain_cell_percentages(adata: AnnData, obs_key: str, domain_ids: li
 
 
 def _markers_as_dict(adata: AnnData, obs_key: str, domain_ids: list, n_genes: int = 15):
-    if "rank_genes_groups" in adata.uns:
-        names = adata.uns["rank_genes_groups"]["names"][:n_genes]
-        return {domain: list(names[domain]) for domain in domain_ids}
+    if "rank_genes_groups" not in adata.uns:
+        sc.tl.rank_genes_groups(adata, groupby=obs_key)
 
-    sc.tl.rank_genes_groups(adata, groupby=obs_key)
-
-    return {
-        domain: sc.get.rank_genes_groups_df(adata, domain, log2fc_min=0)["names"][:n_genes].tolist()
-        for domain in domain_ids
-    }
+    names = adata.uns["rank_genes_groups"]["names"][:n_genes]
+    return {domain: list(names[domain]) for domain in domain_ids}
 
 
 def _output_schema(
