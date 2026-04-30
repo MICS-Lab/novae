@@ -113,10 +113,6 @@ def _validate_api_key(
     provider: str | None = None,
 ) -> str:
     if api_key is None:
-        warnings.warn(
-            f"`api_key` was not provided. Trying environment variable `{env_var}`.",
-            stacklevel=2,
-        )
         api_key = getenv(env_var)
         if api_key is None or not isinstance(api_key, str) or not api_key.strip():
             raise ValueError(f"{provider} API key is required. Provide `api_key` or set `{env_var}`.")
